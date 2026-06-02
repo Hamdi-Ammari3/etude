@@ -11,6 +11,7 @@ import StatsCards from "../components/StatsCards";
 import ExerciseGenerator from'../components/ExerciseGenerator';
 import LeaderboardCard from '../components/LeaderboardCard';
 import PremiumCard from '../components/PremiumCard';
+import {FiLoader} from "react-icons/fi";
 import './dashboard.css';
 
 export default function DashboardPage() {
@@ -22,8 +23,8 @@ export default function DashboardPage() {
     return (
       <ProtectedRoute>
         <Navbar />
-        <div>
-          Chargement...
+        <div className="spin-div">
+          <FiLoader className="spin-icon" />
         </div>
       </ProtectedRoute>
     );

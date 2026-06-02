@@ -1,21 +1,21 @@
 .exercise-generator-card{
-    background:#ffffff;
-    border-radius:32px;
-    padding:32px;
-    border:1px solid rgba(0,0,0,.05);
+  background:#ffffff;
+  border-radius:32px;
+  padding:32px;
+  border:1px solid rgba(0,0,0,.05);
 }
 
 .exercise-generator-header{
-    display:flex;
-    align-items:center;
-    gap:12px;
-    margin-bottom:32px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin-bottom:32px;
 }
 
 .exercise-generator-header h2{
-    font-size:1.65rem;
-    font-weight:600;
-    color:#18181b;
+  font-size:1.65rem;
+  font-weight:600;
+  color:#18181b;
 }
 
 .exercise-generator-icon{
@@ -24,7 +24,6 @@
     border-radius:16px;
     background:#d1fae5;
     color:#059669;
-
     display:flex;
     align-items:center;
     justify-content:center;
@@ -432,9 +431,17 @@
 }
 
 @media(max-width:768px){
-
-    .generator-row{
-        grid-template-columns:1fr;
-    }
+  .exercise-generator-card{
+    background:#ffffff;
+    border-radius:32px;
+    padding:30px 15px;
+    border:1px solid rgba(0,0,0,.05);
+  }
+  .generator-row{
+    grid-template-columns:1fr;
+  }
+  .exercise-generator-header h2{
+    font-size:1.2rem;
+  }
 
 }

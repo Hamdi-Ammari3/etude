@@ -16,6 +16,24 @@
     gap:32px;
 }
 
+.spin-div {
+  width: 100vw;
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spin-icon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @media (max-width: 768px) {
     .dashboard-top-section {
         padding: 25px 25px;

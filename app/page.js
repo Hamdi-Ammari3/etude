@@ -26,7 +26,7 @@ export default function Home() {
   }, [user, loading, router]);
 
   return (
-    <div>
+    <div className="spin-div">
       <FiLoader className="spin-icon" />
     </div>
   );

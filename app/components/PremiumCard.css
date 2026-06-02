@@ -18,6 +18,7 @@
 .premium-header h3{
     color:#0c4a6e;
     font-weight:600;
+    font-size: 17px;
 }
 
 .premium-header svg{
@@ -43,4 +44,10 @@
     color:white;
 
     font-weight:600;
+}
+
+@media(max-width:768px){
+    .premium-header h3{
+        font-size: 14px;
+    }
 }

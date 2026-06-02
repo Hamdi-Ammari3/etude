@@ -11,6 +11,14 @@ body {
   overflow-x: hidden;
 }
 
+.spin-div {
+  width: 100vw;
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .spin-icon {
   animation: spin 1s linear infinite;
 }

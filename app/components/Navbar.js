@@ -47,7 +47,7 @@ export default function Navbar() {
                         href="/dashboard"
                         className="dashboard-logo"
                     >
-                        Profi
+                        Etude IA
                     </Link>
 
                     <div className="dashboard-navbar-links">
