@@ -1,0 +1,27 @@
+.dashboard-top-section {
+  padding: 50px 100px 25px 100px;
+}
+
+.dashboard-content{
+    display:grid;
+    grid-template-columns:7fr 5fr;
+    gap:48px;
+    align-items:start;
+    padding: 25px 100px 50px 100px;
+}
+
+.dashboard-right{
+    display:flex;
+    flex-direction:column;
+    gap:32px;
+}
+
+@media (max-width: 768px) {
+    .dashboard-top-section {
+        padding: 25px 25px;
+    }
+    .dashboard-content{
+        grid-template-columns:1fr;
+        padding: 25px 25px 50px 25px;
+    }
+}

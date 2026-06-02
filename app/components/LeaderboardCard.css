@@ -1,0 +1,25 @@
+.leaderboard-card{
+    background:white;
+    border-radius:24px;
+    padding:24px;
+    border:1px solid rgba(0,0,0,.05);
+}
+
+.leaderboard-header{
+    display:flex;
+    align-items:center;
+    gap:8px;
+
+    margin-bottom:24px;
+
+    font-weight:600;
+}
+
+.leaderboard-header svg{
+    color:#f59e0b;
+}
+
+.leaderboard-empty{
+    color:#a1a1aa;
+    font-size:.9rem;
+}

@@ -1,0 +1,39 @@
+1/ DB Collections
+
+users
+
+curriculum
+
+exerciseHistory
+
+**************************
+2/ services/exerciseService.js
+
+Create Exercise History
+
+Get Exercise
+
+Complete Exercise
+
+Reward User
+
+Consume Energy
+
+
+**************************
+3/ services/subscriptionService.js Done
+
+isPremium()
+
+canGenerateExercise()
+
+getRemainingDailyQuota()
+
+resetDailyEnergyIfNeeded()
+
+
+*********************
+4/ hooks/useDashboard.js
+Combine => AuthContext + UserContext + SubscriptionService
+
+

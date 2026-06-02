@@ -1,0 +1,197 @@
+.subscription-page {
+  min-height: 100vh;
+  background: #fafafa;
+}
+
+.subscription-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.subscription-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  background: transparent;
+  border: none;
+
+  color: #71717a;
+
+  font-size: 0.9rem;
+  font-weight: 500;
+
+  cursor: pointer;
+
+  margin-bottom: 24px;
+
+  transition: color 0.2s ease;
+}
+
+.subscription-back-btn:hover {
+  color: #18181b;
+}
+
+.subscription-back-btn svg {
+  font-size: 18px;
+}
+
+.subscription-header {
+  margin-bottom: 25px;
+}
+
+.subscription-header h1 {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #18181b;
+}
+
+.subscription-header p {
+  color: #71717a;
+  font-size: 1rem;
+}
+
+.plans-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+
+.plan-card {
+  position: relative;
+  background: white;
+  border-radius: 28px;
+  border: 1px solid rgba(0,0,0,.08);
+  padding: 32px;
+  transition: .25s;
+}
+
+.current-plan {
+  border: 2px solid #10b981;
+}
+
+.premium-active {
+  border: 2px solid #0ea5e9;
+}
+
+.premium-card {
+  background: linear-gradient(
+      135deg,
+      #eff6ff,
+      #ffffff
+  );
+}
+
+.premium-icon {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  font-size: 22px;
+  color: #f59e0b;
+}
+
+.plan-card h3 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #18181b;
+}
+
+.price {
+  margin-top: 12px;
+  font-size: 2.3rem;
+  font-weight: 800;
+  color: #18181b;
+}
+
+.price span {
+  font-size: .95rem;
+  font-weight: 400;
+  color: #71717a;
+}
+
+.features-list {
+  list-style: none;
+  padding: 0;
+  margin: 20px 0;
+}
+
+.features-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 14px;
+  color: #27272a;
+  font-size: .95rem;
+}
+
+.features-list svg {
+  color: #10b981;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.premium-card .features-list svg {
+  color: #0284c7;
+}
+
+.current-badge {
+  color: #10b981;
+  font-size: .75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.whatsapp-button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: none;
+  border-radius: 14px;
+  background: #25d366;
+  color: white;
+  padding: 12px 14px;
+  font-size: .95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .25s ease;
+}
+
+.whatsapp-button:hover {
+  background: #1ebe5d;
+  transform: translateY(-1px);
+}
+
+.whatsapp-button svg {
+  font-size: 18px;
+}
+
+.subscription-note {
+  margin-top: 30px;
+  text-align: center;
+  color: #a1a1aa;
+  font-size: .8rem;
+}
+
+@media (max-width: 768px) {
+
+  .plans-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .subscription-container {
+    padding: 24px 16px;
+  }
+
+  .subscription-header h1 {
+    font-size: 1.8rem;
+  }
+
+  .plan-card {
+    padding: 24px;
+  }
+
+}
