@@ -190,7 +190,7 @@ export default function ExerciseGenerator() {
         </div>
 
         <h2>
-          Générateur d'exercices IA
+          Générateur d'exercices
         </h2>
 
       </div>

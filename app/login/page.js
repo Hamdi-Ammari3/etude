@@ -109,7 +109,7 @@ export default function LoginPage() {
           </div>
 
           <h1 className="login-title">
-            Apprends intelligemment avec l'IA.
+            Révise, progresse et réussis.
           </h1>
 
           <p className="login-description">
