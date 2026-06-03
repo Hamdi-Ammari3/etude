@@ -12,8 +12,8 @@ const notoArabic = Noto_Sans_Arabic({
 });
 
 export const metadata = {
-  title: "Etude IA",
-  description: "E-Learning Platform Powered by AI",
+  title: "Droussy TN",
+  description: "جميع المواد الأساسية في منصة واحدة",
 };
 
 export default function RootLayout({ children }) {

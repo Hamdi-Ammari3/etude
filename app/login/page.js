@@ -105,7 +105,7 @@ export default function LoginPage() {
         <div className="login-header">
 
           <div className="login-logo">
-            <h1>Etude IA</h1>
+            <h1>Droussy TN</h1>
           </div>
 
           <h1 className="login-title">

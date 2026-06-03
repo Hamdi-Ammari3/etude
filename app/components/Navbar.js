@@ -47,7 +47,7 @@ export default function Navbar() {
                         href="/dashboard"
                         className="dashboard-logo"
                     >
-                        Etude IA
+                        Droussy TN
                     </Link>
 
                     <div className="dashboard-navbar-links">
