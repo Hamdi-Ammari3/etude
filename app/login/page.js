@@ -43,28 +43,20 @@ export default function LoginPage() {
         await setDoc(userRef, {
 
           uid: loggedUser.uid,
-
           name: loggedUser.displayName || "",
-
           email: loggedUser.email || "",
-
-          // PLAN
           plan: "free",
-
-          // GAMIFICATION
           xp: 0,
           level: 1,
           streak: 0,
-
-          // DAILY TRACKING
           dailyExercisesGenerated: 0,
           lastDailyReset: serverTimestamp(),
-
-          // SUBSCRIPTION
           subscriptionStart: null,
           subscriptionEnd: null,
-
-          // META
+          stats: {
+            totalExercises: 0,
+            combinations: {}
+          },
           createdAt: serverTimestamp(),
 
         });
@@ -105,7 +97,7 @@ export default function LoginPage() {
         <div className="login-header">
 
           <div className="login-logo">
-            <h1>Droussy TN</h1>
+            <h1>Droussy Tn</h1>
           </div>
 
           <h1 className="login-title">

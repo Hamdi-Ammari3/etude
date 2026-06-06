@@ -22,6 +22,10 @@ export default function ExerciseGenerator() {
   const [generating, setGenerating] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("");
   const [showPremiumModal,setShowPremiumModal] = useState(false);
+  const [quotaModalData, setQuotaModalData] = useState({
+    isPremium: false,
+    limit: 3,
+  });
 
   useEffect(() => {
 
@@ -118,6 +122,11 @@ export default function ExerciseGenerator() {
 
         if (data.quotaReached) {
 
+          setQuotaModalData({
+            isPremium: data.isPremium,
+            limit: data.limit,
+          });
+
           setShowPremiumModal(true);
 
           return;
@@ -179,6 +188,8 @@ export default function ExerciseGenerator() {
   const isPrimaryGrade = grade.startsWith("primaire_");
 
   const physicsLabel = isPrimaryGrade ? "🔬 Éveil Scientifique" : "⚡ Physique";
+
+  console.log(quotaModalData)
 
   return (
     <div className="exercise-generator-card">
@@ -420,81 +431,101 @@ export default function ExerciseGenerator() {
 
       {showPremiumModal && (
 
-        <div className="premium-modal-overlay">
+  <div className="premium-modal-overlay">
 
-          <div className="premium-modal">
+    <div className="premium-modal">
 
-            <div className="premium-modal-badge">
-              PREMIUM
-            </div>
+      <div className="premium-modal-badge">
 
-            <h3>
-              Limite quotidienne atteinte
-            </h3>
-
-            <p>
-              Vous avez utilisé vos 5 exercices gratuits aujourd'hui.
-            </p>
-
-            <div className="premium-benefits">
-
-              <div>Exercices illimités</div>
-
-              <div>Toutes les matières</div>
-
-              <div>Tous les niveaux</div>
-
-              <div>Historique complet</div>
-
-              <div>Progression détaillée</div>
-
-            </div>
-
-            <div className="premium-price">
-
-              <span className="price-value">
-                25 TND / mois
-              </span>
-
-            </div>
-
-            <button
-              className="premium-whatsapp-btn"
-              onClick={() => {
-
-                const message = "Bonjour, je souhaite souscrire à l'abonnement Premium Profi.";
-
-                window.open(
-                  `https://wa.me/21651510183?text=${encodeURIComponent(message)}`,
-                  "_blank"
-                );
-
-              }}
-            >
-
-            <FaWhatsapp size={20}/>
-          
-            Contactez-nous via WhatsApp
-
-        </button>
-
-        <button
-          className="premium-close-btn"
-          onClick={() =>
-            setShowPremiumModal(false)
-          }
-        >
-
-          Plus tard
-
-        </button>
+        {quotaModalData.isPremium ? "PREMIUM" : "GRATUIT"}
 
       </div>
 
+      <h3>
+
+        {quotaModalData.isPremium
+          ? "Quota Premium atteint"
+          : "Limite quotidienne atteinte"}
+
+      </h3>
+
+      <p>
+
+        {quotaModalData.isPremium
+          ? `Vous avez utilisé vos ${quotaModalData.limit} exercices disponibles aujourd'hui. Votre quota sera automatiquement réinitialisé demain.`
+          : `Vous avez utilisé vos ${quotaModalData.limit} exercices gratuits aujourd'hui.`}
+
+      </p>
+
+      {!quotaModalData.isPremium && (
+
+        <>
+
+          <div className="premium-benefits">
+
+            <div>Jusqu'à 30 exercices par jour</div>
+
+            <div>Toutes les matières</div>
+
+            <div>Tous les niveaux</div>
+
+            <div>Historique complet</div>
+
+            <div>Progression détaillée</div>
+
+          </div>
+
+          <div className="premium-price">
+
+            <span className="price-value">
+
+              25 TND / mois
+
+            </span>
+
+          </div>
+
+          <button
+            className="premium-whatsapp-btn"
+            onClick={() => {
+
+              const message =
+                "Bonjour, je souhaite souscrire à l'abonnement Premium Profi.";
+
+              window.open(
+                `https://wa.me/21651510183?text=${encodeURIComponent(message)}`,
+                "_blank"
+              );
+
+            }}
+          >
+
+            <FaWhatsapp size={20} />
+
+            Contactez-nous via WhatsApp
+
+          </button>
+
+        </>
+
+      )}
+
+      <button
+        className="premium-close-btn"
+        onClick={() => setShowPremiumModal(false)}
+      >
+
+        {quotaModalData.isPremium
+          ? "Compris"
+          : "Plus tard"}
+
+      </button>
+
     </div>
 
-  )
-}
+  </div>
+
+)}
 
     </div>
   );

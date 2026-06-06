@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import {getUserData} from '../../../services/userService'
-import {canGenerateExercise,resetDailyUsageIfNeeded} from "../../../services/subscriptionService";
+import {canGenerateExercise,isPremium} from "../../../services/subscriptionService";
 import {findAvailableExercise,createExerciseTemplate,createExerciseHistory,increaseTemplateUsage,buildExerciseKey } from "../../../services/exerciseService";
-import { addDailyExercise } from "../../../services/userService";
+import { addDailyExercise,addExerciseStat } from "../../../services/userService";
 import { generateExerciseWithAI } from "../../../services/openAIService";
 
 export async function POST(request) {
@@ -39,19 +39,17 @@ export async function POST(request) {
             );
         }
 
-        // RESET DAILY USAGE IF NEEDED
-        //const wasReset = await resetDailyUsageIfNeeded(userId,userData);
-
-        //if (wasReset) {
-            //userData = await getUserData(userId);
-        //}
-
         // CHECK QUOTA
         if (!canGenerateExercise(userData)) {
+
+            const premiumUser = isPremium(userData);
+
             return NextResponse.json(
                 {
                     success: false,
                     quotaReached: true,
+                    isPremium: premiumUser,
+                    limit: premiumUser ? 30 : 3,
                     error: "Limite quotidienne atteinte.",
                 },
                 {
@@ -71,6 +69,8 @@ export async function POST(request) {
                 increaseTemplateUsage(cachedExercise.id),
 
                 addDailyExercise(userId),
+
+                addExerciseStat(userId,subject,grade),
             ]);
 
             return NextResponse.json({
@@ -148,12 +148,11 @@ export async function POST(request) {
 
         // SAVE HISTORY + USAGE
         const [historyId] = await Promise.all([
-            createExerciseHistory(
-                userId,
-                template
-            ),
+            createExerciseHistory(userId,template),
 
             addDailyExercise(userId),
+
+            addExerciseStat(userId,subject,grade),
         ]);
 
         // RETURN RESULT

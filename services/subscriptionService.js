@@ -68,37 +68,39 @@ export async function checkAndResetQuota(uid,userData) {
     return true;
 }
 
-// USER CAN GENERATE EXERCICE ?
+// USER CAN GENERATE EXERCISE ?
 export function canGenerateExercise(userData) {
 
     if (!userData) {
         return false;
     }
 
-    if (isPremium(userData)) {
-        return true;
-    }
+    const FREE_DAILY_LIMIT = 3;
 
-    const FREE_DAILY_LIMIT = 5;
+    const PREMIUM_DAILY_LIMIT = 30;
 
-    return userData.dailyExercisesGenerated < FREE_DAILY_LIMIT;
+    const limit = isPremium(userData) ? PREMIUM_DAILY_LIMIT : FREE_DAILY_LIMIT;
+
+    return userData.dailyExercisesGenerated < limit;
 
 }
 
-//GET USER REMAINING QUOTA
+// GET USER REMAINING QUOTA
 export function getRemainingDailyQuota(userData) {
 
     if (!userData) {
         return 0;
     }
 
-    if (isPremium(userData)) {
-        return "Illimité";
-    }
+    const FREE_DAILY_LIMIT = 3;
 
-    const FREE_DAILY_LIMIT = 5;
+    const PREMIUM_DAILY_LIMIT = 30;
 
-    return Math.max(0,FREE_DAILY_LIMIT - userData.dailyExercisesGenerated);
+    const limit = isPremium(userData)
+        ? PREMIUM_DAILY_LIMIT
+        : FREE_DAILY_LIMIT;
+
+    return Math.max(0, limit - (userData.dailyExercisesGenerated || 0));
 
 }
 

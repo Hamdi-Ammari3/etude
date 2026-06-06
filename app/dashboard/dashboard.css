@@ -35,11 +35,15 @@
 }
 
 @media (max-width: 768px) {
-    .dashboard-top-section {
-        padding: 25px 25px;
-    }
-    .dashboard-content{
-        grid-template-columns:1fr;
-        padding: 25px 25px 50px 25px;
-    }
+  .dashboard-top-section {
+    padding: 25px 15px 0px;
+  }
+  .dashboard-content{
+    grid-template-columns:1fr;
+    gap:25px;
+    padding: 25px 15px 50px;
+  }
+  .dashboard-right{
+    gap:25px;
+  }
 }

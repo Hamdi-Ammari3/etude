@@ -147,6 +147,35 @@ export async function addDailyExercise(uid) {
 
 }
 
+// UPDATE EXERCISE STATS
+export async function addExerciseStat(uid,subject,grade) {
+
+    try {
+
+        const userRef = doc(DB, "users", uid);
+
+        const combinationKey = `stats.combinations.${subject}__${grade}`;
+
+        await updateDoc(userRef, {
+
+            "stats.totalExercises": increment(1),
+
+            [combinationKey]: increment(1),
+
+        });
+
+        return true;
+
+    } catch (error) {
+
+        console.log(error);
+
+        return false;
+
+    }
+
+}
+
 
 // UPDATE LEVEL
 export async function updateLevel(uid, level) {

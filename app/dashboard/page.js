@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../context/AuthContext";
 import { useUser } from "../../context/UserContext";
-import {isPremium,getRemainingDailyQuota} from "../../services/subscriptionService";
+import {isPremium} from "../../services/subscriptionService";
 import ProtectedRoute from "../components/ProtectedRoute";
 import Navbar from "../components/Navbar";
 import HeroSection from "../components/HeroSection";
@@ -11,6 +11,7 @@ import StatsCards from "../components/StatsCards";
 import ExerciseGenerator from'../components/ExerciseGenerator';
 import LeaderboardCard from '../components/LeaderboardCard';
 import PremiumCard from '../components/PremiumCard';
+import StatisticsCard from "../components/StatisticsCard";
 import {FiLoader} from "react-icons/fi";
 import './dashboard.css';
 
@@ -44,13 +45,27 @@ export default function DashboardPage() {
 
   }
 
-  const quotaText = getRemainingDailyQuota(userData);
+  const quotaLimit = premiumActive ? 30 : 3;
+
+  const usedToday = userData?.dailyExercisesGenerated || 0;
 
   const xp = userData?.xp || 0;
 
   const xpInLevel = xp % 200;
 
   const pct = Math.round((xpInLevel / 200) * 100);
+
+  const stats = Object.entries(userData?.stats?.combinations || {}).map(([key, count]) => {
+
+    const [subject, grade] = key.split("__");
+
+    return {
+      subject,
+      grade,
+      count,
+    };
+
+  }).sort((a, b) => b.count - a.count);
 
   return (
     <ProtectedRoute>
@@ -71,10 +86,10 @@ export default function DashboardPage() {
         <StatsCards
           level={userData?.level || 1}
           progressPercent={pct}
-          lastBadge={null}
           isPremium={premiumActive}
           premiumDaysLeft={premiumDaysLeft}
-          quotaText={quotaText}
+          quotaLimit={quotaLimit}
+          usedToday={usedToday}
         />
 
       </section>
@@ -86,7 +101,16 @@ export default function DashboardPage() {
         </div>
 
         <div className="dashboard-right">
-          <PremiumCard />
+          {!premiumActive && (
+            <PremiumCard />
+          )}
+          
+
+          <StatisticsCard
+            stats={stats}
+            totalExercises={userData?.stats?.totalExercises || 0}
+          />
+          
           {/* <LeaderboardCard /> */}
         </div>
 

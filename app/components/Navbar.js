@@ -47,7 +47,7 @@ export default function Navbar() {
                         href="/dashboard"
                         className="dashboard-logo"
                     >
-                        Droussy TN
+                        Droussy Tn
                     </Link>
 
                     <div className="dashboard-navbar-links">

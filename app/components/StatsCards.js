@@ -2,13 +2,12 @@
 
 import "./StatsCards.css";
 
-export default function StatsCards({level,progressPercent,lastBadge,isPremium,premiumDaysLeft,quotaText}) {
+export default function StatsCards({level,progressPercent,isPremium,premiumDaysLeft,usedToday,quotaLimit}) {
 
   return (
     <div className="stats-grid">
 
       {/* LEVEL CARD */}
-
       <div className="stats-card">
 
         <div className="stats-card-header">
@@ -36,21 +35,35 @@ export default function StatsCards({level,progressPercent,lastBadge,isPremium,pr
 
       </div>
 
-      {/* BADGE CARD */}
-      <div className="stats-card badge-card">
-        
-        <div className="badge-icon">
-          {lastBadge?.icon ?? "🎯"}
+      {/* PLAN CARD */}
+      <div className={`stats-card plan-card ${isPremium ? "premium-plan" : "free-plan"}`}>
+
+        <div className="plan-badge">
+
+          {isPremium ? "⭐" : "🆓"}
+
         </div>
 
-        <div>
+        <div className="plan-content">
 
           <p className="stats-label">
-            Dernier badge
+
+            Plan actuel
+
           </p>
 
-          <p className="badge-name">
-            {lastBadge?.name ?? "Nouveau membre"}
+          <h3 className="plan-title">
+
+            {isPremium ? "Premium" : "Gratuit"}
+
+          </h3>
+
+          <p className="plan-description">
+
+            {isPremium
+              ? `${premiumDaysLeft} jour${premiumDaysLeft > 1 ? "s" : ""} restant${premiumDaysLeft > 1 ? "s" : ""}`
+              : "3 exercices par jour"}
+
           </p>
 
         </div>
@@ -58,25 +71,20 @@ export default function StatsCards({level,progressPercent,lastBadge,isPremium,pr
       </div>
 
       {/* QUOTA CARD */}
-
       <div className="quota-card">
 
         <p className="quota-label">
-          {isPremium
-            ? "Plan Premium"
-            : "Quota quotidien"}
+          Quota quotidien
         </p>
 
         <div className="quota-content">
 
           <span className="quota-number">
-            {quotaText}
+            {usedToday} / {quotaLimit}
           </span>
 
           <span className="quota-subtitle">
-            {isPremium
-              ? `${premiumDaysLeft}j restants`
-              : "exercices restants"}
+            générés aujourd'hui
           </span>
 
         </div>

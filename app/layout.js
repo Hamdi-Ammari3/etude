@@ -12,7 +12,7 @@ const notoArabic = Noto_Sans_Arabic({
 });
 
 export const metadata = {
-  title: "Droussy TN",
+  title: "Droussy Tn",
   description: "جميع المواد الأساسية في منصة واحدة",
 };
 

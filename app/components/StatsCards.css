@@ -46,18 +46,20 @@
     transition: width .4s ease;
 }
 
-.badge-card {
+.plan-card {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 18px;
+    transition: .25s ease;
 }
 
-.badge-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 999px;
-    background: #fefce8;
-    border: 1px solid #fde68a;
+.plan-badge {
+    width: 50px;
+    height: 50px;
+
+    flex-shrink: 0;
+
+    border-radius: 18px;
 
     display: flex;
     align-items: center;
@@ -66,10 +68,50 @@
     font-size: 1.5rem;
 }
 
-.badge-name {
-    font-size: 1rem;
-    font-weight: 500;
+.plan-content {
+    flex: 1;
+}
+
+.plan-title {
+    margin-top: 4px;
+    font-size: 1.15rem;
+    font-weight: 700;
     color: #18181b;
+}
+
+.plan-description {
+    margin-top: 4px;
+    font-size: .85rem;
+    color: #71717a;
+}
+
+/* FREE */
+
+.free-plan .plan-badge {
+    background: #f4f4f5;
+}
+
+/* PREMIUM */
+
+.premium-plan {
+    background: linear-gradient(
+        135deg,
+        #eff6ff,
+        #ffffff
+    );
+}
+
+.premium-plan .plan-badge {
+    background: #fef3c7;
+}
+
+.premium-plan .plan-title {
+    color: #0369a1;
+}
+
+.premium-plan .plan-description {
+    color: #0284c7;
+    font-weight: 600;
 }
 
 .quota-card {
