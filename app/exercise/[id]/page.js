@@ -249,39 +249,12 @@ export default function ExercisePage() {
                                     <div className="exercise-actions">
 
                                         <button
-                                            className="finish-btn"
-                                            disabled={
-                                                busy ||
-                                                !answer.trim()
-                                            }
-                                            onClick={() =>
-                                                finish(
-                                                    100
-                                                )
-                                            }
+                                            className={`finish-btn ${!answer.trim() ? "disabled-btn" : ""}`}
+                                            disabled={busy || !answer.trim()}
+                                            onClick={() => finish(100)}
                                         >
 
-                                            {busy
-                                                ? "Validation..."
-                                                : "J'ai fini, voir la correction"}
-
-                                        </button>
-
-                                        <button
-                                            className="giveup-btn"
-                                            disabled={
-                                                busy
-                                            }
-                                            onClick={() =>
-                                                finish(
-                                                    0
-                                                )
-                                            }
-                                        >
-
-                                            <FiLock />
-
-                                            Abandonner & voir
+                                            {busy ? "Validation..." : "J'ai fini, voir la correction"}
 
                                         </button>
 
