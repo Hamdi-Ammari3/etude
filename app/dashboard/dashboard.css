@@ -36,7 +36,7 @@
 
 @media (max-width: 768px) {
   .dashboard-top-section {
-    padding: 25px 15px 0px;
+    padding: 25px 15px 5px;
   }
   .dashboard-content{
     grid-template-columns:1fr;

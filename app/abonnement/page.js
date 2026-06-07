@@ -2,8 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../context/AuthContext";
+import { useUser } from "../../context/UserContext";
 import ProtectedRoute from "../components/ProtectedRoute";
 import Navbar from "../components/Navbar";
+import {isPremium} from "../../services/subscriptionService";
 import { FiCheck,FiAward,FiArrowLeft } from "react-icons/fi";
 import { FaWhatsapp } from "react-icons/fa";
 import "./abonnement.css";
@@ -12,9 +14,11 @@ export default function AbonnementPage() {
 
     const router = useRouter();
 
-    const { userData } = useAuth();
+    const {userData} = useUser();
 
-    const isPremium = userData?.subscriptionPlan === "premium";
+    const premiumActive = isPremium(userData);
+
+    console.log(premiumActive)
 
     const premiumFeatures = [
 
@@ -61,9 +65,9 @@ export default function AbonnementPage() {
 
                         <p>
 
-                            {isPremium
+                            {premiumActive
                                 ? "Vous utilisez actuellement l'abonnement Premium."
-                                : "Plan gratuit — 5 exercices par jour."}
+                                : "Plan gratuit — 3 exercices par jour."}
 
                         </p>
 
@@ -73,13 +77,7 @@ export default function AbonnementPage() {
 
                         {/* FREE */}
 
-                        <div
-                            className={`plan-card ${
-                                !isPremium
-                                    ? "current-plan"
-                                    : ""
-                            }`}
-                        >
+                        <div className={`plan-card ${!premiumActive ? "current-plan" : ""}`} >
 
                             <div>
 
@@ -103,7 +101,7 @@ export default function AbonnementPage() {
 
                                 <li>
                                     <FiCheck />
-                                    5 exercices par jour
+                                    3 exercices par jour
                                 </li>
 
                                 <li>
@@ -118,7 +116,7 @@ export default function AbonnementPage() {
 
                             </ul>
 
-                            {!isPremium && (
+                            {!premiumActive && (
 
                                 <p className="current-badge">
 
@@ -132,13 +130,7 @@ export default function AbonnementPage() {
 
                         {/* PREMIUM */}
 
-                        <div
-                            className={`plan-card premium-card ${
-                                isPremium
-                                    ? "premium-active"
-                                    : ""
-                            }`}
-                        >
+                        <div className={`plan-card premium-card ${premiumActive ? "premium-active" : ""}`}>
 
                             <div className="premium-icon">
 
@@ -184,15 +176,13 @@ export default function AbonnementPage() {
 
                             </ul>
 
-                            {isPremium ? (
+                            {premiumActive ? (
 
-                                <button
-                                    className="premium-button disabled"
-                                >
+                                <p className="current-badge">
 
-                                    Abonnement actif
+                                    Plan actuel
 
-                                </button>
+                                </p>
 
                             ) : (
 

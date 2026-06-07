@@ -36,7 +36,7 @@ export default function StatsCards({level,progressPercent,isPremium,premiumDaysL
       </div>
 
       {/* PLAN CARD */}
-      <div className={`stats-card plan-card ${isPremium ? "premium-plan" : "free-plan"}`}>
+      <div className={`stats-card starts-plan-card ${isPremium ? "premium-plan" : "free-plan"}`}>
 
         <div className="plan-badge">
 
@@ -52,6 +52,8 @@ export default function StatsCards({level,progressPercent,isPremium,premiumDaysL
 
           </p>
 
+          <div className="stats-label-plan-details">
+
           <h3 className="plan-title">
 
             {isPremium ? "Premium" : "Gratuit"}
@@ -65,6 +67,7 @@ export default function StatsCards({level,progressPercent,isPremium,premiumDaysL
               : "3 exercices par jour"}
 
           </p>
+          </div>
 
         </div>
 
