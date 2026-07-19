@@ -6,6 +6,7 @@ import { notFound, useParams } from "next/navigation";
 import { findSubject, findLessonsForSubject } from "../../../../../lib/curriculum";
 import { useUser } from "../../../../../lib/auth";
 import { canAccessLesson } from "../../../../../lib/access";
+import { getLocalProgress, lessonCompletion } from "../../../../../lib/progress";
 import LoadingSpinner from "../../../../components/LoadingSpinner";
 import "../../../../style.css";
 
@@ -35,7 +36,7 @@ function Chip({ icon, children }) {
 
 export default function LessonsPage() {
   const { gradeId, subjectId } = useParams();
-  const { user } = useUser();
+  const { user, hydrated: userHydrated } = useUser();
 
   const [found, setFound] = useState(null);
   const [lessons, setLessons] = useState([]);
@@ -87,6 +88,19 @@ export default function LessonsPage() {
 
   const { level, grade, subject } = found;
   const total = lessons.length;
+
+  const progress = userHydrated ? (user ? user.progress || {} : getLocalProgress()) : {};
+  const subjectProgressMap = progress?.[gradeId]?.[subjectId] || {};
+
+  // Returns "done" | "in-progress" | "not-started" for a given lesson.
+  function getLessonStatus(lessonId) {
+    const lp = subjectProgressMap[lessonId];
+    if (!lp) return "not-started";
+    const pct = lessonCompletion(lp);
+    if (pct >= 1) return "done";
+    if (pct > 0) return "in-progress";
+    return "not-started";
+  }
 
   // Group by the real trimestre field on each lesson doc (1, 2, or 3).
   const groups = [1, 2, 3]
@@ -160,9 +174,10 @@ export default function LessonsPage() {
                     // order is 1-based from the seed script; index into canAccessLesson is 0-based.
                     const lessonIndexInSubject = l.order - 1;
                     const accessible = canAccessLesson(user, gradeId, lessonIndexInSubject);
+                    const status = getLessonStatus(l.lessonId);
 
                     const rowNumber = (
-                      <span className="lesson-number">
+                      <span className={`lesson-number lesson-number-${status}`}>
                         {String(i + 1).padStart(2, "0")}
                       </span>
                     );
@@ -172,6 +187,12 @@ export default function LessonsPage() {
                         <p className="lesson-row-title">
                           {l.title}
                           {!accessible && <span className="lock-badge">🔒</span>}
+                          {accessible && status === "done" && (
+                            <span className="lesson-status-badge lesson-status-badge-done">Terminée</span>
+                          )}
+                          {accessible && status === "in-progress" && (
+                            <span className="lesson-status-badge lesson-status-badge-progress">En cours</span>
+                          )}
                         </p>
                         <div className="lesson-row-chips">
                           <Chip icon="📖">Résumé</Chip>
@@ -192,15 +213,6 @@ export default function LessonsPage() {
                           >
                             {rowNumber}
                             {rowInfo}
-                            <span className="lesson-row-locked-hint">
-                              <Link
-                                href={`/grade/${gradeId}/unlock`}
-                                className="lesson-row-unlock-link"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                Débloquer
-                              </Link>
-                            </span>
                           </div>
                         </li>
                       );
@@ -210,12 +222,12 @@ export default function LessonsPage() {
                       <li key={l.id} className="lesson-list-item">
                         <Link
                           href={`/grade/${gradeId}/subject/${subjectId}/lesson/${l.lessonId}`}
-                          className="lesson-row"
+                          className={`lesson-row lesson-row-${status}`}
                         >
                           {rowNumber}
                           {rowInfo}
                           <span className="lesson-row-open">
-                            Ouvrir
+                            {status === "done" ? "Revoir" : status === "in-progress" ? "Continuer" : "Ouvrir"}
                             <svg className="lesson-row-open-icon" viewBox="0 0 20 20" fill="currentColor">
                               <path
                                 fillRule="evenodd"
