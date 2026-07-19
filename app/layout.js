@@ -1,8 +1,6 @@
 import { Noto_Sans_Arabic } from "next/font/google";
+import Navbar from './components/Navbar'
 import "./style.css";
-
-import { AuthProvider } from "../context/AuthContext";
-import {UserProvider} from '../context/UserContext';
 
 const notoArabic = Noto_Sans_Arabic({
   subsets: ["arabic"],
@@ -13,7 +11,7 @@ const notoArabic = Noto_Sans_Arabic({
 
 export const metadata = {
   title: "Droussy Tn",
-  description: "جميع المواد الأساسية في منصة واحدة",
+  description: "Révisez à votre rythme, progressez chaque jour.",
 };
 
 export default function RootLayout({ children }) {
@@ -21,15 +19,9 @@ export default function RootLayout({ children }) {
     <html lang="ar">
       <body id="app-container" className={notoArabic.variable}>
 
-        <AuthProvider>
+        <Navbar />
 
-          <UserProvider>
-
-            {children}
-
-          </UserProvider>
-
-        </AuthProvider>
+        {children}
 
       </body>
     </html>

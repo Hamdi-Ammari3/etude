@@ -1,151 +1,180 @@
 "use client";
 
-import "./login.css";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
-import { signInWithGoogle } from "../../lib/auth";
-import { DB } from "../../lib/firebaseConfig";
-import { useAuth } from "../../context/AuthContext";
-import {FiArrowLeft,FiLoader} from "react-icons/fi";
+import Link from "next/link";
+import { completeLogin, useUser } from "../../lib/auth";
+import "../style.css";
+
+function Field({ label, children }) {
+  return (
+    <label className="field">
+      <span className="field-label">{label}</span>
+      {children}
+    </label>
+  );
+}
+
+function OtpInput({ value, onChange }) {
+  const inputRef = useRef(null);
+  const digits = value.padEnd(6, " ").slice(0, 6).split("");
+
+  return (
+    <div className="otp-wrap">
+      <input
+        ref={inputRef}
+        type="text"
+        inputMode="numeric"
+        value={value}
+        onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, 6))}
+        autoFocus
+        className="otp-hidden-input"
+      />
+      <div className="otp-boxes" onClick={() => inputRef.current?.focus()}>
+        {digits.map((d, i) => (
+          <div key={i} className={`otp-box ${value.length === i ? "otp-box-active" : ""}`}>
+            {d.trim()}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function LoginPage() {
-
   const router = useRouter();
-
-  const { user, loading } = useAuth();
-
-  const [signing, setSigning] = useState(false);
+  const { user, hydrated } = useUser();
+  const [step, setStep] = useState("info");
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [otp, setOtp] = useState("");
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    if (hydrated && user) router.push("/");
+  }, [hydrated, user, router]);
 
-    if (!loading && user) {
-      router.replace("/dashboard");
-    }
+  async function handleSendOtp(e) {
+    e.preventDefault();
+    setError(null);
+    if (name.trim().length < 2) return setError("Veuillez entrer votre prénom.");
+    if (!/^\d{8}$/.test(phone.trim())) return setError("Numéro invalide (8 chiffres).");
 
-  }, [user, loading, router]);
-
-  async function handleGoogleLogin() {
-
+    setLoading(true);
     try {
-
-      setSigning(true);
-
-      const loggedUser = await signInWithGoogle();
-
-      const userRef = doc(DB, "users", loggedUser.uid);
-
-      const userSnap = await getDoc(userRef);
-
-      // CREATE USER DOC IF FIRST LOGIN
-      if (!userSnap.exists()) {
-
-        await setDoc(userRef, {
-
-          uid: loggedUser.uid,
-          name: loggedUser.displayName || "",
-          email: loggedUser.email || "",
-          plan: "free",
-          xp: 0,
-          level: 1,
-          streak: 0,
-          dailyExercisesGenerated: 0,
-          lastDailyReset: serverTimestamp(),
-          subscriptionStart: null,
-          subscriptionEnd: null,
-          stats: {
-            totalExercises: 0,
-            combinations: {}
-          },
-          createdAt: serverTimestamp(),
-
-        });
-
+      const res = await fetch("/api/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: phone.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Une erreur est survenue.");
+        return;
       }
-
-      router.replace("/dashboard");
-
-    } catch (error) {
-
-      console.log(error);
-
-      alert("Échec de la connexion. Réessayez.");
-
+      setStep("otp");
+    } catch {
+      setError("Connexion impossible. Vérifiez votre réseau.");
     } finally {
-
-      setSigning(false);
-
+      setLoading(false);
     }
   }
 
-  if (loading) {
+  async function handleVerify(e) {
+    e.preventDefault();
+    setError(null);
+    if (!/^\d{4,6}$/.test(otp.trim())) return setError("Code invalide.");
 
-    return (
-      <div className="login-loading-container">
-
-        <FiLoader className="spin-icon" />
-
-      </div>
-    );
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: phone.trim(), code: otp.trim(), name: name.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Code incorrect.");
+        return;
+      }
+      await completeLogin(data.token);
+      router.push("/");
+    } catch {
+      setError("Connexion impossible. Vérifiez votre réseau.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
-    <div className="login-page">
-
-      <div className="login-card">
-
-        <div className="login-header">
-
-          <div className="login-logo">
-            <h1>Droussy Tn</h1>
-          </div>
-
-          <h1 className="login-title">
-            Révise, progresse et réussis.
-          </h1>
-
-          <p className="login-description">
-            Exercices interactifs adaptés au programme tunisien. 
-            Progresse avec des défis, gagne de l'XP et améliore 
-            tes résultats chaque jour.
-          </p>
-
-        </div>
-
-        <button
-          className="google-login-button"
-          onClick={handleGoogleLogin}
-          disabled={signing}
-        >
-
-          {signing ? (
-            <>
-              <>
-
-                <p>Connexion...</p>
-                <FiLoader className="spin-icon" />              
-
-              </>
-            </>
-          ) : (
-            <>
-              <img
-                  src="https://www.svgrepo.com/show/475656/google-color.svg"
-                  alt="Google"
-                />
-                <p>Continuer avec Google</p>
-                
-            </>
-          )}
-
-        </button>
-
-        <p className="login-footer-text">
-          En continuant, vous acceptez nos conditions d'utilisation.
+    <div className="login-container">
+      <div className="login-header">
+        <h1 className="login-title">Bienvenue</h1>
+        <p className="login-subtitle">
+          {step === "info"
+            ? "Connectez-vous pour suivre votre progression"
+            : `Nous avons envoyé un code au +216 ${phone}`}
         </p>
-
       </div>
 
+      <div className="login-card">
+        {step === "info" ? (
+          <form onSubmit={handleSendOtp} className="login-form">
+            <Field label="Prénom">
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Amine"
+                autoFocus
+                className="text-input"
+              />
+            </Field>
+            <Field label="Numéro de téléphone">
+              <div className="phone-input-wrap">
+                <span className="phone-prefix">+216</span>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                  placeholder="12 345 678"
+                  className="phone-input"
+                />
+              </div>
+            </Field>
+            {error && <p className="form-error">{error}</p>}
+            <button type="submit" disabled={loading} className="btn btn-primary btn-block">
+              {loading ? "Envoi..." : "Recevoir le code"}
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleVerify} className="login-form">
+            <Field label="Code de vérification">
+              <OtpInput value={otp} onChange={setOtp} />
+            </Field>
+            {error && <p className="form-error">{error}</p>}
+            <button type="submit" disabled={loading} className="btn btn-primary btn-block">
+              {loading ? "Vérification..." : "Vérifier et continuer"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setStep("info");
+                setOtp("");
+                setError(null);
+              }}
+              className="btn-text-muted"
+            >
+              ← Modifier le numéro
+            </button>
+          </form>
+        )}
+      </div>
+
+      <p className="login-back-link">
+        <Link href="/">Retour à l'accueil</Link>
+      </p>
     </div>
   );
 }
