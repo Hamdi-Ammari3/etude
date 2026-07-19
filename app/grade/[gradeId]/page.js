@@ -8,6 +8,7 @@ import { useUser } from "../../../lib/auth";
 import { isGradeUnlocked } from "../../../lib/access";
 import { getLocalProgress, subjectProgress, gradeProgress } from "../../../lib/progress";
 import ProgressBar from "../../components/ProgressBar";
+import LoadingSpinner from '../../components/LoadingSpinner';
 import "../../style.css";
 
 export default function GradePage() {
@@ -55,7 +56,7 @@ export default function GradePage() {
   if (loading || !found) {
     return (
       <div className="page-container">
-        <p className="loading-text">Chargement...</p>
+        <LoadingSpinner />
       </div>
     );
   }

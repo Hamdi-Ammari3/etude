@@ -6,6 +6,7 @@ import { getLevelsWithGrades, getAllSubjectsByGrade } from "../lib/curriculum";
 import { useUser } from "../lib/auth";
 import { getLocalProgress, gradeProgress } from "../lib/progress";
 import ProgressBar from "./components/ProgressBar";
+import LoadingSpinner from './components/LoadingSpinner';
 import "./style.css";
 
 export default function HomePage() {
@@ -53,7 +54,7 @@ export default function HomePage() {
     <div className="page-container">
 
       {loading ? (
-        <p className="loading-text">Chargement...</p>
+        <LoadingSpinner />
       ) : (
         <>
           {hydrated && startedGradeIds.length > 0 && (

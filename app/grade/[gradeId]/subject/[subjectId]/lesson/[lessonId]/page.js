@@ -8,6 +8,7 @@ import {getLocalProgress,saveLocalProgress,updateLessonProgress,lessonCompletion
 import ProgressBar from "../../../../../../components/ProgressBar";
 import { useUser } from "../../../../../../../lib/auth";
 import { canAccessLesson } from "../../../../../../../lib/access";
+import LoadingSpinner from "../../../../../../components/LoadingSpinner";
 import "../../../../../../style.css";
 
 const TABS = [
@@ -65,7 +66,7 @@ export default function LessonPage() {
   if (loading || !found) {
     return (
       <div className="page-container page-container-sm">
-        <p className="loading-text">Chargement...</p>
+        <LoadingSpinner/>
       </div>
     );
   }

@@ -6,6 +6,7 @@ import { notFound, useParams } from "next/navigation";
 import { findSubject, findLessonsForSubject } from "../../../../../lib/curriculum";
 import { useUser } from "../../../../../lib/auth";
 import { canAccessLesson } from "../../../../../lib/access";
+import LoadingSpinner from "../../../../components/LoadingSpinner";
 import "../../../../style.css";
 
 const TRIMESTRE_META = {
@@ -79,7 +80,7 @@ export default function LessonsPage() {
   if (loading || !found) {
     return (
       <div className="page-container page-container-md">
-        <p className="loading-text">Chargement...</p>
+        <LoadingSpinner/>
       </div>
     );
   }
