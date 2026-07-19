@@ -44,7 +44,6 @@ export default function HomePage() {
     return null;
   }
 
-  //Grade progress
   function getGradeProgress(gradeId) {
     const subjects = subjectsByGrade.get(gradeId);
     if (!subjects || subjects.length === 0) return 0;
