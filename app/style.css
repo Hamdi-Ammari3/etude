@@ -453,9 +453,8 @@ body {
   margin-top: 0.75rem;
 }
 
-/* Levels section */
-.levels-section {
-  margin-top: 3.5rem;
+.continue-section + .levels-section {
+  margin-top: 3.5rem; /* full gap only when it follows the "continue" section */
 }
 
 .levels-title {
