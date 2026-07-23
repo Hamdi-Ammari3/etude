@@ -62,7 +62,7 @@ export default function Navbar() {
                       className="navbar-menu-redeem"
                       onClick={() => setOpen(false)}
                     >
-                      Débloquer une classe
+                      Ajouter une classe
                     </Link>
                     <button
                       type="button"
