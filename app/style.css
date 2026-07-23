@@ -1352,3 +1352,333 @@ body {
   background: #fef3c7;
   color: #d97706;
 }
+
+.auth-mode-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: #f3f4f6;
+  border-radius: 10px;
+  margin-bottom: 16px;
+}
+
+.auth-mode-tab {
+  flex: 1;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.auth-mode-tab-active {
+  background: #fff;
+  color: #2563eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.navbar-redeem-btn {
+  padding: 8px;
+  margin-right: 10px;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background 0.15s ease;
+  text-decoration: none;
+}
+
+.navbar-redeem-btn:hover {
+  background: #dbeafe;
+}
+
+.navbar-menu-redeem {
+  display: block;
+  padding: 10px 16px;
+  font-size: 0.9rem;
+  color: #2563eb;
+  font-weight: 600;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.navbar-menu-redeem:hover {
+  background: #f9fafb;
+}
+
+.redeem-container {
+  max-width: 460px;
+  margin: 0 auto;
+  padding: 45px 20px;
+}
+
+.redeem-header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.redeem-header-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 16px;
+  border-radius: 16px;
+  background: #eff6ff;
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.redeem-header-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.redeem-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 6px;
+}
+
+.redeem-subtitle {
+  font-size: 0.925rem;
+  color: #6b7280;
+}
+
+/* Step indicator */
+.redeem-steps {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 28px;
+}
+
+.redeem-step-wrap {
+  display: flex;
+  align-items: flex-start;
+  position: relative;
+}
+
+.redeem-step-dot-col {
+  position: relative;
+  width: 32px;
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+}
+
+.redeem-step-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  z-index: 1;
+}
+
+.redeem-step-dot-upcoming {
+  background: #f3f4f6;
+  color: #9ca3af;
+}
+
+.redeem-step-dot-active {
+  background: #2563eb;
+  color: #fff;
+  box-shadow: 0 0 0 4px #dbeafe;
+}
+
+.redeem-step-dot-done {
+  background: #16a34a;
+  color: #fff;
+}
+
+.redeem-step-check {
+  width: 16px;
+  height: 16px;
+}
+
+.redeem-step-label {
+  position: absolute;
+  top: 38px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.7rem;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.redeem-step-label-upcoming {
+  color: #9ca3af;
+}
+
+.redeem-step-label-active {
+  color: #2563eb;
+}
+
+.redeem-step-label-done {
+  color: #16a34a;
+}
+
+.redeem-step-line {
+  width: 56px;
+  height: 2px;
+  margin: 0 4px;
+}
+
+.redeem-step-line-upcoming {
+  background: #e5e7eb;
+}
+
+.redeem-step-line-done {
+  background: #16a34a;
+}
+
+/* Card */
+.redeem-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.04);
+  padding: 32px 28px;
+}
+
+.redeem-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.redeem-code-input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-align: center;
+  text-transform: uppercase;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  transition: border-color 0.15s ease;
+}
+
+.redeem-code-input:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+.redeem-code-hint {
+  display: block;
+  font-size: 0.8rem;
+  color: #9ca3af;
+  margin-top: 6px;
+  font-weight: 400;
+}
+
+.btn-lg {
+  padding: 14px;
+  font-size: 1rem;
+}
+
+/* Preview step */
+.redeem-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+}
+
+.redeem-preview-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: #eff6ff;
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.redeem-preview-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.redeem-preview-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.redeem-preview-grade {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+.redeem-preview-note {
+  font-size: 0.8rem;
+  color: #9ca3af;
+  margin-bottom: 20px;
+}
+
+.redeem-preview .btn,
+.redeem-preview .btn-text-muted {
+  width: 100%;
+  margin-top: 8px;
+}
+
+/* Success step */
+.redeem-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+}
+
+.redeem-success-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #dcfce7;
+  color: #16a34a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.redeem-success-icon svg {
+  width: 32px;
+  height: 32px;
+}
+
+.redeem-success-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.redeem-success-text {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.redeem-success .btn {
+  width: 100%;
+}

@@ -38,31 +38,43 @@ export default function Navbar() {
 
         <div className="navbar-actions">
           {!hydrated ? null : user ? (
-            <div className="navbar-user" ref={menuRef}>
-              <button
-                type="button"
-                className="navbar-avatar"
-                onClick={() => setOpen((o) => !o)}
-                aria-label="Menu du compte"
-              >
-                {initial}
-              </button>
-              {open && (
-                <div className="navbar-menu">
-                  <div className="navbar-menu-info">
-                    <p className="navbar-menu-name">{user.name}</p>
-                    <p className="navbar-menu-phone">{user.phone}</p>
+            <>
+              <Link href="/redeem" className="navbar-redeem-btn">
+                Ajouter une classe
+              </Link>
+              <div className="navbar-user" ref={menuRef}>
+                <button
+                  type="button"
+                  className="navbar-avatar"
+                  onClick={() => setOpen((o) => !o)}
+                  aria-label="Menu du compte"
+                >
+                  {initial}
+                </button>
+                {open && (
+                  <div className="navbar-menu">
+                    <div className="navbar-menu-info">
+                      <p className="navbar-menu-name">{user.name}</p>
+                      <p className="navbar-menu-phone">{user.phone}</p>
+                    </div>
+                    <Link
+                      href="/redeem"
+                      className="navbar-menu-redeem"
+                      onClick={() => setOpen(false)}
+                    >
+                      Débloquer une classe
+                    </Link>
+                    <button
+                      type="button"
+                      className="navbar-menu-logout"
+                      onClick={handleLogout}
+                    >
+                      Se déconnecter
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    className="navbar-menu-logout"
-                    onClick={handleLogout}
-                  >
-                    Se déconnecter
-                  </button>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            </>
           ) : (
             <Link href="/login" className="navbar-login-btn">
               Connexion

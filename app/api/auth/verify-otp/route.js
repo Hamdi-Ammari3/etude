@@ -4,7 +4,7 @@ import { adminAuth, adminDB } from "../../../../lib/firebaseAdmin";
 
 export async function POST(request) {
   try {
-    const { phone, code, name } = await request.json();
+    const { phone, code, name, mode } = await request.json();
 
     const e164 = toE164Tunisia(phone || "");
     if (!e164) {
@@ -12,6 +12,29 @@ export async function POST(request) {
     }
     if (!/^\d{4,6}$/.test(String(code || "").trim())) {
       return NextResponse.json({ error: "Code invalide." }, { status: 400 });
+    }
+
+    const normalizedMode = mode === "signup" ? "signup" : "login";
+
+    const uid = `tn${e164.replace("+", "")}`;
+    const userRef = adminDB.collection("users").doc(uid);
+    const existing = await userRef.get();
+
+    // Safety net in case this route is ever called without going through
+    // send-otp's own check first (e.g. a stale client, or someone hitting
+    // the API directly) — keeps login/signup semantics enforced here too,
+    // not just in send-otp.
+    if (normalizedMode === "login" && !existing.exists) {
+      return NextResponse.json(
+        { error: "Aucun compte trouvé avec ce numéro. Créez un compte." },
+        { status: 404 }
+      );
+    }
+    if (normalizedMode === "signup" && existing.exists) {
+      return NextResponse.json(
+        { error: "Un compte existe déjà avec ce numéro. Connectez-vous." },
+        { status: 409 }
+      );
     }
 
     const client = getTwilioClient();
@@ -22,10 +45,6 @@ export async function POST(request) {
     if (check.status !== "approved") {
       return NextResponse.json({ error: "Code incorrect ou expiré." }, { status: 401 });
     }
-
-    const uid = `tn${e164.replace("+", "")}`;
-    const userRef = adminDB.collection("users").doc(uid);
-    const existing = await userRef.get();
 
     if (existing.exists) {
       await userRef.update({ lastLoginAt: new Date().toISOString() });
