@@ -16,7 +16,6 @@ const db = getFirestore(app);
 const GRADE_ID = "prim-4";
 const SUBJECT_ID = "anglais";
 
-// Trimestre 3 — lessons l17 through l24
 const LESSON_CONTENT = {
   l17: {
     summary:
@@ -55,6 +54,13 @@ const LESSON_CONTENT = {
       { question: "Complete: 'I am ___ today!' (feeling good)", options: ["sad", "small", "happy", "big"], answer: 2 },
       { question: "What is the opposite of 'big'?", options: ["happy", "sad", "small", "good"], answer: 2 },
       { question: "What is the opposite of 'happy'?", options: ["big", "small", "sad", "good"], answer: 2 },
+    ],
+    videoLinks: [
+      {
+        title: "Adjectives and Opposites Song | Children's Songs",
+        url: "https://www.youtube.com/watch?v=Qfl9m0sff-4",
+        channel: "Fun Kids English",
+      },
     ],
   },
 
@@ -96,6 +102,13 @@ const LESSON_CONTENT = {
       { question: "How do you say 'fenêtre' in English?", options: ["door", "window", "table", "sofa"], answer: 1 },
       { question: "How do you say 'canapé' in English?", options: ["bed", "table", "sofa", "door"], answer: 2 },
     ],
+    videoLinks: [
+      {
+        title: "Parts of the House | Kids Vocabulary",
+        url: "https://www.youtube.com/watch?v=aOSJZbHoiY8",
+        channel: "Fun Kids English",
+      },
+    ],
   },
 
   l19: {
@@ -135,6 +148,13 @@ const LESSON_CONTENT = {
       { question: "How do you say 'venteux' in English?", options: ["cloudy", "windy", "rainy", "sunny"], answer: 1 },
       { question: "How do you say 'nuageux' in English?", options: ["cloudy", "sunny", "hot", "cold"], answer: 0 },
       { question: "Complete: 'It is ___ today, take an umbrella.'", options: ["sunny", "hot", "rainy", "cold"], answer: 2 },
+    ],
+    videoLinks: [
+      {
+        title: "Weather Song for Kids | Sunny, Cloudy, Rainy, Snowy",
+        url: "https://www.youtube.com/watch?v=Unbc3y1RefQ",
+        channel: "Fun Kids English",
+      },
     ],
   },
 
@@ -176,6 +196,13 @@ const LESSON_CONTENT = {
       { question: "How do you express a negative preference?", options: ["I like", "I am", "I don't like", "I has"], answer: 2 },
       { question: "Complete: 'They ___ vegetables.' (positive)", options: ["likes", "like", "doesn't like", "am"], answer: 1 },
     ],
+    videoLinks: [
+      {
+        title: "Do You Like? Song for Kids | Learn English for Children",
+        url: "https://www.youtube.com/watch?v=YngQO-u9sWQ",
+        channel: "Fun Kids English",
+      },
+    ],
   },
 
   l21: {
@@ -215,6 +242,13 @@ const LESSON_CONTENT = {
       { question: "How do you say 'sous' in English?", options: ["in", "on", "under", "at"], answer: 2 },
       { question: "Complete: 'The ball is ___ the box.' (inside)", options: ["on", "in", "under", "at"], answer: 1 },
       { question: "Complete: 'The shoes are ___ the bed.' (beneath)", options: ["on", "in", "under", "at"], answer: 2 },
+    ],
+    videoLinks: [
+      {
+        title: "Prepositions Song for Kids | In On Under",
+        url: "https://www.youtube.com/watch?v=ZDklTwnR8i8",
+        channel: "Fun Kids English",
+      },
     ],
   },
 
@@ -256,6 +290,13 @@ const LESSON_CONTENT = {
       { question: "Complete: 'What ___ is it?'", options: ["time", "day", "date", "hour"], answer: 0 },
       { question: "How do you say 'Il est sept heures' in English?", options: ["It is seven o'clock", "It seven o'clock", "It is o'clock seven", "Seven it is o'clock"], answer: 0 },
     ],
+    videoLinks: [
+      {
+        title: "Tell the Time Song | Learn to Tell Time for Kids",
+        url: "https://www.youtube.com/watch?v=K5q65e_E-os",
+        channel: "Fun Kids English",
+      },
+    ],
   },
 
   l23: {
@@ -296,6 +337,13 @@ const LESSON_CONTENT = {
       { question: "Complete: 'I like to ___ stories.' (lire)", options: ["write", "read", "sing", "draw"], answer: 1 },
       { question: "Complete: 'We ___ in Art class.' (dessiner)", options: ["read", "write", "draw", "sing"], answer: 2 },
     ],
+    videoLinks: [
+      {
+        title: "School Subjects Song | What Do You Study at School?",
+        url: "https://www.youtube.com/watch?v=JoDm0RC5gk8",
+        channel: "Fun Kids English",
+      },
+    ],
   },
 
   l24: {
@@ -335,6 +383,13 @@ const LESSON_CONTENT = {
       { question: "Complete: 'I ___ to school every day.' (aller)", options: ["go", "eat", "sleep", "play"], answer: 0 },
       { question: "Complete: 'I ___ at night.' (dormir)", options: ["wake up", "eat", "sleep", "study"], answer: 2 },
       { question: "Which verb describes studying at home?", options: ["sleep", "study", "wake up", "play"], answer: 1 },
+    ],
+    videoLinks: [
+      {
+        title: "This Is The Way - Morning Routines Song",
+        url: "https://www.youtube.com/watch?v=9ji9K20U6ms",
+        channel: "Fun Kids English",
+      },
     ],
   },
 };

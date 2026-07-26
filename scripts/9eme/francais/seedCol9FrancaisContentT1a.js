@@ -16,10 +16,6 @@ const db = getFirestore(app);
 const GRADE_ID = "col-9";
 const SUBJECT_ID = "francais";
 
-// Trimestre 1, part A — lessons l1 through l6 (Module 1 + début Module 2)
-// Titles confirmed from the real textbook's tableau synoptique. Content
-// reconstructed from standard knowledge of French grammar/conjugaison at
-// this level — NOT verified against actual textbook pages/exercises.
 const LESSON_CONTENT = {
   l1: {
     summary:

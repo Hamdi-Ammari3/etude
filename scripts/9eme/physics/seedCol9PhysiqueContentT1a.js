@@ -16,11 +16,6 @@ const db = getFirestore(app);
 const GRADE_ID = "col-9";
 const SUBJECT_ID = "physique";
 
-// Trimestre 1, part A — lessons l1 through l5 (التيار الكهربائي المتغير +
-// الكهرباء المنزلية + بداية الكهرباء الساكنة). Chapter titles and stated
-// pedagogical objectives (الأهداف) confirmed from the real textbook's table
-// of contents. Content reconstructed to serve those specific objectives —
-// NOT verified against the actual textbook pages/exercises.
 const LESSON_CONTENT = {
   l1: {
     summary:

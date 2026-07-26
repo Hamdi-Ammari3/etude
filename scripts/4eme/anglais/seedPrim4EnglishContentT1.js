@@ -17,6 +17,12 @@ const GRADE_ID = "prim-4";
 const SUBJECT_ID = "anglais";
 
 // Trimestre 1 — lessons l1 through l8
+// videoLinks added: real, existing YouTube videos found via web search,
+// prioritizing established/official channels (British Council LearnEnglish
+// Kids, Super Simple Songs, Dream English, Have Fun Teaching). I could not
+// watch the videos myself to verify content/quality end-to-end — please
+// do a final sanity check on each link (dialect, ad load, appropriateness)
+// before treating them as fully vetted.
 const LESSON_CONTENT = {
   l1: {
     summary:
@@ -55,6 +61,13 @@ const LESSON_CONTENT = {
       { question: "How do you pronounce the letter 'H' in English?", options: ["ash", "eïtch", "aitche", "atch"], answer: 1 },
       { question: "Which letter comes before 'D'?", options: ["A", "B", "C", "E"], answer: 2 },
       { question: "Which of these is a vowel?", options: ["B", "I", "S", "R"], answer: 1 },
+    ],
+    videoLinks: [
+      {
+        title: "Alphabet Song | ABC Song | Phonics Song",
+        url: "https://www.youtube.com/watch?v=36IBDpTRVNE",
+        channel: "Have Fun Teaching",
+      },
     ],
   },
 
@@ -96,6 +109,13 @@ const LESSON_CONTENT = {
       { question: "What do you say in the afternoon?", options: ["Good morning", "Good night", "Good afternoon", "Goodbye"], answer: 2 },
       { question: "Which of these is a way to say goodbye?", options: ["Hello", "Bye", "Hi", "Good morning"], answer: 1 },
     ],
+    videoLinks: [
+      {
+        title: "Hi. Hello. Good bye. (Greeting song)",
+        url: "https://www.youtube.com/watch?v=svS0UikccrY",
+        channel: "English Singsing",
+      },
+    ],
   },
 
   l3: {
@@ -135,6 +155,13 @@ const LESSON_CONTENT = {
       { question: "Which number is 'six'?", options: ["5", "6", "7", "8"], answer: 1 },
       { question: "Which number is 'two'?", options: ["1", "2", "3", "4"], answer: 1 },
       { question: "What comes after 'nine'?", options: ["eight", "ten", "seven", "eleven"], answer: 1 },
+    ],
+    videoLinks: [
+      {
+        title: "Top 10 Counting Songs | Learn To Count",
+        url: "https://www.youtube.com/watch?v=7D4K9oi7oBM",
+        channel: "Super Simple Songs",
+      },
     ],
   },
 
@@ -176,6 +203,13 @@ const LESSON_CONTENT = {
       { question: "How do you say 'noir' in English?", options: ["white", "black", "brown", "grey"], answer: 1 },
       { question: "What color do you get by mixing red and white?", options: ["pink", "green", "purple", "orange"], answer: 0 },
     ],
+    videoLinks: [
+      {
+        title: "What Color Is it? Song | Learn 11 Colors",
+        url: "https://www.youtube.com/watch?v=YyFLBTTAbSE",
+        channel: "LearnEnglish Kids (British Council)",
+      },
+    ],
   },
 
   l5: {
@@ -215,6 +249,13 @@ const LESSON_CONTENT = {
       { question: "Complete: He ___ my brother.", options: ["am", "is", "are", "be"], answer: 1 },
       { question: "Complete: They ___ happy.", options: ["am", "is", "are", "be"], answer: 2 },
       { question: "What is the short form of 'I am'?", options: ["I's", "I'm", "I'am", "Im"], answer: 1 },
+    ],
+    videoLinks: [
+      {
+        title: '"I Am, You Are, He/She Is" Song – Present Simple "To Be" Lesson',
+        url: "https://www.youtube.com/watch?v=PZCcRzgrr8Y",
+        channel: "Rockin English",
+      },
     ],
   },
 
@@ -256,6 +297,13 @@ const LESSON_CONTENT = {
       { question: "Complete: 'This is my ___.' (mother)", options: ["mother", "father", "brother", "sister"], answer: 0 },
       { question: "Which word means 'frère' or 'sœur' together?", options: ["parents", "siblings", "family", "cousins"], answer: 1 },
     ],
+    videoLinks: [
+      {
+        title: "Family Song For Children | 7 Family Member Names",
+        url: "https://www.youtube.com/watch?v=FXqPs1IvtNs",
+        channel: "LearnEnglish Kids (British Council)",
+      },
+    ],
   },
 
   l7: {
@@ -296,6 +344,13 @@ const LESSON_CONTENT = {
       { question: "How do you say 'crayon' in English?", options: ["pen", "pencil", "book", "chair"], answer: 1 },
       { question: "How do you say 'table' in English?", options: ["chair", "table", "bag", "book"], answer: 1 },
     ],
+    videoLinks: [
+      {
+        title: "What is In Your Bag? Song with Matt | School Classroom Items",
+        url: "https://www.youtube.com/watch?v=aVSnDZHNEQc",
+        channel: "LearnEnglish Kids (British Council)",
+      },
+    ],
   },
 
   l8: {
@@ -335,6 +390,13 @@ const LESSON_CONTENT = {
       { question: "Which day comes before 'Friday'?", options: ["Thursday", "Saturday", "Sunday", "Monday"], answer: 0 },
       { question: "How do you say 'samedi' in English?", options: ["Sunday", "Saturday", "Friday", "Monday"], answer: 1 },
       { question: "How many days are there in a week?", options: ["5", "6", "7", "8"], answer: 2 },
+    ],
+    videoLinks: [
+      {
+        title: "Days of The Week Song For Kids",
+        url: "https://www.youtube.com/watch?v=36n93jvjkDs",
+        channel: "Dream English",
+      },
     ],
   },
 };

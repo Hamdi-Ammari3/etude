@@ -64,7 +64,6 @@ export default function LessonsPage() {
 
       setFound(subjectResult);
       setLessons(lessonsResult);
-      setOpenTrimestre(lessonsResult[0]?.trimestre ?? null);
       setLoading(false);
     }
 
@@ -92,7 +91,6 @@ export default function LessonsPage() {
   const progress = userHydrated ? (user ? user.progress || {} : getLocalProgress()) : {};
   const subjectProgressMap = progress?.[gradeId]?.[subjectId] || {};
 
-  // Returns "done" | "in-progress" | "not-started" for a given lesson.
   function getLessonStatus(lessonId) {
     const lp = subjectProgressMap[lessonId];
     if (!lp) return "not-started";
@@ -102,7 +100,6 @@ export default function LessonsPage() {
     return "not-started";
   }
 
-  // Group by the real trimestre field on each lesson doc (1, 2, or 3).
   const groups = [1, 2, 3]
     .map((t) => ({
       id: `t${t}`,
@@ -139,15 +136,20 @@ export default function LessonsPage() {
       </header>
 
       <div className="trimestre-accordion">
-        {groups.map((g) => {
+        {groups.map((g, gi) => {
           const open = openTrimestre === g.trimestre;
           return (
-            <section key={g.id} className="accordion-section">
+            <section
+              key={g.id}
+              className={`accordion-section ${open ? "accordion-section-open" : ""}`}
+            >
               <button
+                type="button"
                 onClick={() => setOpenTrimestre(open ? null : g.trimestre)}
                 className="accordion-trigger"
+                aria-expanded={open}
               >
-                <span className="accordion-number">{g.trimestre}</span>
+                <span className="accordion-number">{gi + 1}</span>
                 <div className="accordion-info">
                   <div className="accordion-label-row">
                     <p className="accordion-label">{g.label}</p>
@@ -155,26 +157,33 @@ export default function LessonsPage() {
                   </div>
                   <p className="accordion-meta">{g.period} · {g.lessons.length} leçons</p>
                 </div>
-                <svg
-                  className={`accordion-chevron ${open ? "accordion-chevron-open" : ""}`}
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M5.23 7.21a.75.75 0 011.06.02L10 11.06l3.71-3.83a.75.75 0 111.08 1.04l-4.25 4.39a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z"
-                    clipRule="evenodd"
-                  />
-                </svg>
+
+                <span className="accordion-cta-text">
+                  {open ? "Fermer" : "Afficher les leçons"}
+                </span>
+
+                <span className={`accordion-chevron-badge ${open ? "accordion-chevron-badge-open" : ""}`}>
+                  <svg
+                    className={`accordion-chevron ${open ? "" : "accordion-chevron-bounce"}`}
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M5.23 7.21a.75.75 0 011.06.02L10 11.06l3.71-3.83a.75.75 0 111.08 1.04l-4.25 4.39a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </span>
               </button>
 
               {open && (
-                <ol className="lesson-ordered-list">
+                <ol className="lesson-ordered-list lesson-ordered-list-anim">
                   {g.lessons.map((l, i) => {
-                    // order is 1-based from the seed script; index into canAccessLesson is 0-based.
                     const lessonIndexInSubject = l.order - 1;
                     const accessible = canAccessLesson(user, gradeId, lessonIndexInSubject);
                     const status = getLessonStatus(l.lessonId);
+                    const ctaLabel = status === "done" ? "Revoir" : status === "in-progress" ? "Continuer" : "Ouvrir la leçon";
 
                     const rowNumber = (
                       <span className={`lesson-number lesson-number-${status}`}>
@@ -194,6 +203,9 @@ export default function LessonsPage() {
                             <span className="lesson-status-badge lesson-status-badge-progress">En cours</span>
                           )}
                         </p>
+                        {l.summary && (
+                          <p className="lesson-row-summary">{l.summary}</p>
+                        )}
                         <div className="lesson-row-chips">
                           <Chip icon="📖">Résumé</Chip>
                           <Chip icon="●">3 exercices</Chip>
@@ -204,7 +216,11 @@ export default function LessonsPage() {
 
                     if (!accessible) {
                       return (
-                        <li key={l.id} className="lesson-list-item">
+                        <li
+                          key={l.id}
+                          className="lesson-list-item lesson-list-item-anim"
+                          style={{ animationDelay: `${i * 60}ms` }}
+                        >
                           <div
                             className="lesson-row lesson-row-locked"
                             role="button"
@@ -213,21 +229,27 @@ export default function LessonsPage() {
                           >
                             {rowNumber}
                             {rowInfo}
+                            <span className="lesson-row-locked-hint">🔒 Verrouillée</span>
                           </div>
                         </li>
                       );
                     }
 
                     return (
-                      <li key={l.id} className="lesson-list-item">
+                      <li
+                        key={l.id}
+                        className="lesson-list-item lesson-list-item-anim"
+                        style={{ animationDelay: `${i * 60}ms` }}
+                      >
                         <Link
                           href={`/grade/${gradeId}/subject/${subjectId}/lesson/${l.lessonId}`}
                           className={`lesson-row lesson-row-${status}`}
                         >
                           {rowNumber}
                           {rowInfo}
-                          <span className="lesson-row-open">
-                            {status === "done" ? "Revoir" : status === "in-progress" ? "Continuer" : "Ouvrir"}
+                          <span className={`lesson-row-open lesson-row-open-${status}`}>
+                            <span className="lesson-row-open-shimmer" />
+                            <span className="lesson-row-open-label">{ctaLabel}</span>
                             <svg className="lesson-row-open-icon" viewBox="0 0 20 20" fill="currentColor">
                               <path
                                 fillRule="evenodd"

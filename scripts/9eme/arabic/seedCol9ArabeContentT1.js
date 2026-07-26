@@ -16,13 +16,6 @@ const db = getFirestore(app);
 const GRADE_ID = "col-9";
 const SUBJECT_ID = "arabe";
 
-// Trimestre 1 — lessons l1 through l8
-// Titles reconstructed around confirmed web anchors (see seedCol9Arabe.js
-// comments). Content itself is reconstructed from standard knowledge of
-// Tunisian collège Arabic grammar — NOT verified against an actual
-// textbook. Given برفوي stakes and lower confidence than col-9 maths/
-// français, this subject is a strong candidate for review if textbook
-// photos become available later.
 const LESSON_CONTENT = {
   l1: {
     summary:

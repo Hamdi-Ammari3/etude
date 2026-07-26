@@ -645,7 +645,7 @@ body {
 
 .grade-header-title {
   margin: 0.5rem 0 0;
-  font-size: 1.875rem;
+  font-size: 1.5rem;
   font-weight: 600;
   letter-spacing: -0.02em;
 }
@@ -964,7 +964,7 @@ body {
   gap: 1.25rem;
   justify-content: space-between;
   border-bottom: 1px solid var(--color-border);
-  padding-bottom: 2rem;
+  padding-bottom: 1rem;
 }
 @media (min-width: 768px) {
   .lessons-header { flex-direction: row; align-items: flex-end; }
@@ -987,31 +987,6 @@ body {
   margin-top: 0.25rem; font-size: 0.6875rem; text-transform: uppercase;
   letter-spacing: 0.05em; color: var(--color-muted);
 }
-
-/* Accordion */
-.trimestre-accordion { margin-top: 2.5rem; display: flex; flex-direction: column; gap: 1.25rem; }
-.accordion-section {
-  overflow: hidden; border-radius: 1rem; border: 1px solid var(--color-border); background: var(--color-card);
-}
-.accordion-trigger {
-  width: 100%; display: flex; align-items: center; gap: 1rem; padding: 1.25rem 1.5rem;
-  text-align: left; background: none; border: none; cursor: pointer; transition: background-color 0.15s ease;
-}
-.accordion-trigger:hover { background: color-mix(in oklab, var(--color-border) 40%, transparent); }
-.accordion-number {
-  display: flex; align-items: center; justify-content: center; height: 2.75rem; width: 2.75rem;
-  border-radius: 999px; background: var(--color-accent); font-family: Georgia, serif; font-style: italic;
-  color: var(--color-primary); font-size: 1.25rem; flex-shrink: 0;
-}
-.accordion-info { flex: 1; min-width: 0; }
-.accordion-label-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
-.accordion-label { margin: 0; font-weight: 500; font-size: 1.125rem; }
-.accordion-tag { border-radius: 999px; padding: 0.125rem 0.5rem; font-size: 0.6875rem; font-weight: 500; }
-.accordion-tag-primary { background: color-mix(in oklab, var(--color-primary) 10%, transparent); color: var(--color-primary); }
-.accordion-tag-muted { background: var(--color-border); color: var(--color-muted); }
-.accordion-meta { margin: 0.25rem 0 0; font-size: 0.75rem; color: var(--color-muted); }
-.accordion-chevron { height: 1.25rem; width: 1.25rem; color: var(--color-muted); transition: transform 0.2s ease; flex-shrink: 0; }
-.accordion-chevron-open { transform: rotate(180deg); }
 
 .lesson-ordered-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--color-border); }
 .lesson-list-item { border-bottom: 1px solid var(--color-border); }
@@ -1049,8 +1024,12 @@ body {
 
 /* Lesson detail page */
 .lesson-page-header { margin-top: 1.5rem; border-bottom: 1px solid var(--color-border); padding-bottom: 1.5rem; }
-.lesson-page-title { margin: 0; font-size: 1.875rem; font-weight: 600; letter-spacing: -0.02em; }
-@media (min-width: 768px) { .lesson-page-title { font-size: 2.25rem; } }
+.lesson-page-title { margin: 0; font-size: 1.5rem; font-weight: 600; letter-spacing: -0.02em; }
+@media (min-width: 768px) { 
+  .lesson-page-title { 
+    font-size: 2.25rem; 
+  } 
+}
 .lesson-page-progress { margin-top: 1rem; max-width: 28rem; }
 
 .tab-bar { margin-top: 1.5rem; display: flex; flex-wrap: wrap; gap: 0.25rem; border-bottom: 1px solid var(--color-border); }
@@ -1680,4 +1659,524 @@ body {
 
 .redeem-success .btn {
   width: 100%;
+}
+
+.video-links-section {
+  margin-top: 2rem;
+}
+
+.video-links-list {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.video-link-card {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-card);
+  padding: 0.75rem 1rem;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.15s ease;
+}
+
+.video-link-card:hover {
+  border-color: color-mix(in oklab, var(--color-primary) 40%, transparent);
+  background: var(--color-accent);
+}
+
+.video-link-icon {
+  flex-shrink: 0;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--color-primary) 10%, transparent);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.video-link-icon svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.video-link-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.video-link-title {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-foreground);
+}
+
+.video-link-channel {
+  margin: 0.125rem 0 0;
+  font-size: 0.75rem;
+  color: var(--color-muted);
+}
+
+.video-link-external {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  color: var(--color-muted);
+}
+
+.video-link-card:hover .video-link-external {
+  color: var(--color-primary);
+}
+
+/* New: plain-language instruction above the accordions */
+.trimestre-instructions {
+  margin-top: 1.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  text-align: center;
+}
+
+/* Lesson row open pill — remove the old "hide on mobile" rule entirely,
+   make it a clear, always-visible colored button */
+.lesson-row-open {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 0.375rem;
+  flex-shrink: 0;
+  align-self: center;
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.8125rem;
+  padding: 0.5rem 0.875rem;
+  border-radius: 999px;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.lesson-row-open-done {
+  background: var(--color-success);
+}
+
+.lesson-row-open-in-progress {
+  background: #d97706;
+}
+
+.lesson-row:hover .lesson-row-open {
+  opacity: 0.9;
+  transform: translateX(2px);
+}
+
+.lesson-row:active .lesson-row-open {
+  transform: scale(0.95);
+}
+
+.lesson-row-open-icon {
+  height: 0.9rem;
+  width: 0.9rem;
+  animation: lesson-row-arrow-nudge 1.6s ease-in-out infinite;
+}
+
+@keyframes lesson-row-arrow-nudge {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(3px); }
+}
+
+/* Locked-lesson hint, replacing the old plain lock badge inline */
+.lesson-row-locked-hint {
+  flex-shrink: 0;
+  align-self: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+/* Accordion */
+.trimestre-accordion { margin-top: 1.25rem; display: flex; flex-direction: column; gap: 1.25rem; }
+
+.trimestre-instructions {
+  margin-top: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--color-muted);
+}
+
+.trimestre-instructions-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.5rem;
+  width: 1.5rem;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--color-primary) 10%, transparent);
+  color: var(--color-primary);
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+.accordion-section {
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-card);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.accordion-section:hover {
+  border-color: color-mix(in oklab, var(--color-primary) 30%, transparent);
+  box-shadow: 0 4px 12px -8px rgba(0, 0, 0, 0.08);
+}
+
+.accordion-section-open {
+  border-color: color-mix(in oklab, var(--color-primary) 40%, transparent);
+  box-shadow: 0 8px 24px -12px rgba(0, 0, 0, 0.12);
+}
+
+.accordion-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.accordion-trigger:hover { background: color-mix(in oklab, var(--color-border) 40%, transparent); }
+.accordion-trigger:active { transform: scale(0.995); }
+
+.accordion-number {
+  display: flex; align-items: center; justify-content: center;
+  height: 2.75rem; width: 2.75rem;
+  border-radius: 999px; background: var(--color-accent);
+  font-family: Georgia, serif; font-style: italic;
+  color: var(--color-primary); font-size: 1.25rem; flex-shrink: 0;
+  transition: transform 0.25s ease;
+}
+
+.accordion-trigger:hover .accordion-number { transform: scale(1.1); }
+
+.accordion-info { 
+  flex: 1; 
+  min-width: 0; 
+}
+.accordion-label-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.accordion-label { margin: 0; font-weight: 500; font-size: 1.125rem; transition: color 0.15s ease; }
+.accordion-trigger:hover .accordion-label { color: var(--color-primary); }
+
+.accordion-tag { border-radius: 999px; padding: 0.125rem 0.5rem; font-size: 0.6875rem; font-weight: 500; }
+.accordion-tag-primary { background: color-mix(in oklab, var(--color-primary) 10%, transparent); color: var(--color-primary); }
+.accordion-tag-muted { background: var(--color-border); color: var(--color-muted); }
+.accordion-meta { margin: 0.75rem 0 0; font-size: 0.75rem; color: var(--color-muted); }
+
+/* Text label next to the chevron — hidden on very small screens, chevron badge alone is enough there */
+.accordion-cta-text {
+  display: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-primary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+@media (min-width: 480px) {
+  .accordion-cta-text { display: inline; }
+}
+
+.accordion-chevron-badge {
+  position: relative;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  height: 2rem; width: 2rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  color: var(--color-muted);
+  transition: all 0.3s ease;
+}
+
+.accordion-trigger:hover .accordion-chevron-badge {
+  border-color: color-mix(in oklab, var(--color-primary) 40%, transparent);
+  color: var(--color-primary);
+}
+
+.accordion-chevron-badge-open {
+  transform: rotate(180deg);
+  border-color: color-mix(in oklab, var(--color-primary) 40%, transparent);
+  background: color-mix(in oklab, var(--color-primary) 10%, transparent);
+  color: var(--color-primary);
+}
+
+/* Soft pulsing ring on the badge while the section is still closed,
+   to draw a first-time visitor's eye toward it */
+.accordion-section:not(.accordion-section-open) .accordion-chevron-badge {
+  animation: pulse-soft 2.2s ease-in-out infinite;
+}
+
+@keyframes pulse-soft {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-primary) 25%, transparent); }
+  50% { box-shadow: 0 0 0 5px color-mix(in oklab, var(--color-primary) 0%, transparent); }
+}
+
+.accordion-chevron {
+  height: 1rem;
+  width: 1rem;
+}
+
+/* Gentle up/down bounce on the chevron itself while closed */
+.accordion-chevron-bounce {
+  animation: point-down 1.6s ease-in-out infinite;
+}
+
+@keyframes point-down {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(2px); }
+}
+
+/* Lesson list */
+.lesson-ordered-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--color-border); }
+
+.lesson-ordered-list-anim {
+  animation: accordion-content-in 0.3s ease;
+}
+
+@keyframes accordion-content-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.lesson-list-item { border-bottom: 1px solid var(--color-border); }
+.lesson-list-item:last-child { border-bottom: none; }
+
+.lesson-list-item-anim {
+  animation: lesson-item-in 0.3s ease backwards;
+}
+
+@keyframes lesson-item-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.lesson-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.25rem;
+  padding: 1.25rem 1.5rem;
+  text-decoration: none;
+  color: inherit;
+  transition: background-color 0.2s ease, padding-left 0.2s ease;
+}
+
+.lesson-row:hover {
+  background: color-mix(in oklab, var(--color-border) 30%, transparent);
+  padding-left: 1.75rem;
+}
+
+.lesson-number {
+  font-family: Georgia, serif; font-style: italic; font-size: 1.5rem;
+  color: color-mix(in oklab, var(--color-muted) 60%, transparent);
+  width: 2.5rem; flex-shrink: 0; padding-top: 0.125rem;
+  transition: color 0.15s ease;
+}
+.lesson-row:hover .lesson-number { color: var(--color-primary); }
+
+.lesson-row-info { flex: 1; min-width: 0; }
+.lesson-row-title { margin: 0; font-weight: 500; transition: color 0.15s ease; }
+.lesson-row:hover .lesson-row-title { color: var(--color-primary); }
+
+.lesson-row-summary {
+  margin: 0.25rem 0 0; font-size: 0.875rem; color: var(--color-muted);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+
+.lesson-row-chips { margin-top: 0.75rem; display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.chip {
+  display: inline-flex; align-items: center; gap: 0.375rem; border-radius: 999px;
+  border: 1px solid var(--color-border); background: var(--color-card); padding: 0.25rem 0.625rem;
+  font-size: 0.6875rem; color: var(--color-muted);
+}
+.chip-icon { color: var(--color-primary); }
+
+/* Desktop "Ouvrir" pill, always visible at the end of the row */
+.lesson-row-open {
+  position: relative;
+  overflow: hidden;
+  display: none;
+  flex-shrink: 0;
+  align-self: center;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--color-primary) 30%, transparent);
+  background: color-mix(in oklab, var(--color-primary) 6%, transparent);
+  color: var(--color-primary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  transition: all 0.2s ease;
+}
+
+@media (min-width: 640px) {
+  .lesson-row-open { display: inline-flex; }
+}
+
+.lesson-row:hover .lesson-row-open {
+  background: var(--color-primary);
+  color: #fff;
+  gap: 0.625rem;
+}
+
+.lesson-row-open-done {
+  border-color: color-mix(in oklab, var(--color-success) 30%, transparent);
+  background: color-mix(in oklab, var(--color-success) 8%, transparent);
+  color: var(--color-success);
+}
+.lesson-row:hover .lesson-row-open-done { background: var(--color-success); color: #fff; }
+
+.lesson-row-open-in-progress {
+  border-color: #fde68a;
+  background: #fffbeb;
+  color: #d97706;
+}
+.lesson-row:hover .lesson-row-open-in-progress { background: #d97706; color: #fff; }
+
+.lesson-row-open-label { position: relative; }
+
+.lesson-row-open-icon {
+  position: relative;
+  height: 1rem;
+  width: 1rem;
+  animation: point-right 1.6s ease-in-out infinite;
+}
+
+@keyframes point-right {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(3px); }
+}
+
+/* Shimmer sweep across the button on hover */
+.lesson-row-open-shimmer {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.5) 50%,
+    transparent 70%
+  );
+  background-size: 200% 100%;
+  transition: opacity 0.2s ease;
+}
+
+.lesson-row:hover .lesson-row-open-shimmer {
+  opacity: 1;
+  animation: shimmer 1.2s ease infinite;
+}
+
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+/* Mobile-only inline "Ouvrir la leçon →" text under the title —
+   shown below 640px where the row-open pill is hidden */
+.lesson-row-open-mobile {
+  display: inline-flex;
+  margin-top: 0.75rem;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  padding: 0.5rem 0.875rem;
+}
+
+@media (min-width: 640px) {
+  .lesson-row-open-mobile { display: none; }
+}
+
+.lesson-row-open-mobile-done { background: var(--color-success); }
+.lesson-row-open-mobile-in-progress { background: #d97706; }
+
+/* Locked lessons */
+.lesson-row-locked {
+  cursor: not-allowed;
+  opacity: 0.55;
+  filter: grayscale(0.3);
+}
+.lesson-row-locked:hover {
+  background: inherit;
+  padding-left: 1.5rem;
+}
+.lesson-row-locked-hint {
+  flex-shrink: 0;
+  align-self: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+/* Remove unused leftover classes no longer referenced in JS */
+/* (delete .lesson-row-open-mobile, .lesson-row-open-mobile-done,
+   .lesson-row-open-mobile-in-progress entirely) */
+
+@media (max-width: 640px) {
+  .accordion-trigger { padding: 1rem; gap: 0.625rem; }
+  .accordion-number { height: 2.25rem; width: 2.25rem; font-size: 1.05rem; }
+  .accordion-label { font-size: 1rem; }
+  .accordion-meta { font-size: 0.7rem; }
+  .accordion-tag { font-size: 0.625rem; }
+
+  /* Let the row wrap: number + title on line 1, the button/hint on its
+     own full-width line below, instead of squeezing into a 3rd column */
+  .lesson-row {
+    flex-wrap: wrap;
+    padding: 1rem;
+    gap: 0.625rem;
+  }
+
+  .lesson-number { width: 2rem; font-size: 1.25rem; padding-top: 0; }
+
+  .lesson-row-info {
+    flex: 1 1 auto;
+    min-width: 0; /* lets the title/summary text wrap properly instead of forcing overflow */
+  }
+
+  .lesson-row-title { font-size: 0.9375rem; }
+  .lesson-row-chips { gap: 0.375rem; }
+  .chip { font-size: 0.625rem; padding: 0.2rem 0.5rem; }
+
+  /* Force the "Ouvrir/Continuer/Revoir" button to always show on mobile,
+     as a full-width pill on its own line */
+  .lesson-row-open {
+    display: inline-flex !important;
+    flex-basis: 100%;
+    justify-content: center;
+    margin-top: 0.375rem;
+  }
+
+  /* Locked hint also gets its own full-width line, centered */
+  .lesson-row-locked-hint {
+    flex-basis: 100%;
+    margin-left: 0;
+    margin-top: 0.375rem;
+    text-align: center;
+    font-size: 0.6875rem;
+  }
 }

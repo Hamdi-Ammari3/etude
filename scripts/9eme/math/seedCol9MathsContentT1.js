@@ -16,13 +16,6 @@ const db = getFirestore(app);
 const GRADE_ID = "col-9";
 const SUBJECT_ID = "maths";
 
-// Trimestre 1 — lessons l1 through l5
-// Chapter titles are confirmed from the real textbook فهرس (user-provided
-// photos). Content itself is reconstructed from standard knowledge of this
-// long-established Tunisian 9ème curriculum — NOT verified against the
-// actual textbook pages. Given برفوي exam stakes, this is a priority
-// candidate for a full page-by-page check against the real book before
-// treating as final.
 const LESSON_CONTENT = {
   l1: {
     summary:

@@ -16,7 +16,6 @@ const db = getFirestore(app);
 const GRADE_ID = "prim-4";
 const SUBJECT_ID = "anglais";
 
-// Trimestre 2 — lessons l9 through l16
 const LESSON_CONTENT = {
   l9: {
     summary:
@@ -55,6 +54,13 @@ const LESSON_CONTENT = {
       { question: "Which number is 'sixteen'?", options: ["15", "16", "17", "18"], answer: 1 },
       { question: "How do you say '12' in English?", options: ["eleven", "twelve", "twenty", "ten"], answer: 1 },
       { question: "What comes after 'nineteen'?", options: ["eighteen", "twenty", "ten", "nine"], answer: 1 },
+    ],
+    videoLinks: [
+      {
+        title: "Counting 11 to 20 | Numbers | Counting Song for Kids",
+        url: "https://www.youtube.com/watch?v=jNeOIPxSq9g",
+        channel: "Fun Kids English",
+      },
     ],
   },
 
@@ -96,6 +102,13 @@ const LESSON_CONTENT = {
       { question: "Which word means 'ces' (pluriel) ?", options: ["This", "These", "It", "That"], answer: 1 },
       { question: "Complete: ___ a table.", options: ["This is", "These are", "This are", "These is"], answer: 0 },
     ],
+    videoLinks: [
+      {
+        title: "What is it Song | What are they Song | Is and Are",
+        url: "https://www.youtube.com/watch?v=-91uN4W_leY",
+        channel: "Fun Kids English",
+      },
+    ],
   },
 
   l11: {
@@ -135,6 +148,13 @@ const LESSON_CONTENT = {
       { question: "How do you say 'cheval' in English?", options: ["cow", "sheep", "horse", "rabbit"], answer: 2 },
       { question: "How do you say 'lapin' in English?", options: ["rabbit", "horse", "cow", "sheep"], answer: 0 },
       { question: "How do you say 'vache' in English?", options: ["horse", "sheep", "cow", "cat"], answer: 2 },
+    ],
+    videoLinks: [
+      {
+        title: "Pet Song for Kids | Animal Songs | Sing and Move",
+        url: "https://www.youtube.com/watch?v=RAObh4cLDAI",
+        channel: "LearnEnglish Kids (British Council)",
+      },
     ],
   },
 
@@ -176,6 +196,13 @@ const LESSON_CONTENT = {
       { question: "How do you say 'bouche' in English?", options: ["nose", "mouth", "ears", "eyes"], answer: 1 },
       { question: "How do you say 'pied' in English?", options: ["hand", "arm", "foot", "leg"], answer: 2 },
     ],
+    videoLinks: [
+      {
+        title: "Body Parts Song for Kids: Learn Head to Toe!",
+        url: "https://www.youtube.com/watch?v=R1Hrkqep8nU",
+        channel: "SchoolTube",
+      },
+    ],
   },
 
   l13: {
@@ -215,6 +242,13 @@ const LESSON_CONTENT = {
       { question: "Complete: We ___ a big house.", options: ["has", "have", "is", "am"], answer: 1 },
       { question: "Complete: It ___ four legs.", options: ["have", "has", "are", "am"], answer: 1 },
       { question: "Which form is used with 'she'?", options: ["have", "has", "am", "are"], answer: 1 },
+    ],
+    videoLinks: [
+      {
+        title: '"Have and Has Song" - Rockin\' English',
+        url: "https://www.youtube.com/watch?v=cx8g9yrEy3g",
+        channel: "Rockin English",
+      },
     ],
   },
 
@@ -256,6 +290,13 @@ const LESSON_CONTENT = {
       { question: "How do you say 'fromage' in English?", options: ["egg", "cheese", "milk", "bread"], answer: 1 },
       { question: "How do you say 'jus' in English?", options: ["water", "milk", "juice", "bread"], answer: 2 },
     ],
+    videoLinks: [
+      {
+        title: "Food Song | Learn 15 Food and Drinks",
+        url: "https://www.youtube.com/watch?v=6IwulRrYnzQ",
+        channel: "LearnEnglish Kids (British Council)",
+      },
+    ],
   },
 
   l15: {
@@ -295,6 +336,13 @@ const LESSON_CONTENT = {
       { question: "Which month comes before 'September'?", options: ["July", "August", "October", "June"], answer: 1 },
       { question: "How do you say 'mai' in English?", options: ["March", "April", "May", "June"], answer: 2 },
       { question: "How many months are there in a year?", options: ["10", "11", "12", "13"], answer: 2 },
+    ],
+    videoLinks: [
+      {
+        title: "Months of the Year Song",
+        url: "https://www.youtube.com/watch?v=v608v42dKeI",
+        channel: "Learn English Kids",
+      },
     ],
   },
 
@@ -336,6 +384,13 @@ const LESSON_CONTENT = {
       { question: "What does 'My name is...' mean?", options: ["Mon âge est...", "Je m'appelle...", "Ma classe est...", "J'habite à..."], answer: 1 },
       { question: "Complete: 'My name ___ Amira.'", options: ["am", "is", "are", "have"], answer: 1 },
       { question: "What does 'How old are you?' mean?", options: ["Comment vas-tu ?", "Quel âge as-tu ?", "Où habites-tu ?", "Comment t'appelles-tu ?"], answer: 1 },
+    ],
+    videoLinks: [
+      {
+        title: "How Old Are You? Song | Kids ESL Songs",
+        url: "https://www.youtube.com/watch?v=AIRgNiSAmRc",
+        channel: "Fun Kids English",
+      },
     ],
   },
 };
