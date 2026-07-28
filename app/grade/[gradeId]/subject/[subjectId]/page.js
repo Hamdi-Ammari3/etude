@@ -135,11 +135,6 @@ export default function LessonsPage() {
         </div>
       </header>
 
-      <p className="trimestre-instructions">
-        <span className="trimestre-instructions-icon">↓</span>
-        Cliquez sur un trimestre pour afficher ses leçons, puis sur une leçon pour l'ouvrir.
-      </p>
-
       <div className="trimestre-accordion">
         {groups.map((g, gi) => {
           const open = openTrimestre === g.trimestre;

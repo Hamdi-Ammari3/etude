@@ -2149,7 +2149,7 @@ body {
   }
   .accordion-number { height: 2.25rem; width: 2.25rem; font-size: 1.05rem; }
   .accordion-label { font-size: 1rem; }
-  .accordion-meta { font-size: 0.7rem; }
+  .accordion-meta { font-size: 0.7rem; margin: 1rem 0 0 }
   .accordion-tag { font-size: 0.625rem; }
 
   /* Let the row wrap: number + title on line 1, the button/hint on its
