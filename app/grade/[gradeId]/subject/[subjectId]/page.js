@@ -135,6 +135,11 @@ export default function LessonsPage() {
         </div>
       </header>
 
+      <p className="trimestre-instructions">
+        <span className="trimestre-instructions-icon">↓</span>
+        Cliquez sur un trimestre pour afficher ses leçons, puis sur une leçon pour l'ouvrir.
+      </p>
+
       <div className="trimestre-accordion">
         {groups.map((g, gi) => {
           const open = openTrimestre === g.trimestre;
@@ -259,6 +264,7 @@ export default function LessonsPage() {
                             </svg>
                           </span>
                         </Link>
+
                       </li>
                     );
                   })}
@@ -268,6 +274,24 @@ export default function LessonsPage() {
           );
         })}
       </div>
+
+      <section className="custom-exam-card">
+        <div className="custom-exam-card-info">
+          <p className="custom-exam-badge">✨ Examen à la demande</p>
+          <h2 className="custom-exam-title">Créez un examen sur mesure en 1 minute</h2>
+          <p className="custom-exam-text">
+            Choisissez les leçons que vous voulez réviser et obtenez un examen personnalisé, avec la
+            correction que vous affichez seulement quand vous le souhaitez.
+          </p>
+        </div>
+        <Link
+          href={`/grade/${gradeId}/subject/${subjectId}/examen`}
+          className="custom-exam-cta"
+        >
+          <span className="custom-exam-cta-shimmer" />
+          <span className="custom-exam-cta-label">Créer mon examen →</span>
+        </Link>
+      </section>
     </div>
   );
 }

@@ -57,6 +57,7 @@ export default function HomePage() {
         <LoadingSpinner />
       ) : (
         <>
+          {/*
           {hydrated && startedGradeIds.length > 0 && (
             <section className="continue-section">
               <h2 className="section-label">Continuer là où vous en êtes</h2>
@@ -89,6 +90,7 @@ export default function HomePage() {
               </div>
             </section>
           )}
+          */}
 
           <section className="levels-section">
             <div>
