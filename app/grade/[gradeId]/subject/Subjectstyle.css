@@ -1,0 +1,376 @@
+
+.tri-grid {
+  margin-top: 2.5rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.25rem;
+}
+
+.tri-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid var(--home-border, #e6ebf3);
+  border-radius: var(--home-radius-md, 20px);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  text-decoration: none;
+}
+
+.tri-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 30px rgba(29, 42, 58, 0.1);
+  border-color: var(--home-primary, #2f6fed);
+}
+
+.tri-card-image-wrap {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: var(--home-wash-blue, #eaf3ff);
+}
+
+.tri-card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.tri-card:hover .tri-card-image {
+  transform: scale(1.05);
+}
+
+.tri-card-tag {
+  position: absolute;
+  left: 0.9rem;
+  top: 0.9rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  backdrop-filter: blur(4px);
+}
+
+.tri-card-tag-primary {
+  background: var(--home-primary, #2f6fed);
+  color: #fff;
+}
+
+.tri-card-tag-muted {
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--home-muted, #5b6b7f);
+}
+
+.tri-card-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 1.2rem 1.3rem 1.4rem;
+}
+
+.tri-card-label {
+  font-family: "Baloo 2", system-ui, sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--home-ink, #1d2a3a);
+}
+
+.tri-card-emoji {
+  margin-right: 0.4rem;
+}
+
+.tri-card-period {
+  margin-top: 0.15rem;
+  font-size: 0.78rem;
+  color: var(--home-muted, #5b6b7f);
+}
+
+.tri-card-meta {
+  margin-top: 0.6rem;
+  font-size: 0.85rem;
+  color: var(--home-muted, #5b6b7f);
+}
+
+.tri-card-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-top: 1.1rem;
+  background: var(--home-primary, #2f6fed);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 0.7rem 1rem;
+  border-radius: 999px;
+  transition: gap 0.15s ease, filter 0.15s ease;
+}
+
+.tri-card:hover .tri-card-cta {
+  gap: 0.6rem;
+  filter: brightness(1.06);
+}
+
+.tri-card-cta-icon {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.tri-card:focus-visible {
+  outline: 3px solid var(--home-primary, #2f6fed);
+  outline-offset: 2px;
+}
+
+@media (max-width: 480px) {
+  .tri-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Trimestre hero (lessons page header) ---------- */
+
+.tri-hero {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  align-items: center;
+  gap: 1.5rem;
+  background: #fff;
+  border: 1px solid var(--home-border, #e6ebf3);
+  border-radius: var(--home-radius-lg, 28px);
+  overflow: hidden;
+  margin-top: 1.5rem;
+}
+
+.tri-hero-copy {
+  padding: 2rem;
+}
+
+.tri-hero-tag {
+  position: static;
+  display: inline-flex;
+}
+
+.tri-hero-title {
+  font-family: "Baloo 2", system-ui, sans-serif;
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  font-weight: 700;
+  margin-top: 0.75rem;
+  color: var(--home-ink, #1d2a3a);
+}
+
+.tri-hero-meta {
+  margin-top: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--home-muted, #5b6b7f);
+}
+
+.tri-hero-sub {
+  margin-top: 0.6rem;
+  font-size: 0.9rem;
+  color: var(--home-muted, #5b6b7f);
+}
+
+.tri-hero-image {
+  width: 100%;
+  height: 100%;
+  max-height: 260px;
+  object-fit: cover;
+}
+
+/* ---------- Lesson cards ---------- */
+
+.tri-lesson-grid {
+  margin-top: 2rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.1rem;
+}
+
+.tri-lesson-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid var(--home-border, #e6ebf3);
+  border-radius: var(--home-radius-md, 20px);
+  padding: 1.25rem 1.3rem 1.4rem;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  text-decoration: none;
+}
+
+.tri-lesson-card:not(.tri-lesson-card-locked):hover {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 28px rgba(29, 42, 58, 0.1);
+  border-color: var(--home-primary, #2f6fed);
+}
+
+.tri-lesson-card-locked {
+  background: #f7f8fa;
+  cursor: not-allowed;
+}
+
+.tri-lesson-card-top {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.tri-lesson-number {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 14px;
+  font-family: "Baloo 2", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  background: var(--home-wash-blue, #eaf3ff);
+  color: var(--home-primary, #2f6fed);
+}
+
+.tri-lesson-number-done {
+  background: #e3f8ec;
+  color: #1f9d55;
+}
+
+.tri-lesson-number-in-progress {
+  background: var(--home-wash-coral, #fff1e5);
+  color: var(--home-coral, #ff8b5e);
+}
+
+.tri-lesson-title {
+  font-weight: 700;
+  font-size: 1.02rem;
+  line-height: 1.35;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0px;
+}
+
+.tri-lesson-summary {
+  margin-top: 0.7rem;
+  font-size: 0.85rem;
+  color: var(--home-muted, #5b6b7f);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.tri-lesson-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 1rem;
+  justify-content: center;
+}
+
+.tri-lesson-cta {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-top: 1.1rem;
+  padding: 0.7rem 1rem;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #fff;
+  background: var(--home-primary, #2f6fed);
+  overflow: hidden;
+  transition: gap 0.15s ease;
+}
+
+.tri-lesson-card:hover .tri-lesson-cta {
+  gap: 0.6rem;
+}
+
+.tri-lesson-cta-done {
+  background: #1f9d55;
+}
+
+.tri-lesson-cta-in-progress {
+  background: var(--home-coral, #ff8b5e);
+}
+
+.tri-lesson-cta-icon {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.tri-lesson-locked-hint {
+  margin-top: 1.1rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--home-muted, #5b6b7f);
+  text-align: center;
+}
+
+.tri-lesson-card:focus-visible {
+  outline: 3px solid var(--home-primary, #2f6fed);
+  outline-offset: 2px;
+}
+
+/* ---------- Bottom exam CTA banner ---------- */
+
+.tri-exam-banner {
+  margin-top: 2.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: var(--home-wash-blue, #eaf3ff);
+  border: 1px solid var(--home-border, #e6ebf3);
+  border-radius: var(--home-radius-lg, 28px);
+  padding: 1.5rem 1.75rem;
+}
+
+.tri-exam-banner-text {
+  font-size: 0.95rem;
+  color: var(--home-ink, #1d2a3a);
+}
+
+.tri-exam-banner-cta {
+  flex-shrink: 0;
+  background: var(--home-primary, #2f6fed);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0.8rem 1.4rem;
+  border-radius: 999px;
+  transition: transform 0.15s ease;
+}
+
+.tri-exam-banner-cta:hover {
+  transform: translateY(-2px);
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 720px) {
+  .tri-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .tri-hero-image {
+    order: -1;
+    max-height: 200px;
+  }
+
+  .tri-lesson-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tri-exam-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

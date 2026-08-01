@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { notFound, useParams } from "next/navigation";
 import { findLesson } from "../../../../../../../lib/curriculum";
+import { TRIMESTRE_META } from "../../../../../../../lib/trimestres";
 import {getLocalProgress,saveLocalProgress,updateLessonProgress,lessonCompletion} from "../../../../../../../lib/progress";
 import ProgressBar from "../../../../../../components/ProgressBar";
 import { useUser } from "../../../../../../../lib/auth";
@@ -110,6 +111,17 @@ export default function LessonPage() {
         <Link href={`/grade/${gradeId}/subject/${subjectId}`} className="breadcrumb-link">
           {subject.name}
         </Link>
+        {lesson.trimestre && (
+          <>
+            <span className="breadcrumb-sep">/</span>
+            <Link
+              href={`/grade/${gradeId}/subject/${subjectId}/trimestre/${lesson.trimestre}`}
+              className="breadcrumb-link"
+            >
+              {TRIMESTRE_META[lesson.trimestre]?.label || `Trimestre ${lesson.trimestre}`}
+            </Link>
+          </>
+        )}
       </nav>
 
       <header className="lesson-page-header">
