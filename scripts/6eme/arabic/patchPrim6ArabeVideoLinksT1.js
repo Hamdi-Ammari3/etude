@@ -1,4 +1,4 @@
-// scripts/patchPrim6ArabeVideoLinksL1.js
+// scripts/patchPrim6ArabeVideoLinksT1.js
 require("dotenv").config();
 const { initializeApp, cert } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
@@ -23,6 +23,36 @@ const VIDEO_LINKS = {
       url: "https://www.youtube.com/watch?v=QwgwnhBA86w",
     },
   ],
+  l2: [
+    {
+      title: "سنة سادسة إبتدائي: العربيّة — أنشطة وتمارين حول تصريف المضاعف",
+      url: "https://www.youtube.com/watch?v=ctJnsmyJicY",
+    },
+  ],
+  l3: [
+    {
+      title: "تصريف الناقص في المضارع المرفوع — السنة السادسة",
+      url: "https://www.youtube.com/watch?v=-FiWoFXFQrc&t=1s",
+    },
+  ],
+  l4: [
+    {
+      title: "تصريف الناقص في المضارع المرفوع — السنة السادسة",
+      url: "https://www.youtube.com/watch?v=jqqXv_BG2lM",
+    },
+  ],
+  l5: [
+    {
+      title: "الاسم المقصور وتنوينه — سنة سادسة ابتدائي",
+      url: "https://www.youtube.com/watch?v=EVDmhdhZ84g",
+    },
+  ],
+  l6: [
+    {
+      title: "تقديم الخبر على المبتدأ — سنة سادسة ابتدائي",
+      url: "https://www.youtube.com/watch?v=7qvuKilgSjc",
+    },
+  ],
 };
 
 async function patchVideoLinks() {
@@ -37,7 +67,8 @@ async function patchVideoLinks() {
   }
 
   await batch.commit();
-  console.log(`✔ patched videoLinks on ${count} lessonContent docs for ${GRADE_ID}_${SUBJECT_ID} (l1 only)`);
+  console.log(`✔ patched videoLinks on ${count} lessonContent docs for ${GRADE_ID}_${SUBJECT_ID} (Trimestre 1)`);
+  console.log(`  (l5, l6 have a title but empty url — search manually)`);
 }
 
 async function main() {

@@ -1,4 +1,4 @@
-// scripts/patchCol8FrancaisVideoLinksL1.js
+// scripts/patchPrim6MathsVideoLinksT3.js
 require("dotenv").config();
 const { initializeApp, cert } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
@@ -13,15 +13,26 @@ const app = initializeApp({
 
 const db = getFirestore(app);
 
-const GRADE_ID = "col-8";
-const SUBJECT_ID = "francais";
+const GRADE_ID = "prim-6";
+const SUBJECT_ID = "maths";
 
 const VIDEO_LINKS = {
-  l1: [
+  l21: [
     {
-      title: "Interrogation totale et partielle — Français — Collège",
-      channel: "Mathrix",
-      url: "https://www.youtube.com/watch?v=dufoNN1wjeU",
+      title: "معدل السرعة والمسافة والزمن: الحل بالقواعد وبالتناسب",
+      url: "https://www.youtube.com/watch?v=zmN83zdPH5M",
+    },
+  ],
+  l22: [
+    {
+      title: "الجمع والطرح والضرب في الأعداد الكسرية",
+      url: "https://www.youtube.com/watch?v=fyXmyBIjVt4",
+    },
+  ],
+  l23: [
+    {
+      title: "مساحة شكل مركب من عدة أشكال هندسية",
+      url: "https://www.youtube.com/watch?v=gDdzuxErImU",
     },
   ],
 };
@@ -38,7 +49,8 @@ async function patchVideoLinks() {
   }
 
   await batch.commit();
-  console.log(`✔ patched videoLinks on ${count} lessonContent docs for ${GRADE_ID}_${SUBJECT_ID} (l1 only)`);
+  console.log(`✔ patched videoLinks on ${count} lessonContent docs for ${GRADE_ID}_${SUBJECT_ID} (Trimestre 3)`);
+  console.log(`  (l22, l23 have a title but empty url — search manually)`);
 }
 
 async function main() {

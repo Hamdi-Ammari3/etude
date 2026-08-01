@@ -1,4 +1,4 @@
-// scripts/patchCol7ArabeVideoLinksL1.js
+// scripts/patchCol7ArabeVideoLinksT1.js
 require("dotenv").config();
 const { initializeApp, cert } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
@@ -23,6 +23,30 @@ const VIDEO_LINKS = {
       url: "https://www.youtube.com/watch?v=zize7F4LOCU",
     },
   ],
+  l2: [
+    {
+      title: "الفعل اللازم والمتعدي",
+      url: "https://www.youtube.com/watch?v=zize7F4LOCU",
+    },
+  ],
+  l3: [
+    {
+      title: "البناء الثلاثي للنص السردي:",
+      url: "https://www.youtube.com/watch?v=PFbfWlLUtRk",
+    },
+  ],
+  l4: [
+    {
+      title: "الإطاران المكاني والزماني في النص السردي — سنة سابعة أساسي",
+      url: "https://www.youtube.com/watch?v=u4NG4Xg_kF4",
+    },
+  ],
+  l5: [
+    {
+      title: "شخصية البطل: مواصفاته وتطوره في القصة — سنة سابعة أساسي",
+      url: "",
+    },
+  ],
 };
 
 async function patchVideoLinks() {
@@ -37,7 +61,8 @@ async function patchVideoLinks() {
   }
 
   await batch.commit();
-  console.log(`✔ patched videoLinks on ${count} lessonContent docs for ${GRADE_ID}_${SUBJECT_ID} (l1 only)`);
+  console.log(`✔ patched videoLinks on ${count} lessonContent docs for ${GRADE_ID}_${SUBJECT_ID} (Trimestre 1)`);
+  console.log(`  (l3, l4, l5, l6, l7, l8 have a title but empty url — search manually)`);
 }
 
 async function main() {

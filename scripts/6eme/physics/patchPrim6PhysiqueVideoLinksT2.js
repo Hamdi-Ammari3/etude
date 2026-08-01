@@ -1,4 +1,4 @@
-// scripts/patchCol7MathsVideoLinksL1.js
+// scripts/patchPrim6PhysiqueVideoLinksT2.js
 require("dotenv").config();
 const { initializeApp, cert } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
@@ -13,14 +13,30 @@ const app = initializeApp({
 
 const db = getFirestore(app);
 
-const GRADE_ID = "col-7";
-const SUBJECT_ID = "maths";
+const GRADE_ID = "prim-6";
+const SUBJECT_ID = "physique"; // "إيقاظ علمي" at this grade
 
 const VIDEO_LINKS = {
-  l1: [
+  l6: [
     {
-      title: "أولويات العمليات الحسابية — الصف السابع",
-      url: "https://www.youtube.com/watch?v=g3DhTOHIr5Q",
+      title: "مكونات الدم ووظائفها",
+      url: "https://www.youtube.com/watch?v=XD3Fud4DtI8",
+    },
+    {
+      title: "درس الدورة الدموية الكبرى والصغرى",
+      url: "https://www.youtube.com/watch?v=7ptmS6qaN2A",
+    },
+  ],
+  l7: [
+    {
+      title: "الجلد: طبقاته",
+      url: "https://www.youtube.com/watch?v=RClfrsmybIs",
+    },
+  ],
+  l8: [
+    {
+      title: "تصنيف الأغذية والوجبة الغذائية المتوازنة",
+      url: "https://www.youtube.com/watch?v=yhQ0r8jFpRw",
     },
   ],
 };
@@ -37,7 +53,8 @@ async function patchVideoLinks() {
   }
 
   await batch.commit();
-  console.log(`✔ patched videoLinks on ${count} lessonContent docs for ${GRADE_ID}_${SUBJECT_ID} (l1 only)`);
+  console.log(`✔ patched videoLinks on ${count} lessonContent docs for ${GRADE_ID}_${SUBJECT_ID} (Trimestre 2)`);
+  console.log(`  (l7, l8 have a title but empty url — search manually)`);
 }
 
 async function main() {

@@ -1,4 +1,4 @@
-// scripts/patchPrim6MathsVideoLinksL1.js
+// scripts/patchCol7PhysiqueVideoLinksT1.js
 require("dotenv").config();
 const { initializeApp, cert } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
@@ -13,14 +13,38 @@ const app = initializeApp({
 
 const db = getFirestore(app);
 
-const GRADE_ID = "prim-6";
-const SUBJECT_ID = "maths";
+const GRADE_ID = "col-7";
+const SUBJECT_ID = "physique";
 
 const VIDEO_LINKS = {
   l1: [
     {
-      title: "الجمع والطرح في الأعداد العشرية — السنة السادسة ابتدائي",
-      url: "https://www.youtube.com/watch?v=cq4H8sUS8Aw",
+      title: "حالات المادة وتحولاتها",
+      url: "https://www.youtube.com/watch?v=E400Am7mOk4",
+    },
+  ],
+  l2: [
+    {
+      title: "حالات المادة وتحولاتها",
+      url: "https://www.youtube.com/watch?v=E400Am7mOk4",
+    },
+  ],
+  l3: [
+    {
+      title: "حالات المادة وتحولاتها",
+      url: "https://www.youtube.com/watch?v=E400Am7mOk4",
+    },
+  ],
+  l4: [
+    {
+      title: "قياس الكتلة والحجم ",
+      url: "https://www.youtube.com/watch?v=rgI_8DavWRI",
+    },
+  ],
+  l5: [
+    {
+      title: "الكتلة الحجمية والكثافة",
+      url: "https://www.youtube.com/watch?v=UU1D7uApKnQ",
     },
   ],
 };
@@ -37,7 +61,8 @@ async function patchVideoLinks() {
   }
 
   await batch.commit();
-  console.log(`✔ patched videoLinks on ${count} lessonContent docs for ${GRADE_ID}_${SUBJECT_ID} (l1 only)`);
+  console.log(`✔ patched videoLinks on ${count} lessonContent docs for ${GRADE_ID}_${SUBJECT_ID} (Trimestre 1)`);
+  console.log(`  (l4, l6 have a title but empty url — search manually)`);
 }
 
 async function main() {

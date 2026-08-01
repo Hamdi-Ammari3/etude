@@ -1,4 +1,4 @@
-// scripts/patchCol8AnglaisVideoLinksL1.js
+// scripts/patchCol7PhysiqueVideoLinksT2.js
 require("dotenv").config();
 const { initializeApp, cert } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
@@ -13,15 +13,32 @@ const app = initializeApp({
 
 const db = getFirestore(app);
 
-const GRADE_ID = "col-8";
-const SUBJECT_ID = "anglais";
+const GRADE_ID = "col-7";
+const SUBJECT_ID = "physique";
 
 const VIDEO_LINKS = {
-  l1: [
+  l7: [
     {
-      title: "Kids vocabulary - School Subjects - favorite subject - English educational video",
-      channel: "English Singsing",
-      url: "https://www.youtube.com/watch?v=AnZxeX_8mVk",
+      title: "أهمية الماء في الحياة",
+      url: "https://www.youtube.com/watch?v=oJCQCnsnsX8",
+    },
+  ],
+  l8: [
+    {
+      title: "مصادر الماء وتحولاته الفيزيائية",
+      url: "https://www.youtube.com/watch?v=CtcVUaGRmg8",
+    },
+  ],
+  l9: [
+    {
+      title: "درس دورة الماء في الطبيعة ",
+      url: "https://www.youtube.com/watch?v=ES_xdSbvxnA",
+    },
+  ],
+  l10: [
+    {
+      title: "الماء النقي وماء الشرب: النقاوة والمعالجة",
+      url: "https://www.youtube.com/watch?v=pkRWzX6cLVk",
     },
   ],
 };
@@ -38,7 +55,8 @@ async function patchVideoLinks() {
   }
 
   await batch.commit();
-  console.log(`✔ patched videoLinks on ${count} lessonContent docs for ${GRADE_ID}_${SUBJECT_ID} (l1 only)`);
+  console.log(`✔ patched videoLinks on ${count} lessonContent docs for ${GRADE_ID}_${SUBJECT_ID} (Trimestre 2)`);
+  console.log(`  (l7, l8, l10, l11, l12 have a title but empty url — search manually)`);
 }
 
 async function main() {
