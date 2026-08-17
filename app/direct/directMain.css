@@ -1,0 +1,94 @@
+.direct-header {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 0;
+}
+
+.direct-eyebrow {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--home-primary);
+  margin: 0;
+}
+
+.direct-title {
+  margin: 0.35rem 0 0;
+  font-family: var(--home-font-display);
+  font-size: clamp(1.9rem, 4vw, 2.5rem);
+  font-weight: 800;
+}
+
+.direct-sub {
+  margin: 0.5rem 0 0;
+  color: var(--home-muted);
+  font-weight: 600;
+}
+
+.direct-level-section {
+  max-width: 1180px;
+  margin: 2.5rem auto 0;
+  padding: 0 1.5rem;
+}
+
+.direct-level-section:last-child {
+  padding-bottom: 3rem;
+}
+
+.direct-level-heading {
+  margin-bottom: 1.25rem;
+  font-family: var(--home-font-display);
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+
+.direct-grade-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .direct-grade-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .direct-grade-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.direct-grade-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: var(--home-radius-2xl, 28px);
+  background: var(--home-card);
+  border: 2px solid var(--home-border);
+  text-decoration: none;
+  color: inherit;
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.direct-grade-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--home-shadow-pop);
+  border-color: var(--home-primary);
+}
+
+.direct-grade-emoji {
+  font-size: 1.9rem;
+  line-height: 1;
+}
+
+.direct-grade-label {
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.direct-grade-card:focus-visible {
+  outline: 3px solid var(--home-primary);
+  outline-offset: 2px;
+}

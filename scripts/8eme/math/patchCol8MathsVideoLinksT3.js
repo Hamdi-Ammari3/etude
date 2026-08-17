@@ -1,4 +1,4 @@
-// scripts/patchCol8MathsVideoLinksL1.js
+// scripts/patchCol8MathsVideoLinksT3.js
 require("dotenv").config();
 const { initializeApp, cert } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
@@ -17,10 +17,22 @@ const GRADE_ID = "col-8";
 const SUBJECT_ID = "maths";
 
 const VIDEO_LINKS = {
-  l1: [
+  l17: [
     {
-      title: "ثامنة أساسي — مجموعة الأعداد الصحيحة النسبية (الجزء الأول)",
-      url: "https://www.youtube.com/watch?v=pwuAu4hACPo",
+      title: "المعادلات من الدرجة الأولى بمجهول واحد",
+      url: "https://www.youtube.com/watch?v=zzqxiCp2RmE",
+    },
+  ],
+  l18: [
+    {
+      title: "المعادلات من الدرجة الأولى بمجهول واحد",
+      url: "https://www.youtube.com/watch?v=zzqxiCp2RmE",
+    },
+  ],
+  l20: [
+    {
+      title: "المعدل الحسابي (المتوسط) — سنة ثامنة أساسي",
+      url: "https://www.youtube.com/watch?v=BK6zV3aeyx0",
     },
   ],
 };
@@ -37,7 +49,8 @@ async function patchVideoLinks() {
   }
 
   await batch.commit();
-  console.log(`✔ patched videoLinks on ${count} lessonContent docs for ${GRADE_ID}_${SUBJECT_ID} (l1 only)`);
+  console.log(`✔ patched videoLinks on ${count} lessonContent docs for ${GRADE_ID}_${SUBJECT_ID} (Trimestre 3)`);
+  console.log(`  (l19, l20, l21, l22, l23, l24 have a title but empty url — search manually)`);
 }
 
 async function main() {

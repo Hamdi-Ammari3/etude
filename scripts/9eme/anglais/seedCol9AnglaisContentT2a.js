@@ -16,10 +16,6 @@ const db = getFirestore(app);
 const GRADE_ID = "col-9";
 const SUBJECT_ID = "anglais";
 
-// Trimestre 2, part A — lessons l11 through l15 (Module 3: Health and
-// Environment). Grammar points and functions confirmed from the real
-// textbook synopsis. Content reconstructed to teach that specific grammar —
-// NOT verified against actual textbook exercises/texts.
 const LESSON_CONTENT = {
   l11: {
     summary:

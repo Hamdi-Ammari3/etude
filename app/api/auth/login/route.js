@@ -5,9 +5,11 @@ import { normalizePhone, buildUid } from "../../../../lib/phone";
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
 
+const ROLE_LABELS = { student: "élève", teacher: "enseignant" };
+
 export async function POST(request) {
   try {
-    const { phone, password } = await request.json();
+    const { phone, password, loginAs } = await request.json();
 
     const canonicalPhone = normalizePhone(phone || "");
     if (!canonicalPhone) {
@@ -16,9 +18,16 @@ export async function POST(request) {
         { status: 400 }
       );
     }
+
+    // Digits-only 4-character passcode, shared by both student and
+    // teacher accounts.
     if (!/^\d{4}$/.test(String(password || "").trim())) {
       return NextResponse.json({ error: "Code invalide." }, { status: 400 });
     }
+
+    // Defaults to "student" for backward compatibility, though both
+    // current callers (student and teacher login pages) always send this.
+    const requestedRole = loginAs === "teacher" ? "teacher" : "student";
 
     const uid = buildUid(canonicalPhone);
     const userRef = adminDB.collection("users").doc(uid);
@@ -63,6 +72,26 @@ export async function POST(request) {
       return NextResponse.json({ error: "Code incorrect." }, { status: 401 });
     }
 
+    // Password is correct — now check this account's role against which
+    // login page sent the request. Existing docs written before `role`
+    // existed default to "student", mirroring the same default used
+    // client-side in useUser().
+    const accountRole = data.role || "student";
+
+    if (accountRole !== requestedRole) {
+      // Credentials were correct — this is a wrong-page mistake, not a
+      // guessing attempt, so reset the counter rather than penalizing it.
+      await userRef.update({
+        loginAttempts: { count: 0, windowStart: 0 },
+      });
+      return NextResponse.json(
+        {
+          error: `Ce compte est enregistré comme ${ROLE_LABELS[accountRole]}. Utilisez la connexion ${ROLE_LABELS[accountRole]}.`,
+        },
+        { status: 403 }
+      );
+    }
+
     // Success — reset attempts, update last login, mint session token.
     await userRef.update({
       loginAttempts: { count: 0, windowStart: 0 },
@@ -77,6 +106,7 @@ export async function POST(request) {
         uid,
         name: data.name,
         phone: data.phone,
+        role: accountRole,
         purchasedGrades: data.purchasedGrades || [],
       },
     });

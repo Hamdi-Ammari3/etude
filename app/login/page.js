@@ -5,15 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { completeLogin, useUser } from "../../lib/auth";
 import "../style.css";
-
-function Field({ label, children }) {
-  return (
-    <label className="field">
-      <span className="field-label">{label}</span>
-      {children}
-    </label>
-  );
-}
+import "../homePage.css";
+import "./loginPage.css";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -44,7 +37,7 @@ export default function LoginPage() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: phone.trim(), password: password.trim() }),
+        body: JSON.stringify({ phone: phone.trim(), password: password.trim(), loginAs: "student" }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -61,50 +54,65 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="login-container">
-      <div className="login-header">
-        <h1 className="login-title">Bienvenue</h1>
+    <div className="login-page">
+      <div className="login-wrap">
+        <span className="login-icon-badge">🔑</span>
+        <h1 className="login-title">Connexion</h1>
         <p className="login-subtitle">Connectez-vous pour suivre votre progression</p>
-      </div>
 
-      <div className="login-card">
-        <form onSubmit={handleSubmit} className="login-form">
-          <Field label="Numéro de téléphone">
-            <div className="phone-input-wrap">
-              <span className="phone-prefix">+216</span>
+        <div className="login-card">
+          <form onSubmit={handleSubmit} className="login-form">
+            <div>
+              <label htmlFor="phone" className="login-field-label">
+                📱 Numéro de téléphone
+              </label>
+              <div className="login-phone-row">
+                <span className="login-phone-prefix">🇹🇳 +216</span>
+                <input
+                  id="phone"
+                  type="tel"
+                  inputMode="numeric"
+                  autoComplete="username"
+                  maxLength={8}
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                  placeholder="22942420"
+                  autoFocus
+                  className="login-phone-input"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="password" className="login-field-label">
+                🔒 Code secret (4 chiffres)
+              </label>
               <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 8))}
-                placeholder="22942420"
-                autoFocus
-                className="phone-input"
+                id="password"
+                type="text"
+                inputMode="numeric"
+                autoComplete="current-password"
+                maxLength={4}
+                value={password}
+                onChange={(e) => setPassword(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                placeholder="1234"
+                className="login-password-input"
               />
             </div>
-          </Field>
-          <Field label="Code secret (4 chiffres)">
-            <input
-              type="tel"
-              inputMode="numeric"
-              value={password}
-              onChange={(e) => setPassword(e.target.value.replace(/\D/g, "").slice(0, 4))}
-              placeholder="••••"
-              className="text-input"
-            />
-          </Field>
-          {error && <p className="form-error">{error}</p>}
-          <button type="submit" disabled={loading} className="btn btn-primary btn-block">
-            {loading ? "Connexion..." : "Se connecter"}
-          </button>
-        </form>
-      </div>
 
-      <p className="login-back-link">
-        Pas encore de compte ? Contactez-nous sur WhatsApp pour créer le vôtre.
-      </p>
-      <p className="login-back-link">
-        <Link href="/">Retour à l'accueil</Link>
-      </p>
+            {error && <p className="login-error">{error}</p>}
+
+            <button type="submit" disabled={loading} className="login-submit-btn">
+              {loading ? "Connexion..." : "Se connecter"}
+            </button>
+          </form>
+        </div>
+
+        <p className="login-hint">Pas encore de compte ? Contactez-nous sur WhatsApp pour créer le vôtre.</p>
+        <p className="login-hint">
+          <Link href="/">Retour à l'accueil</Link>
+        </p>
+      </div>
     </div>
   );
 }

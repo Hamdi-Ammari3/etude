@@ -1,0 +1,127 @@
+.lecons-header {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 0;
+}
+
+.lecons-eyebrow {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--home-primary);
+  margin: 0;
+}
+
+.lecons-title {
+  margin: 0.35rem 0 0;
+  font-family: var(--home-font-display);
+  font-size: clamp(1.9rem, 4vw, 2.5rem);
+  font-weight: 800;
+}
+
+.lecons-sub {
+  margin: 0.5rem 0 0;
+  color: var(--home-muted);
+  font-weight: 600;
+}
+
+.lecons-level-section {
+  max-width: 1180px;
+  margin: 2.5rem auto 0;
+  padding: 0 1.5rem;
+}
+
+.lecons-level-section:last-child {
+  padding-bottom: 3rem;
+}
+
+.lecons-level-heading {
+  margin-bottom: 1.25rem;
+  font-family: var(--home-font-display);
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+
+.lecons-grade-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .lecons-grade-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .lecons-grade-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.lecons-grade-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 1rem;
+  border-radius: var(--home-radius-2xl);
+  background: var(--home-card);
+  border: 2px solid var(--home-border);
+  text-decoration: none;
+  color: inherit;
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.lecons-grade-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--home-shadow-pop);
+  border-color: var(--home-primary);
+}
+
+.lecons-grade-card-purchased {
+  border-color: var(--home-primary);
+  background: linear-gradient(180deg, #fff 0%, var(--home-wash-blue) 140%);
+}
+
+.lecons-grade-card-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.lecons-grade-icon {
+  font-size: 1.9rem;
+  line-height: 1;
+}
+
+.lecons-grade-label {
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.lecons-grade-badge {
+  position: absolute;
+  top: 0.7rem;
+  right: 0.7rem;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.lecons-grade-badge-purchased {
+  background: var(--home-primary);
+  color: #fff;
+}
+
+.lecons-grade-badge-progress {
+  background: var(--home-wash-coral);
+  color: var(--home-coral);
+}
+
+.lecons-grade-card:focus-visible {
+  outline: 3px solid var(--home-primary);
+  outline-offset: 2px;
+}

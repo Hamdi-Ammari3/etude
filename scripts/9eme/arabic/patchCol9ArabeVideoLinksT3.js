@@ -1,4 +1,4 @@
-// scripts/patchCol9AnglaisVideoLinksL1.js
+// scripts/patchCol9ArabeVideoLinksT3.js
 require("dotenv").config();
 const { initializeApp, cert } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
@@ -14,14 +14,31 @@ const app = initializeApp({
 const db = getFirestore(app);
 
 const GRADE_ID = "col-9";
-const SUBJECT_ID = "anglais";
+const SUBJECT_ID = "arabe";
 
 const VIDEO_LINKS = {
-  l1: [
+  l17: [
     {
-      title: "Question words in English — English grammar lessons",
-      channel: "British Council LearnEnglishTeens",
-      url: "https://www.youtube.com/watch?v=GtUusxnP6Oo",
+      title: "تمهيد لعلم العروض: التقطيع العروضي والتفعيلات",
+      url: "https://www.youtube.com/watch?v=q9Icbjcv7js",
+    },
+  ],
+  l18: [
+    {
+      title: "البحور الشعرية (الطويل، الكامل، البسيط، الوافر)",
+      url: "https://www.youtube.com/watch?v=ld9qPgrM57I",
+    },
+  ],
+  l19: [
+    {
+      title: "القافية والروي في الشعر العربي",
+      url: "https://www.youtube.com/watch?v=UCbQcX89u6Q",
+    },
+  ],
+  l20: [
+    {
+      title: "تحليل نص شعري: الشكل والمضمون",
+      url: "https://www.youtube.com/watch?v=5xkNAnWbtLs",
     },
   ],
 };
@@ -38,7 +55,8 @@ async function patchVideoLinks() {
   }
 
   await batch.commit();
-  console.log(`✔ patched videoLinks on ${count} lessonContent docs for ${GRADE_ID}_${SUBJECT_ID} (l1 only)`);
+  console.log(`✔ patched videoLinks on ${count} lessonContent docs for ${GRADE_ID}_${SUBJECT_ID} (Trimestre 3)`);
+  console.log(`  (all 8 lessons have a title but empty url — search manually)`);
 }
 
 async function main() {

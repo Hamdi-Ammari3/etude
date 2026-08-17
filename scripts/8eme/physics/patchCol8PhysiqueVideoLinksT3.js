@@ -1,4 +1,4 @@
-// scripts/patchCol8PhysiqueVideoLinksL1.js
+// scripts/patchCol8PhysiqueVideoLinksT3.js
 require("dotenv").config();
 const { initializeApp, cert } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
@@ -17,10 +17,22 @@ const GRADE_ID = "col-8";
 const SUBJECT_ID = "physique";
 
 const VIDEO_LINKS = {
-  l1: [
+  l15: [
     {
-      title: "مكونات وطبقات الغلاف الجوي",
-      url: "https://www.youtube.com/watch?v=LsL7VLmbeTo",
+      title: "انكسار الضوء وتغير اتجاهه بين وسطين شفافين — سنة ثامنة أساسي",
+      url: "https://www.youtube.com/watch?v=rk0h5_3mE-M",
+    },
+  ],
+  l16: [
+    {
+      title: "العدسات (المحدبة والمقعرة) والمرايا — سنة ثامنة أساسي",
+      url: "https://www.youtube.com/watch?v=8pR7JBkh81c",
+    },
+  ],
+  l18: [
+    {
+      title: "الفرق بين الكتلة والوزن — سنة ثامنة أساسي",
+      url: "https://www.youtube.com/watch?v=HuRRGs1Lxrk",
     },
   ],
 };
@@ -37,7 +49,8 @@ async function patchVideoLinks() {
   }
 
   await batch.commit();
-  console.log(`✔ patched videoLinks on ${count} lessonContent docs for ${GRADE_ID}_${SUBJECT_ID} (l1 only)`);
+  console.log(`✔ patched videoLinks on ${count} lessonContent docs for ${GRADE_ID}_${SUBJECT_ID} (Trimestre 3)`);
+  console.log(`  (all 6 lessons have a title but empty url — search manually)`);
 }
 
 async function main() {

@@ -5,10 +5,13 @@ import Link from "next/link";
 import { useRouter, useParams, notFound } from "next/navigation";
 import { findSubject, findLessonsForSubject } from "../../../../../../lib/curriculum";
 import { useUser } from "../../../../../../lib/auth";
-import { auth } from '../../../../../../lib/firebaseConfig';
-import LoadingSpinner from '../../../../../components/LoadingSpinner';
-import AccessRequiredModal from '../../../../../components/AccessRequiredModal';
-import '../../../../../style.css';
+import { auth } from "../../../../../../lib/firebaseConfig";
+import LoadingSpinner from "../../../../../components/LoadingSpinner";
+import AccessRequiredModal from "../../../../../components/AccessRequiredModal";
+//import "../../../../../style.css";
+import "../../../../../homePage.css";
+import "../Subjectstyle.css";
+import "./examenPage.css";
 
 const DIFFICULTIES = [
   { id: "facile", label: "Facile" },
@@ -70,13 +73,13 @@ export default function ExamenPage() {
 
   if (loading || !found || !userHydrated) {
     return (
-      <div className="page-container page-container-md">
+      <div className="loading-page">
         <LoadingSpinner />
       </div>
     );
   }
 
-  const { grade, subject } = found;
+  const { subject } = found;
 
   const allSelected = lessons.length > 0 && selected.length === lessons.length;
 
@@ -108,7 +111,7 @@ export default function ExamenPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${idToken}`,
+          Authorization: `Bearer ${idToken}`,
         },
         body: JSON.stringify({
           gradeId,
@@ -138,51 +141,44 @@ export default function ExamenPage() {
   }
 
   return (
-    <div className="page-container page-container-md">
-      <nav className="breadcrumb">
-        <Link href="/" className="breadcrumb-link">Accueil</Link>
-        <span className="breadcrumb-sep">/</span>
-        <Link href={`/grade/${gradeId}`} className="breadcrumb-link">{grade.name}</Link>
-        <span className="breadcrumb-sep">/</span>
-        <Link href={`/grade/${gradeId}/subject/${subjectId}`} className="breadcrumb-link">
-          {subject.name}
-        </Link>
-        <span className="breadcrumb-sep">/</span>
-        <span className="breadcrumb-current">Examen à la demande</span>
-      </nav>
+    <div className="home-page">
+      <div className="grd-page">
+      <Link href={`/grade/${gradeId}/subject/${subjectId}`} className="subj-back-link">
+        ← {subject.name}
+      </Link>
 
-      <header className="examen-header">
-        <span className="custom-exam-badge">✨ Nouveau · Généré automatiquement</span>
-        <h1 className="examen-title">Créer mon examen sur mesure</h1>
-        <p className="examen-subtitle">
+      <header className="exam-header">
+        <span className="exam-header-badge">✨ Nouveau · Généré automatiquement</span>
+        <h1 className="exam-header-title">Créer mon examen sur mesure</h1>
+        <p className="exam-header-sub">
           Choisissez simplement les leçons que vous voulez réviser. Nous préparons un examen de{" "}
           {subject.name} adapté, avec la correction détaillée que vous pourrez afficher quand vous le
           souhaitez.
         </p>
       </header>
 
-      <ol className="examen-steps">
+      <ol className="exam-steps">
         <StepBadge n={1} label="Choisir les leçons" active />
         <StepBadge n={2} label="Régler l'examen" active />
         <StepBadge n={3} label="Passer l'examen" active={false} />
       </ol>
 
-      <section className="examen-section">
-        <div className="examen-section-header">
+      <section className="exam-panel">
+        <div className="exam-panel-header">
           <div>
-            <h2 className="examen-section-title">1. Quelles leçons voulez-vous réviser ?</h2>
-            <p className="examen-section-subtitle">Cochez une ou plusieurs leçons ci-dessous.</p>
+            <h2 className="exam-section-title">1. Quelles leçons voulez-vous réviser ?</h2>
+            <p className="exam-panel-sub">Cochez une ou plusieurs leçons ci-dessous.</p>
           </div>
           <button
             type="button"
             onClick={() => setSelected(allSelected ? [] : lessons.map((l) => l.lessonId))}
-            className="btn btn-outline"
+            className="btn-pill btn-pill-outline"
           >
             {allSelected ? "Tout décocher" : "Tout sélectionner"}
           </button>
         </div>
 
-        <div className="examen-lesson-grid">
+        <div className="exam-lesson-list">
           {lessons.map((l, i) => {
             const checked = selected.includes(l.lessonId);
             return (
@@ -191,17 +187,15 @@ export default function ExamenPage() {
                 type="button"
                 aria-pressed={checked}
                 onClick={() => toggleLesson(l.lessonId)}
-                className={`examen-lesson-option ${checked ? "examen-lesson-option-checked" : ""}`}
+                className={`exam-lesson-row ${checked ? "exam-lesson-row-checked" : ""}`}
               >
-                <span className={`examen-lesson-check ${checked ? "examen-lesson-check-on" : ""}`}>
-                  ✓
-                </span>
-                <span className="examen-lesson-info">
-                  <span className="examen-lesson-title">
-                    <span className="examen-lesson-number">{String(i + 1).padStart(2, "0")}</span>
+                <span className={`exam-lesson-check ${checked ? "exam-lesson-check-on" : ""}`}>✓</span>
+                <span className="exam-lesson-info">
+                  <span className="exam-lesson-title">
+                    <span className="exam-lesson-number">{String(i + 1).padStart(2, "0")}</span>
                     {l.title}
                   </span>
-                  {l.summary && <span className="examen-lesson-summary">{l.summary}</span>}
+                  {l.summary && <span className="exam-lesson-summary">{l.summary}</span>}
                 </span>
               </button>
             );
@@ -209,12 +203,12 @@ export default function ExamenPage() {
         </div>
       </section>
 
-      <section className="examen-section">
-        <h2 className="examen-section-title">2. Réglez votre examen</h2>
-        <div className="examen-settings-grid">
+      <section className="exam-panel">
+        <h2 className="exam-section-title">2. Réglez votre examen</h2>
+        <div className="exam-settings-grid">
           <div>
-            <p className="examen-settings-label">Niveau de difficulté</p>
-            <div className="examen-pill-row">
+            <p className="exam-settings-label">Niveau de difficulté</p>
+            <div className="exam-pill-row">
               {DIFFICULTIES.map((d) => (
                 <Pill key={d.id} active={difficulty === d.id} onClick={() => setDifficulty(d.id)}>
                   {d.label}
@@ -223,8 +217,8 @@ export default function ExamenPage() {
             </div>
           </div>
           <div>
-            <p className="examen-settings-label">Durée de l'examen</p>
-            <div className="examen-pill-row">
+            <p className="exam-settings-label">Durée de l'examen</p>
+            <div className="exam-pill-row">
               {DURATIONS.map((d) => (
                 <Pill key={d} active={duration === d} onClick={() => setDuration(d)}>
                   {d} min
@@ -235,8 +229,8 @@ export default function ExamenPage() {
         </div>
       </section>
 
-      <div className="examen-generate-card">
-        <p className="examen-generate-hint">
+      <div className="exam-generate-card">
+        <p className="exam-generate-hint">
           {selected.length === 0
             ? "Sélectionnez au moins une leçon pour commencer."
             : `${selected.length} leçon${selected.length > 1 ? "s" : ""} sélectionnée${
@@ -244,42 +238,32 @@ export default function ExamenPage() {
               } · ${duration} min`}
         </p>
 
-        {error && <p className="form-error">{error}</p>}
+        {error && <p className="exam-error">{error}</p>}
 
         <button
           type="button"
           disabled={selected.length === 0 || generating}
           onClick={handleGenerate}
-          className="custom-exam-cta"
+          className="btn-pill btn-pill-primary btn-pill-lg"
         >
-          {!generating && selected.length > 0 && <span className="custom-exam-cta-shimmer" />}
-          <span className="custom-exam-cta-label">
-            {generating ? "Génération en cours…" : "Générer mon examen"}
-          </span>
+          {generating ? "Génération en cours…" : "Générer mon examen"}
         </button>
 
-        {generating && (
-          <p className="examen-generating-text">
-            Préparation des questions à partir de vos leçons…
-          </p>
-        )}
+        {generating && <p className="exam-generating-text">Préparation des questions à partir de vos leçons…</p>}
       </div>
 
       {accessModal && (
-        <AccessRequiredModal
-          variant={accessModal}
-          gradeId={gradeId}
-          onClose={() => setAccessModal(null)}
-        />
+        <AccessRequiredModal variant={accessModal} gradeId={gradeId} onClose={() => setAccessModal(null)} />
       )}
+    </div>
     </div>
   );
 }
 
 function StepBadge({ n, label, active }) {
   return (
-    <li className={`examen-step-badge ${active ? "examen-step-badge-active" : ""}`}>
-      <span className="examen-step-number">{n}</span>
+    <li className={`exam-step-badge ${active ? "exam-step-badge-active" : ""}`}>
+      <span className="exam-step-number">{n}</span>
       {label}
     </li>
   );
@@ -287,11 +271,7 @@ function StepBadge({ n, label, active }) {
 
 function Pill({ active, onClick, children }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`examen-pill ${active ? "examen-pill-active" : ""}`}
-    >
+    <button type="button" onClick={onClick} className={`exam-pill ${active ? "exam-pill-active" : ""}`}>
       {children}
     </button>
   );

@@ -1,0 +1,838 @@
+/* =========================================================
+   TEACHER LOGIN (split intro / form layout)
+   ========================================================= */
+
+.ens-login-page {
+  min-height: calc(100vh - 70px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1.25rem;
+}
+
+.ens-login-grid {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  display: grid;
+  /* minmax(0, 1fr) instead of a bare 1fr — grid items default to
+     min-width:auto, meaning they refuse to shrink below their own
+     content's natural width even inside a 1fr track. On a narrow phone
+     that's what was pushing this panel wider than the viewport (and
+     making it look off-center, since margin:auto can't center
+     something already wider than its container). minmax(0, 1fr)
+     explicitly overrides that default down to 0. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+}
+
+@media (min-width: 900px) {
+  .ens-login-grid {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    align-items: center;
+  }
+}
+
+/* ---------- Intro panel (grape) ---------- */
+
+.ens-login-intro {
+  padding: 2.25rem;
+  border-radius: var(--home-radius-2xl, 28px);
+  background: var(--home-grape, #c796eb);
+  color: var(--home-grape-foreground, #fdfbff);
+  border: 2px solid var(--home-border);
+}
+
+.ens-login-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+}
+
+.ens-login-intro-title {
+  margin: 1rem 0 0.75rem;
+  font-family: var(--home-font-display);
+  font-size: clamp(1.7rem, 3.5vw, 2.1rem);
+  font-weight: 800;
+}
+
+.ens-login-intro-text {
+  font-weight: 600;
+  line-height: 1.6;
+  opacity: 0.92;
+  margin: 0;
+}
+
+.ens-login-features {
+  list-style: none;
+  margin: 1.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+
+.ens-login-whatsapp-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.75rem;
+  padding: 0.75rem 1.4rem;
+  border-radius: 999px;
+  background: var(--home-mint, #73e0b4);
+  color: var(--home-mint-foreground, #003729);
+  font-weight: 800;
+  font-size: 0.9rem;
+  text-decoration: none;
+  transition: transform 150ms ease;
+}
+
+.ens-login-whatsapp-btn:hover {
+  transform: translateY(-2px);
+}
+
+/* ---------- Form panel ---------- */
+
+.ens-login-form-card {
+  padding: 2rem;
+  border-radius: var(--home-radius-2xl, 28px);
+  background: var(--home-card);
+  border: 2px solid var(--home-border);
+}
+
+.ens-login-form-title {
+  font-family: var(--home-font-display);
+  font-size: 1.3rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.ens-login-form-sub {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--home-muted);
+}
+
+.ens-login-field {
+  margin-top: 1.5rem;
+}
+
+.ens-login-label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--home-ink);
+  margin-bottom: 0.5rem;
+}
+
+.ens-login-phone-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.9rem;
+  border-radius: var(--home-radius-md, 20px);
+  border: 2px solid var(--home-border);
+  background: var(--home-bg);
+  transition: border-color 150ms ease;
+}
+
+.ens-login-phone-row:focus-within {
+  border-color: var(--home-grape, #c796eb);
+}
+
+.ens-login-phone-prefix {
+  font-weight: 800;
+  font-size: 0.88rem;
+  color: var(--home-muted);
+  white-space: nowrap;
+}
+
+.ens-login-phone-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  padding: 0.8rem 0;
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: var(--home-ink);
+  outline: none;
+}
+
+.ens-login-password-input {
+  width: 100%;
+  padding: 0.8rem 0.9rem;
+  border-radius: var(--home-radius-md, 20px);
+  border: 2px solid var(--home-border);
+  background: var(--home-bg);
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  color: var(--home-ink);
+  outline: none;
+  transition: border-color 150ms ease;
+}
+
+.ens-login-password-input:focus {
+  border-color: var(--home-grape, #c796eb);
+}
+
+.ens-login-error {
+  margin: 1.25rem 0 0;
+  padding: 0.8rem 1rem;
+  border-radius: var(--home-radius-md, 20px);
+  background: var(--home-coral, #ff8573);
+  color: var(--home-coral-foreground, #fffbfa);
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+
+.ens-login-submit-btn {
+  width: 100%;
+  margin-top: 1.5rem;
+  padding: 0.85rem;
+  border: none;
+  border-radius: 999px;
+  background: var(--home-grape, #c796eb);
+  color: var(--home-grape-foreground, #fdfbff);
+  font-weight: 800;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+.ens-login-submit-btn:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 0 8px 20px rgba(199, 150, 235, 0.35);
+}
+
+.ens-login-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.ens-login-switch {
+  margin: 1.25rem 0 0;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--home-muted);
+}
+
+.ens-login-switch-link {
+  color: var(--home-primary);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.ens-login-switch-link:hover {
+  text-decoration: underline;
+}
+
+/* =========================================================
+   TEACHER DASHBOARD
+   ========================================================= */
+
+.ens-board {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 4rem;
+}
+
+.ens-board-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.ens-logout-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 2px solid var(--home-border, #d4dfeb);
+  background: var(--home-card, #ffffff);
+  padding: 0.5rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: var(--home-ink, #1a2846);
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.ens-logout-btn:hover {
+  background: var(--home-wash-blue, #e5f0fc);
+}
+
+.ens-board-title {
+  font-family: var(--home-font-display);
+  font-size: clamp(1.7rem, 3.5vw, 2.2rem);
+  font-weight: 800;
+  margin: 0;
+}
+
+.ens-board-sub {
+  color: var(--home-muted);
+  font-weight: 600;
+  margin: 0.4rem 0 0;
+}
+
+/* ---------- Stats row ---------- */
+
+.ens-stats-grid {
+  margin-top: 1.75rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 720px) {
+  .ens-stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.ens-stat-card {
+  padding: 1.25rem 1.4rem;
+  border-radius: var(--home-radius-2xl, 28px);
+  background: var(--home-card);
+  border: 2px solid var(--home-border);
+}
+
+.ens-stat-card-mint {
+  background: var(--home-mint, #73e0b4);
+  color: var(--home-mint-foreground, #003729);
+  border-color: var(--home-mint, #73e0b4);
+}
+
+.ens-stat-card-sun {
+  background: var(--home-sun, #faca4b);
+  border-color: var(--home-sun, #faca4b);
+}
+
+.ens-stat-label {
+  font-size: 0.85rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.ens-stat-value {
+  font-family: var(--home-font-display);
+  font-size: 2rem;
+  font-weight: 800;
+  margin: 0.3rem 0 0;
+}
+
+.ens-stat-hint {
+  font-size: 0.75rem;
+  font-weight: 600;
+  opacity: 0.8;
+  margin: 0.25rem 0 0;
+}
+
+/* ---------- Main grid: form + calendar ---------- */
+
+.ens-main-grid {
+  margin-top: 2rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+  .ens-main-grid {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+}
+
+.ens-form-card {
+  padding: 1.5rem;
+  border-radius: var(--home-radius-2xl, 28px);
+  background: var(--home-card);
+  border: 2px solid var(--home-border);
+}
+
+.ens-form-title {
+  font-family: var(--home-font-display);
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin: 0 0 1.25rem;
+}
+
+.ens-form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 480px) {
+  .ens-form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.ens-field {
+  display: block;
+}
+
+.ens-field-full {
+  grid-column: 1 / -1;
+}
+
+.ens-field-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--home-muted);
+  margin-bottom: 0.4rem;
+}
+
+.ens-select,
+.ens-input {
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--home-radius-md, 20px);
+  border: 2px solid var(--home-border);
+  background: var(--home-bg);
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--home-ink);
+  outline: none;
+  transition: border-color 150ms ease;
+}
+
+.ens-select:focus,
+.ens-input:focus {
+  border-color: var(--home-primary);
+}
+
+/* Matches Lovable's exact classes: mt-6 w-full rounded-full bg-primary
+   px-6 py-3 text-base font-extrabold text-primary-foreground
+   transition-transform hover:scale-[1.02] — a dedicated class since it
+   differs from the shared btn-pill-primary (which lifts + adds a shadow
+   on hover, used intentionally elsewhere). */
+.ens-publish-btn {
+  display: block;
+  width: 100%;
+  margin-top: 1.5rem;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 999px;
+  background: var(--home-primary);
+  color: var(--home-primary-foreground, #f9fcff);
+  font-size: 1rem;
+  font-weight: 800;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 150ms ease;
+}
+
+.ens-publish-btn:hover:not(:disabled) {
+  transform: scale(1.02);
+}
+
+.ens-publish-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ens-field-hint {
+  margin: 0.4rem 0 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--home-muted);
+}
+
+.ens-slot-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ens-slot-day {
+  flex: 1.3;
+}
+
+.ens-slot-time {
+  flex: 1;
+}
+
+.ens-course-slots {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--home-ink);
+}
+
+.ens-course-card-cancelled {
+  opacity: 0.6;
+  background: #f7f8fa;
+}
+ 
+.ens-course-cancel-btn {
+  display: inline-block;
+  margin-top: 0.85rem;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  border: 2px solid var(--home-coral, #ff8573);
+  background: var(--home-card);
+  color: var(--home-coral, #ff8573);
+  font-weight: 800;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+ 
+.ens-course-cancel-btn:hover:not(:disabled) {
+  background: var(--home-wash-coral, #fff1ec);
+}
+ 
+.ens-course-cancel-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+ 
+.ens-course-cancelled-badge {
+  display: inline-block;
+  margin-top: 0.85rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  background: var(--home-border, #d4dfeb);
+  color: var(--home-muted, #606c84);
+  font-weight: 800;
+  font-size: 0.78rem;
+}
+
+.ens-course-price-per-session {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--home-muted);
+}
+
+.ens-dates-fieldset {
+  margin-top: 1.25rem;
+  border: none;
+  padding: 0;
+}
+
+.ens-dates-grid {
+  margin-top: 0.5rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.6rem;
+}
+
+@media (min-width: 480px) {
+  .ens-dates-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ens-date-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ens-date-index {
+  flex-shrink: 0;
+  width: 1.25rem;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--home-muted);
+}
+
+.ens-success-banner {
+  margin-top: 1rem;
+  padding: 0.8rem 1rem;
+  border-radius: var(--home-radius-md, 20px);
+  background: #e3f8ec;
+  color: #146339;
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+
+.ens-submit-btn {
+  width: 100%;
+  margin-top: 1.5rem;
+}
+
+/* ---------- Course cards ---------- */
+
+.ens-courses-title {
+  margin-top: 2.5rem;
+  font-family: var(--home-font-display);
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+
+.ens-empty-text {
+  margin-top: 0.75rem;
+  color: var(--home-muted);
+  font-weight: 600;
+}
+
+.ens-courses-grid {
+  margin-top: 1rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .ens-courses-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (min-width: 1024px) {
+  .ens-courses-grid {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}
+
+.ens-course-card {
+  padding: 1.25rem;
+  border-radius: var(--home-radius-2xl, 28px);
+  background: var(--home-card);
+  border: 2px solid var(--home-border);
+}
+
+.ens-course-name {
+  font-family: var(--home-font-display);
+  font-weight: 800;
+  font-size: 1.05rem;
+  margin: 0;
+}
+
+.ens-course-meta {
+  margin: 0.4rem 0 0;
+  font-size: 0.82rem;
+  color: var(--home-muted);
+  font-weight: 600;
+}
+
+.ens-course-next {
+  margin: 0.6rem 0 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.ens-course-price {
+  margin: 0.6rem 0 0;
+  font-family: var(--home-font-display);
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--home-primary);
+}
+
+/* ---------- Pill button outline variant (btn-pill/btn-pill-primary
+   already exist in this file from the login form) ---------- */
+
+.btn-pill-outline {
+  background: var(--home-card);
+  border: 2px solid var(--home-border);
+  color: var(--home-ink);
+}
+
+.btn-pill-outline:hover {
+  border-color: var(--home-primary);
+  color: var(--home-primary);
+}
+
+/* ---------- Day detail panel ---------- */
+
+.ens-day-panel {
+  margin-top: 1rem;
+  padding: 1.25rem;
+  border-radius: var(--home-radius-2xl, 28px);
+  background: var(--home-card);
+  border: 2px solid var(--home-border);
+}
+
+.ens-day-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.ens-day-panel-title {
+  margin: 0;
+  font-family: var(--home-font-display);
+  font-size: 1.05rem;
+  font-weight: 800;
+  text-transform: capitalize;
+}
+
+.ens-day-panel-close {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: 2px solid var(--home-border);
+  background: var(--home-card);
+  color: var(--home-ink);
+  font-weight: 800;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background-color 150ms ease;
+}
+
+.ens-day-panel-close:hover {
+  background: var(--home-wash-blue, #e5f0fc);
+}
+
+.ens-day-panel-empty {
+  margin: 1rem 0 0;
+  color: var(--home-muted);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.ens-day-session-list {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.ens-day-session-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.8rem 1rem;
+  border-radius: var(--home-radius-md, 20px);
+  background: var(--home-wash-blue, #e5f0fc);
+}
+
+.ens-day-session-subject {
+  margin: 0;
+  font-weight: 800;
+  font-size: 0.9rem;
+}
+
+.ens-day-session-meta {
+  margin: 0.15rem 0 0;
+  font-size: 0.78rem;
+  color: var(--home-muted);
+  font-weight: 600;
+}
+
+.ens-day-session-status {
+  flex-shrink: 0;
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  background: var(--home-mint, #73e0b4);
+  color: var(--home-mint-foreground, #003729);
+  font-weight: 800;
+  font-size: 0.75rem;
+}
+
+.ens-day-session-empty-msg {
+  flex-shrink: 0;
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--home-muted);
+  font-weight: 600;
+  text-align: right;
+}
+
+.ens-day-session-status-missed {
+  background: var(--home-border, #d4dfeb);
+  color: var(--home-muted, #606c84);
+}
+
+.ens-day-session-finish-btn {
+  flex-shrink: 0;
+  padding: 0.5rem 1.1rem;
+  border-radius: 999px;
+  border: none;
+  background: var(--home-coral, #ff8573);
+  color: var(--home-coral-foreground, #fffbfa);
+  font-weight: 800;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: transform 150ms ease;
+}
+
+.ens-day-session-finish-btn:hover:not(:disabled) {
+  transform: scale(1.05);
+}
+
+.ens-day-session-finish-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ens-day-session-start-btn {
+  flex-shrink: 0;
+  padding: 0.5rem 1.1rem;
+  border-radius: 999px;
+  border: none;
+  background: var(--home-primary);
+  color: var(--home-primary-foreground, #f9fcff);
+  font-weight: 800;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: transform 150ms ease;
+}
+
+.ens-day-session-start-btn:hover:not(:disabled) {
+  transform: scale(1.05);
+}
+
+.ens-day-session-start-btn:disabled {
+  background: var(--home-border, #d4dfeb);
+  color: var(--home-muted, #606c84);
+  cursor: not-allowed;
+}
+
+.ens-day-panel-msg {
+  margin-top: 1rem;
+  padding: 0.7rem 1rem;
+  border-radius: var(--home-radius-md, 20px);
+  background: var(--home-wash-blue, #e5f0fc);
+  color: var(--home-primary-dark, #0f6bb8);
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.ens-day-panel-error {
+  margin-top: 1rem;
+  padding: 0.7rem 1rem;
+  border-radius: var(--home-radius-md, 20px);
+  background: var(--home-wash-coral, #fff1ec);
+  color: var(--home-coral, #ff8573);
+  font-weight: 800;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+/* ---------- Cancel-blocked hint ---------- */
+
+.ens-course-cancel-blocked {
+  margin-top: 0.85rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--home-muted);
+}

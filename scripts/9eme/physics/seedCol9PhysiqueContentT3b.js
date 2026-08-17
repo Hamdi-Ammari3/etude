@@ -16,13 +16,6 @@ const db = getFirestore(app);
 const GRADE_ID = "col-9";
 const SUBJECT_ID = "physique";
 
-// Trimestre 3, part B — lessons l26 through l30 (الانكسار الحدي والانعكاس
-// الكلي، تطبيقات تغير مسار الضوء، الأضواء المرئية والضوء الأبيض، الطاقة
-// الضوئية، الطاقة الشمسية). Chapter titles and stated pedagogical
-// objectives confirmed from the real textbook's table of contents. Content
-// reconstructed to serve those specific objectives — NOT verified against
-// actual textbook pages/exercises. This is the final content batch,
-// completing col-9 physique and the full platform content build.
 const LESSON_CONTENT = {
   l26: {
     summary:

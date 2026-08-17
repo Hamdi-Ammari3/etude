@@ -16,14 +16,6 @@ const db = getFirestore(app);
 const GRADE_ID = "col-9";
 const SUBJECT_ID = "francais";
 
-// Trimestre 3 — lessons l24 through l29 (module de lecture 2 + Module 5 +
-// révision finale). Titles confirmed from the real textbook's tableau
-// synoptique. Content reconstructed — NOT verified against actual textbook
-// pages. Same flag as l12: l24 does not teach the actual content of
-// "Riquet à la houppe" (I don't have access to that text), but teaches the
-// general tale-analysis skills the module targets (repérer les
-// caractéristiques du conte, lire/écrire, répondre à des questions de
-// compréhension).
 const LESSON_CONTENT = {
   l24: {
     summary:

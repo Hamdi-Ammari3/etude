@@ -1,3 +1,76 @@
+*{
+  font-family: var(--home-font-display);
+}
+
+:root {
+  --home-bg: #fdfaf0;
+  --home-ink: #1a2846;
+  --home-muted: #606c84;
+  --home-primary: #188ceb;
+  --home-primary-dark: #0f6bb8;
+  --home-primary-foreground: #f9fcff;
+
+  --home-secondary: #f7efd1;
+  --home-secondary-foreground: #55310f;
+
+  --home-accent: #94f2eb;
+  --home-accent-foreground: #00353c;
+
+  --home-sun: #faca4b;
+  --home-sun-foreground: #492b00;
+
+  --home-coral: #ff8573;
+  --home-coral-foreground: #fffbfa;
+
+  --home-sky: #5cc9f9;
+  --home-sky-foreground: #002a4e;
+
+  --home-mint: #73e0b4;
+  --home-mint-foreground: #003729;
+
+  --home-grape: #c796eb;
+  --home-grape-foreground: #fdfbff;
+
+  --home-wash-blue: #e5f0fc;
+  --home-wash-coral: #fff1ec;
+
+  --home-border: #d4dfeb;
+  --home-card: #ffffff;
+
+  --home-radius-sm: 14px;
+  --home-radius-md: 20px;
+  --home-radius-lg: 28px;
+  --home-radius-2xl: 28px;
+  --home-radius-3xl: 32px;
+  --home-radius-4xl: 36px;
+
+  --home-font-display: "Baloo 2", "Nunito", system-ui, sans-serif;
+  --home-font-sans: "Nunito", system-ui, sans-serif;
+
+  --home-gradient-hero: linear-gradient(160deg, #cceeff 0%, #ddffeb 45%, #fff6d1 100%);
+  --home-shadow-pop: 0 10px 0 -4px color-mix(in oklab, var(--home-primary) 22%, transparent),
+    0 18px 40px -18px rgba(50, 70, 115, 0.45);
+}
+
+.home-page {
+  background: var(--home-bg);
+  color: var(--home-ink);
+  font-family: var(--home-font-sans);
+  padding-bottom: 4rem;
+}
+
+.grd-page {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 3rem;
+}
+
+.loading-page {
+  background: var(--home-bg);
+  color: var(--home-ink);
+  font-family: var(--home-font-sans);
+  height: 85vh;
+}
 
 .tri-grid {
   margin-top: 2.5rem;
@@ -372,5 +445,221 @@
   .tri-exam-banner {
     flex-direction: column;
     align-items: flex-start;
+  }
+}
+
+/* =========================================================
+   Additions for the Lovable-style header (back-link, title,
+   compact stats row) — appended to the existing tri-* /
+   trimestre-hero / lesson-card rules already in this file.
+   ========================================================= */
+
+.subj-back-link {
+  display: inline-block;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--home-primary);
+  text-decoration: none;
+}
+
+.subj-back-link:hover {
+  text-decoration: underline;
+}
+
+.subj-header-title {
+  margin: 0.6rem 0 0.4rem;
+  font-family: var(--home-font-display);
+  font-size: clamp(1.9rem, 4vw, 2.5rem);
+  font-weight: 800;
+}
+
+.subj-header-sub {
+  color: var(--home-muted);
+  font-weight: 600;
+  margin: 0 0 1.5rem;
+}
+
+.subj-stats-row {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.subj-stats-row .stat {
+  text-align: left;
+}
+
+.subj-stats-row .stat-value {
+  font-family: var(--home-font-display);
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--home-primary);
+  margin: 0;
+}
+
+.subj-stats-row .stat-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--home-muted);
+  margin: 0;
+}
+
+/* ---------- Polish pass on existing trimestre cards, now that
+   --home-radius-2xl / --home-shadow-pop exist as shared tokens ---------- */
+
+.tri-card {
+  border-width: 2px;
+  border-radius: var(--home-radius-2xl, 28px);
+}
+
+.tri-card:hover {
+  box-shadow: var(--home-shadow-pop, 0 16px 30px rgba(29, 42, 58, 0.1));
+}
+
+/* =========================================================
+   Trimestre lesson-list page — flat card-pop rows,
+   replacing the old photo-hero + stacked lesson-card layout.
+   ========================================================= */
+
+.tri-list-header {
+  margin: 0.6rem 0 2rem;
+}
+
+.tri-list-tag {
+  position: static;
+  display: inline-flex;
+  margin-bottom: 0.5rem;
+}
+
+.tri-list-meta {
+  color: var(--home-muted);
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin: 0.2rem 0 0.6rem;
+}
+
+.tri-lesson-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.tri-lesson-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.1rem;
+  border-radius: var(--home-radius-2xl, 28px);
+  background: var(--home-card);
+  border: 2px solid var(--home-border);
+  text-decoration: none;
+  color: inherit;
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.tri-lesson-row:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--home-shadow-pop, 0 16px 30px rgba(29, 42, 58, 0.1));
+  border-color: var(--home-primary);
+}
+
+.tri-lesson-row-locked {
+  background: #f7f8fa;
+  cursor: not-allowed;
+}
+
+.tri-lesson-row-locked:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: var(--home-border);
+}
+
+.tri-lesson-row-icon {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--home-radius-md, 20px);
+  background: var(--home-secondary, #f7efd1);
+  font-family: var(--home-font-display);
+  font-weight: 800;
+  font-size: 1rem;
+  color: var(--home-secondary-foreground, #55310f);
+}
+
+.tri-lesson-row-icon-done {
+  background: #e3f8ec;
+  color: #1f9d55;
+}
+
+.tri-lesson-row-icon-in-progress {
+  background: var(--home-wash-coral);
+  color: var(--home-coral);
+}
+
+.tri-lesson-row-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.tri-lesson-row-title {
+  font-weight: 800;
+  font-size: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+}
+
+.tri-lesson-row-meta {
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
+  color: var(--home-muted);
+  font-weight: 600;
+}
+
+.tri-lesson-row-cta {
+  flex-shrink: 0;
+  padding: 0.6rem 1.2rem;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: #fff;
+  background: var(--home-primary);
+  transition: transform 150ms ease;
+}
+
+.tri-lesson-row:hover .tri-lesson-row-cta {
+  transform: translateY(-1px);
+}
+
+.tri-lesson-row-cta-done {
+  background: #1f9d55;
+}
+
+.tri-lesson-row-cta-in-progress {
+  background: var(--home-coral);
+}
+
+.tri-lesson-row-locked-badge {
+  flex-shrink: 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--home-muted);
+}
+
+@media (max-width: 560px) {
+  .tri-lesson-row {
+    flex-wrap: wrap;
+  }
+
+  .tri-lesson-row-cta,
+  .tri-lesson-row-locked-badge {
+    margin-left: 64px;
   }
 }

@@ -1,0 +1,312 @@
+.dsub-page {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 3rem;
+}
+
+.dsub-back-link {
+  display: inline-block;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--home-primary);
+  text-decoration: none;
+}
+
+.dsub-back-link:hover {
+  text-decoration: underline;
+}
+
+.dsub-title {
+  margin: 0.6rem 0 0.4rem;
+  font-family: var(--home-font-display);
+  font-size: clamp(1.9rem, 4vw, 2.5rem);
+  font-weight: 800;
+}
+
+.dsub-sub {
+  margin: 0 0 2rem;
+  color: var(--home-muted);
+  font-weight: 600;
+}
+
+.dsub-empty {
+  margin-top: 1rem;
+  padding: 1.75rem;
+  text-align: center;
+  border-radius: var(--home-radius-2xl, 28px);
+  background: var(--home-secondary, #f7efd1);
+  color: var(--home-secondary-foreground, #55310f);
+  font-weight: 800;
+}
+
+/* ---------- Specialization gate ---------- */
+
+.dsub-spec-bar {
+  margin: 1.5rem 0 ;
+  padding: 1.1rem 1.4rem;
+  border-radius: var(--home-radius-2xl, 28px);
+  background: var(--home-grape, #c796eb);
+  color: var(--home-grape-foreground, #fdfbff);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+}
+
+.dsub-spec-label {
+  font-weight: 800;
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
+
+.dsub-spec-select {
+  flex: 1;
+  min-width: 220px;
+  padding: 0.75rem 1rem;
+  border-radius: var(--home-radius-md, 20px);
+  border: none;
+  background: var(--home-card);
+  color: var(--home-ink);
+  font-weight: 700;
+  font-size: 0.95rem;
+  outline: none;
+  cursor: pointer;
+}
+
+.dsub-spec-select:focus {
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.6);
+}
+
+.dsub-spec-prompt {
+  margin-top: 1.5rem;
+  padding: 1.75rem;
+  text-align: center;
+  border-radius: var(--home-radius-2xl, 28px);
+  background: var(--home-wash-blue, #e5f0fc);
+  color: var(--home-primary-dark, #0f6bb8);
+  font-weight: 700;
+}
+
+.dsub-course-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+}
+
+@media (min-width: 1024px) {
+  .dsub-course-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.dsub-course-card {
+  padding: 1.5rem;
+  border-radius: var(--home-radius-2xl, 28px);
+  background: var(--home-card);
+  border: 2px solid var(--home-border);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.dsub-course-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--home-shadow-pop);
+}
+
+.dsub-course-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.dsub-course-avatar {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--home-radius-md, 20px);
+  background: var(--home-sun, #faca4b);
+  color: var(--home-sun-foreground, #492b00);
+  font-family: var(--home-font-display);
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.dsub-course-head-info {
+  min-width: 0;
+}
+
+.dsub-teacher-name {
+  font-family: var(--home-font-display);
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.dsub-teacher-bio {
+  margin: 0.2rem 0 0;
+  font-size: 0.85rem;
+  color: var(--home-muted);
+  font-weight: 500;
+}
+
+.dsub-course-badge {
+  display: inline-block;
+  margin: 0rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  background: var(--home-mint, #73e0b4);
+  color: var(--home-mint-foreground, #003729);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.dsub-stats-row {
+  margin-top: 1.1rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.dsub-stat-box {
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--home-radius-md, 20px);
+  background: var(--home-wash-blue, #e5f0fc);
+}
+
+.dsub-stat-label {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--home-muted);
+}
+
+.dsub-stat-value {
+  margin: 0.15rem 0 0;
+  font-family: var(--home-font-display);
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.dsub-upcoming-box {
+  margin-top: 0.9rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: var(--home-radius-md, 20px);
+  background: var(--home-wash-blue, #e5f0fc);
+}
+
+.dsub-upcoming-label {
+  margin: 0 0 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--home-muted);
+}
+
+.dsub-upcoming-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.dsub-upcoming-chip {
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: var(--home-card);
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--home-ink);
+}
+
+.dsub-footer-row {
+  margin-top: 1.1rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.dsub-price {
+  margin: 0;
+  font-family: var(--home-font-display);
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--home-primary);
+}
+
+.dsub-price-unit {
+  font-family: var(--home-font-sans);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--home-muted);
+}
+
+.dsub-join-btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 999px;
+  background: var(--home-primary);
+  color: var(--home-primary-foreground, #f9fcff);
+  font-weight: 800;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: transform 150ms ease;
+}
+
+.dsub-join-btn:hover:not(:disabled) {
+  transform: scale(1.05);
+}
+
+.dsub-join-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dsub-subscribed-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.dsub-prolong-btn {
+  background: var(--home-mint, #73e0b4);
+  color: var(--home-mint-foreground, #003729);
+}
+
+.dsub-prolong-btn:hover:not(:disabled) {
+  transform: scale(1.05);
+  opacity: 0.92;
+}
+
+.dsub-leave-btn {
+  background: var(--home-coral, #ff8573);
+  color: var(--home-coral-foreground, #fffbfa);
+}
+
+.dsub-leave-btn:hover:not(:disabled) {
+  transform: scale(1.05);
+  opacity: 0.92;
+}
+
+.dsub-join-toast {
+  margin-top: 1.5rem;
+  padding: 0.9rem 1.2rem;
+  border-radius: var(--home-radius-md, 20px);
+  background: var(--home-wash-blue, #e5f0fc);
+  color: var(--home-primary-dark, #0f6bb8);
+  font-weight: 700;
+  text-align: center;
+}
+
+.dsub-join-error {
+  margin-top: 1.5rem;
+  padding: 0.9rem 1.2rem;
+  border-radius: var(--home-radius-md, 20px);
+  background: var(--home-wash-coral, #fff1ec);
+  color: var(--home-coral, #ff8573);
+  font-weight: 800;
+  text-align: center;
+}

@@ -1,4 +1,4 @@
-// scripts/patchCol9PhysiqueVideoLinksL1.js
+// scripts/patchCol9MathsVideoLinksT3.js
 require("dotenv").config();
 const { initializeApp, cert } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
@@ -14,13 +14,35 @@ const app = initializeApp({
 const db = getFirestore(app);
 
 const GRADE_ID = "col-9";
-const SUBJECT_ID = "physique";
+const SUBJECT_ID = "maths";
 
 const VIDEO_LINKS = {
-  l1: [
+  l11: [
     {
-      title: "الدرس الأول: مفهوم التيار الكهربائي المتغير — سنة تاسعة أساسي",
-      url: "https://www.youtube.com/watch?v=wSSKMixGxjg",
+      title: "مبرهنة طالس وتطبيقاتها",
+      url: "https://www.youtube.com/watch?v=6i4T6wJpoWM",
+    },
+  ],
+  l12: [
+    {
+      title: "نظرية بيتاغور",
+      url: "https://www.youtube.com/watch?v=iB1z2vLiEao",
+    },
+    {
+      title: "نظرية بيتاغور",
+      url: "https://www.youtube.com/watch?v=3EzcDbtF2J0",
+    },
+  ],
+  l13: [
+    {
+      title: "أنشطة حول الرباعيات",
+      url: "https://www.youtube.com/watch?v=s_To1Q9NAsg",
+    },
+  ],
+  l14: [
+    {
+      title: "التعامد في الفضاء",
+      url: "https://www.youtube.com/watch?v=sQQWz9jBI0U",
     },
   ],
 };
@@ -37,7 +59,8 @@ async function patchVideoLinks() {
   }
 
   await batch.commit();
-  console.log(`✔ patched videoLinks on ${count} lessonContent docs for ${GRADE_ID}_${SUBJECT_ID} (l1 only)`);
+  console.log(`✔ patched videoLinks on ${count} lessonContent docs for ${GRADE_ID}_${SUBJECT_ID} (Trimestre 3)`);
+  console.log(`  (l13, l14 have a title but empty url — search manually)`);
 }
 
 async function main() {

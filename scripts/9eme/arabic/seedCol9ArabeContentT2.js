@@ -16,12 +16,6 @@ const db = getFirestore(app);
 const GRADE_ID = "col-9";
 const SUBJECT_ID = "arabe";
 
-// Trimestre 2 — lessons l9 through l16 (النص الحجاجي)
-// This trimestre has the strongest real anchors of the subject: l10 (حجج
-// محور العمل), l11 (منهجية تحليل النص الحجاجي خطوة بخطوة), and l15 (منهج
-// الإنشاء الحجاجي) are genuinely confirmed as real content taught at this
-// level, sourced from Tunisian educational sites. The surrounding lessons
-// (l9, l12-l14, l16) fill out the module logically but remain reconstructed.
 const LESSON_CONTENT = {
   l9: {
     summary:

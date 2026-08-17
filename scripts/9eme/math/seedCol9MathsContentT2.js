@@ -16,13 +16,6 @@ const db = getFirestore(app);
 const GRADE_ID = "col-9";
 const SUBJECT_ID = "maths";
 
-// Trimestre 2 — lessons l6 through l10 (updated for the l8/l9 split).
-// l6, l7: unchanged from original. l8: rewritten, now covers ONLY الإحصاء
-// (descriptive stats + grouped data + graphical median), sourced from real
-// textbook photos. l9: NEW, covers الاحتمالات with real probability
-// problems modeled on the dice example from the textbook photos. l10: the
-// التعيين في المستوى content, moved here from the old l9 slot (unchanged
-// content, just renumbered).
 const LESSON_CONTENT = {
   l6: {
     summary:

@@ -15,12 +15,6 @@ const db = getFirestore(app);
 
 const GRADE_ID = "col-9";
 const SUBJECT_ID = "physique";
-
-// Trimestre 1, part B — lessons l6 through l10 (تكملة الكهرباء الساكنة +
-// المحروقات + التفاعل الكيميائي). Chapter titles and stated pedagogical
-// objectives confirmed from the real textbook's table of contents. Content
-// reconstructed to serve those specific objectives — NOT verified against
-// actual textbook pages/exercises.
 const LESSON_CONTENT = {
   l6: {
     summary:

@@ -16,11 +16,6 @@ const db = getFirestore(app);
 const GRADE_ID = "col-9";
 const SUBJECT_ID = "physique";
 
-// Trimestre 2, part A — lessons l11 through l15 (الذرة، بنية الذرة، الرموز
-// الكيميائية، معادلات التفاعلات، ناقلية المحاليل). Chapter titles and
-// stated pedagogical objectives confirmed from the real textbook's table of
-// contents. Content reconstructed to serve those specific objectives — NOT
-// verified against actual textbook pages/exercises.
 const LESSON_CONTENT = {
   l11: {
     summary:

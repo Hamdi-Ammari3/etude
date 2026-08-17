@@ -1,0 +1,88 @@
+.dgrade-page {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 3rem;
+}
+
+.dgrade-back-link {
+  display: inline-block;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--home-primary);
+  text-decoration: none;
+}
+
+.dgrade-back-link:hover {
+  text-decoration: underline;
+}
+
+.dgrade-title {
+  margin: 0.6rem 0 2rem;
+  font-family: var(--home-font-display);
+  font-size: clamp(1.9rem, 4vw, 2.5rem);
+  font-weight: 800;
+}
+
+.dgrade-subject-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .dgrade-subject-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .dgrade-subject-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.dgrade-subject-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.5rem 1rem;
+  text-align: center;
+  border-radius: var(--home-radius-2xl, 28px);
+  background: var(--home-card);
+  border: 2px solid var(--home-border);
+  text-decoration: none;
+  color: inherit;
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.dgrade-subject-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--home-shadow-pop);
+  border-color: var(--home-primary);
+}
+
+.dgrade-subject-emoji {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.dgrade-subject-label {
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.dgrade-subject-count {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--home-muted);
+}
+
+.dgrade-subject-count-available {
+  color: var(--home-primary-dark, #0f6bb8);
+}
+
+.dgrade-subject-card:focus-visible {
+  outline: 3px solid var(--home-primary);
+  outline-offset: 2px;
+}

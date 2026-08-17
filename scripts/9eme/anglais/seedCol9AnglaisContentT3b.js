@@ -16,10 +16,6 @@ const db = getFirestore(app);
 const GRADE_ID = "col-9";
 const SUBJECT_ID = "anglais";
 
-// Trimestre 3, part B — lessons l26 through l30 (Module 6: Civility).
-// Grammar points and functions confirmed from the real textbook synopsis.
-// Content reconstructed to teach that specific grammar — NOT verified
-// against actual textbook exercises/texts.
 const LESSON_CONTENT = {
   l26: {
     summary:

@@ -16,18 +16,6 @@ const db = getFirestore(app);
 const GRADE_ID = "col-9";
 const SUBJECT_ID = "francais";
 
-// Sourced directly from the official 9ème année français textbook's
-// "tableau synoptique" (synoptic overview table), provided by the user as
-// photographs of the actual book. Same highest-confidence tier as col-9
-// maths — the real published textbook, not a reconstruction. 5 thematic
-// modules (each with Oral/Lecture/Écriture skills + explicit Grammaire/
-// Conjugaison/Orthographe/Vocabulaire resources) plus 2 standalone literary
-// reading modules (Nom de plume by Micheline La France; Riquet à la houppe
-// by Charles Perrault). This replaces the earlier reconstructed 24-lesson
-// version entirely — that version had the right general tone (exam-year
-// synthesis) but missed real specific content (passé simple, forme passive
-// with COD/COI, subjonctif présent, multiple homophone sets, the two
-// literary works).
 const LESSONS = [
   { title: "Lecture : le texte narratif (Module 1 : Causes à défendre)", trimestre: 1 },
   { title: "Grammaire : l'expression du temps dans la phrase simple et complexe", trimestre: 1 },

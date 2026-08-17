@@ -16,11 +16,6 @@ const db = getFirestore(app);
 const GRADE_ID = "col-9";
 const SUBJECT_ID = "physique";
 
-// Trimestre 3, part A — lessons l21 through l25 (القلوية، المحلول المتعادل،
-// انعكاس الضوء، المرآة المسطحة، انكسار الضوء). Chapter titles and stated
-// pedagogical objectives confirmed from the real textbook's table of
-// contents. Content reconstructed to serve those specific objectives — NOT
-// verified against actual textbook pages/exercises.
 const LESSON_CONTENT = {
   l21: {
     summary:

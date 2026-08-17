@@ -6,8 +6,20 @@ import { notFound, useParams } from "next/navigation";
 import { findSubject, findLessonsForSubject } from "../../../../../lib/curriculum";
 import { trimestreGroups } from "../../../../../lib/trimestres";
 import LoadingSpinner from "../../../../components/LoadingSpinner";
-import "../../../../style.css";
-import "../Subjectstyle.css";
+import "../../../../homePage.css";
+import "./Subjectstyle.css";
+
+const SUBJECT_EMOJIS = {
+  maths: "➗",
+  physique: "🔬",
+  francais: "🇫🇷",
+  arabe: "📜",
+  anglais: "🗣️",
+};
+
+function getSubjectEmoji(subjectId, subject) {
+  return SUBJECT_EMOJIS[subjectId] || subject?.icon || "📚";
+}
 
 function Stat({ label, value }) {
   return (
@@ -61,57 +73,40 @@ export default function SubjectPage() {
 
   if (loading || !found) {
     return (
-      <div className="page-container page-container-md">
+      <div className="loading-page">
         <LoadingSpinner />
       </div>
     );
   }
 
-  const { level, grade, subject } = found;
+  const { grade, subject } = found;
   const total = lessons.length;
   const groups = trimestreGroups(lessons);
+  const subjectEmoji = getSubjectEmoji(subjectId, subject);
 
   return (
-    <div className="page-container page-container-md">
-      <nav className="breadcrumb">
-        <Link href="/" className="breadcrumb-link">Accueil</Link>
-        <span className="breadcrumb-sep">/</span>
-        <Link href={`/grade/${gradeId}`} className="breadcrumb-link">{grade.name}</Link>
-        <span className="breadcrumb-sep">/</span>
-        <span className="breadcrumb-current">{subject.name}</span>
-      </nav>
+    <div className="home-page">
+    <div className="grd-page">
+      <Link href={`/grade/${gradeId}`} className="subj-back-link">
+        ← Matières de {grade.name}
+      </Link>
 
-      <header className="lessons-header">
-        <div className="lessons-header-main">
-          <span className="subject-icon subject-icon-lg">{subject.icon}</span>
-          <div>
-            <p className="eyebrow">{level.name} · {grade.name}</p>
-            <h1 className="lessons-title">{subject.name}</h1>
-            <p className="lessons-subtitle">Choisis ton trimestre pour découvrir les leçons 🎒</p>
-          </div>
-        </div>
-        <div className="lessons-stats">
-          <Stat label="Leçons" value={String(total)} />
-          <Stat label="Exercices" value={String(total * 3)} />
-          <Stat label="Tests" value={String(total)} />
-        </div>
-      </header>
+      <h1 className="subj-header-title">
+        {subjectEmoji} {subject.name} — {grade.name}
+      </h1>
+      <p className="subj-header-sub">Choisis ton trimestre pour découvrir les leçons 🎒</p>
+
+      <div className="subj-stats-row">
+        <Stat label="Leçons" value={String(total)} />
+        <Stat label="Exercices" value={String(total * 3)} />
+        <Stat label="Tests" value={String(total)} />
+      </div>
 
       <section className="tri-grid">
         {groups.map((g) => (
-          <Link
-            key={g.id}
-            href={`/grade/${gradeId}/subject/${subjectId}/trimestre/${g.id}`}
-            className="tri-card"
-          >
+          <Link key={g.id} href={`/grade/${gradeId}/subject/${subjectId}/trimestre/${g.id}`} className="tri-card">
             <div className="tri-card-image-wrap">
-              <img
-                src={g.image}
-                alt=""
-                className="tri-card-image"
-                width={400}
-                height={260}
-              />
+              <img src={g.image} alt="" className="tri-card-image" width={400} height={260} />
               <span className={`tri-card-tag tri-card-tag-${g.tagTone}`}>{g.tag}</span>
             </div>
 
@@ -149,14 +144,12 @@ export default function SubjectPage() {
             correction que vous affichez seulement quand vous le souhaitez.
           </p>
         </div>
-        <Link
-          href={`/grade/${gradeId}/subject/${subjectId}/examen`}
-          className="custom-exam-cta"
-        >
+        <Link href={`/grade/${gradeId}/subject/${subjectId}/examen`} className="custom-exam-cta">
           <span className="custom-exam-cta-shimmer" />
           <span className="custom-exam-cta-label">Créer mon examen →</span>
         </Link>
       </section>
+    </div>
     </div>
   );
 }

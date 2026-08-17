@@ -16,10 +16,6 @@ const db = getFirestore(app);
 const GRADE_ID = "col-9";
 const SUBJECT_ID = "anglais";
 
-// Trimestre 2, part B — lessons l16 through l20 (Module 4: Services).
-// Grammar points and functions confirmed from the real textbook synopsis.
-// Content reconstructed to teach that specific grammar — NOT verified
-// against actual textbook exercises/texts.
 const LESSON_CONTENT = {
   l16: {
     summary:

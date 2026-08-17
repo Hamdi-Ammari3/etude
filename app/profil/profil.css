@@ -1,0 +1,581 @@
+.profil-page {
+  max-width: 1024px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 4rem;
+}
+
+.profil-header-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1.75rem;
+  border-radius: var(--home-radius-2xl, 28px);
+  background: var(--home-card);
+  border: 2px solid var(--home-border);
+}
+
+.profil-avatar {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--home-radius-3xl, 32px);
+  background: var(--home-sky, #5cc9f9);
+  color: var(--home-sky-foreground, #002a4e);
+  font-family: var(--home-font-display);
+  font-size: 1.7rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.profil-header-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.profil-name {
+  margin: 0;
+  font-family: var(--home-font-display);
+  font-size: 1.6rem;
+  font-weight: 800;
+}
+
+.profil-phone {
+  margin: 0.3rem 0 0;
+  color: var(--home-muted);
+  font-weight: 600;
+}
+
+.profil-balance-box {
+  padding: 0.7rem 1.25rem;
+  border-radius: var(--home-radius-md, 20px);
+  background: var(--home-mint, #73e0b4);
+  color: var(--home-mint-foreground, #003729);
+  text-align: center;
+}
+
+.profil-balance-label {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.profil-balance-value {
+  margin: 0.15rem 0 0;
+  font-family: var(--home-font-display);
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+
+.profil-logout-btn {
+  padding: 0.7rem 1.25rem;
+  border-radius: 999px;
+  border: 2px solid var(--home-border);
+  background: var(--home-card);
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: var(--home-ink);
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.profil-logout-btn:hover {
+  background: var(--home-wash-blue, #e5f0fc);
+}
+
+.profil-section {
+  margin-top: 2.5rem;
+}
+
+.profil-section-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.profil-section-title {
+  font-family: var(--home-font-display);
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.profil-total-badge {
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  background: var(--home-sun, #faca4b);
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+
+.profil-empty-box {
+  margin-top: 1rem;
+  padding: 1.75rem;
+  text-align: center;
+  border-radius: var(--home-radius-2xl, 28px);
+  background: var(--home-secondary, #f7efd1);
+}
+
+.profil-empty-text {
+  margin: 0;
+  font-weight: 800;
+  color: var(--home-secondary-foreground, #55310f);
+}
+
+.profil-empty-cta {
+  display: inline-block;
+  margin-top: 1rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.profil-empty-cta-primary {
+  background: var(--home-primary);
+  color: var(--home-primary-foreground, #f9fcff);
+}
+
+.profil-empty-cta-coral {
+  background: var(--home-coral, #ff8573);
+  color: var(--home-coral-foreground, #fffbfa);
+}
+
+.profil-course-list {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.profil-course-card {
+  padding: 1.25rem;
+  border-radius: var(--home-radius-2xl, 28px);
+  background: var(--home-card);
+  border: 2px solid var(--home-border);
+}
+
+.profil-course-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+}
+
+.profil-course-avatar {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--home-radius-md, 20px);
+  background: var(--home-sun, #faca4b);
+  font-size: 1.5rem;
+}
+
+.profil-course-head-info {
+  min-width: 0;
+}
+
+.profil-course-name {
+  margin: 0;
+  font-weight: 800;
+  font-size: 0.98rem;
+}
+
+.profil-course-grade {
+  margin: 0.2rem 0 0;
+  font-size: 0.8rem;
+  color: var(--home-muted);
+  font-weight: 600;
+}
+
+.profil-course-due {
+  margin: 0.9rem 0 0;
+  font-size: 0.85rem;
+  color: var(--home-muted);
+  font-weight: 600;
+}
+
+.profil-course-due strong {
+  color: var(--home-ink);
+  font-weight: 800;
+}
+
+.profil-course-sessions-box {
+  margin-top: 0.9rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: var(--home-radius-md, 20px);
+  background: var(--home-wash-blue, #e5f0fc);
+}
+
+.profil-course-sessions-label {
+  margin: 0 0 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--home-muted);
+}
+
+.profil-course-sessions-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.profil-course-session-chip {
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: var(--home-card);
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--home-ink);
+}
+
+.profil-course-footer {
+  margin-top: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.profil-course-price {
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  background: var(--home-mint, #73e0b4);
+  color: var(--home-mint-foreground, #003729);
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+
+.profil-course-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.profil-prolong-btn {
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  border: none;
+  background: var(--home-primary);
+  color: var(--home-primary-foreground, #f9fcff);
+  font-weight: 800;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: transform 150ms ease;
+}
+
+.profil-prolong-btn:hover:not(:disabled) {
+  transform: scale(1.05);
+}
+
+.profil-prolong-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.profil-cancel-btn {
+  flex-shrink: 0;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  border: none;
+  background: var(--home-coral, #ff8573);
+  color: var(--home-coral-foreground, #fffbfa);
+  font-weight: 800;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: opacity 150ms ease;
+}
+
+.profil-cancel-btn:hover:not(:disabled) {
+  transform: scale(1.05);
+  opacity: 0.92;
+}
+
+.profil-cancel-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.profil-cancel-msg {
+  margin-top: 1rem;
+  padding: 0.8rem 1.1rem;
+  border-radius: var(--home-radius-md, 20px);
+  background: var(--home-wash-blue, #e5f0fc);
+  color: var(--home-primary-dark, #0f6bb8);
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.profil-cancel-error {
+  margin-top: 1rem;
+  padding: 0.8rem 1.1rem;
+  border-radius: var(--home-radius-md, 20px);
+  background: var(--home-wash-coral, #fff1ec);
+  color: var(--home-coral, #ff8573);
+  font-weight: 800;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.profil-grade-grid {
+  margin-top: 1rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .profil-grade-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.profil-grade-card {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 1rem 1.1rem;
+  border-radius: var(--home-radius-2xl, 28px);
+  background: var(--home-card);
+  border: 2px solid var(--home-border);
+  text-decoration: none;
+  color: inherit;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.profil-grade-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--home-shadow-pop);
+}
+
+.profil-grade-emoji {
+  font-size: 1.8rem;
+  flex-shrink: 0;
+}
+
+.profil-grade-name {
+  margin: 0;
+  font-weight: 800;
+  font-size: 0.95rem;
+}
+
+.profil-grade-hint {
+  margin: 0.15rem 0 0;
+  font-size: 0.78rem;
+  color: var(--home-muted);
+  font-weight: 600;
+}
+
+.profil-calendar-hint {
+  margin: 0.4rem 0 0;
+  font-size: 0.8rem;
+  color: var(--home-muted);
+  font-weight: 600;
+}
+
+.profil-calendar-wrap {
+  margin-top: 1rem;
+}
+
+/* ---------- Day detail panel ---------- */
+
+.profil-day-panel {
+  margin-top: 1rem;
+  padding: 1.25rem;
+  border-radius: var(--home-radius-2xl, 28px);
+  background: var(--home-card);
+  border: 2px solid var(--home-border);
+}
+
+.profil-day-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.profil-day-panel-title {
+  margin: 0;
+  font-family: var(--home-font-display);
+  font-size: 1.05rem;
+  font-weight: 800;
+  text-transform: capitalize;
+}
+
+.profil-day-panel-close {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: 2px solid var(--home-border);
+  background: var(--home-card);
+  color: var(--home-ink);
+  font-weight: 800;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background-color 150ms ease;
+}
+
+.profil-day-panel-close:hover {
+  background: var(--home-wash-blue, #e5f0fc);
+}
+
+.profil-day-panel-empty {
+  margin: 1rem 0 0;
+  color: var(--home-muted);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.profil-day-session-list {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.profil-day-session-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.8rem 1rem;
+  border-radius: var(--home-radius-md, 20px);
+  background: var(--home-wash-blue, #e5f0fc);
+}
+
+.profil-day-session-subject {
+  margin: 0;
+  font-family: var(--home-font-display);
+  font-weight: 800;
+  font-size: 0.9rem;
+}
+
+.profil-day-session-meta {
+  margin: 0.15rem 0 0;
+  font-family: var(--home-font-display);
+  font-size: 0.78rem;
+  color: var(--home-muted);
+  font-weight: 600;
+}
+
+.profil-day-session-join-btn {
+  flex-shrink: 0;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  border: none;
+  background: var(--home-primary);
+  color: var(--home-primary-foreground, #f9fcff);
+  font-weight: 800;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: transform 150ms ease;
+}
+
+.profil-day-session-join-btn:hover:not(:disabled) {
+  transform: scale(1.05);
+}
+
+.profil-day-session-join-btn:disabled {
+  background: var(--home-border, #d4dfeb);
+  color: var(--home-muted, #606c84);
+  cursor: not-allowed;
+}
+
+.profil-day-panel-msg {
+  margin-top: 1rem;
+  padding: 0.7rem 1rem;
+  border-radius: var(--home-radius-md, 20px);
+  background: var(--home-wash-blue, #e5f0fc);
+  color: var(--home-primary-dark, #0f6bb8);
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+/* ---------- Mobile ---------- */
+
+@media (max-width: 600px) {
+  .profil-page {
+    padding: 1.75rem 1rem 3rem;
+  }
+
+  .profil-header-card {
+    flex-direction: column;
+    text-align: center;
+    padding: 1.25rem;
+    gap: 1rem;
+  }
+
+  .profil-header-info {
+    width: 100%;
+  }
+
+  .profil-name {
+    font-size: 1.35rem;
+  }
+
+  .profil-balance-box {
+    padding: 0.7rem 1.25rem;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    border-radius: var(--home-radius-md, 20px);
+    background: var(--home-mint, #73e0b4);
+    color: var(--home-mint-foreground, #003729);
+  }
+
+  .profil-balance-value {
+    margin: 0px;
+  }
+
+  .profil-logout-btn {
+    width: 100%;
+  }
+
+  .profil-course-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .profil-course-price {
+    text-align: center;
+  }
+
+  .profil-course-actions {
+    flex-direction: column;
+  }
+
+  .profil-prolong-btn,
+  .profil-cancel-btn {
+    width: 100%;
+  }
+
+  .profil-day-session-card {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .profil-day-session-join-btn {
+    width: 100%;
+  }
+}

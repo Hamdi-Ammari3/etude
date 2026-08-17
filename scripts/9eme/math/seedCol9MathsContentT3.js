@@ -16,15 +16,6 @@ const db = getFirestore(app);
 const GRADE_ID = "col-9";
 const SUBJECT_ID = "maths";
 
-// Trimestre 3 — lessons l11 through l14
-// Chapter titles confirmed from the real textbook فهرس (user-provided
-// photos). Content reconstructed from standard knowledge of this
-// well-established Tunisian 9ème geometry curriculum — NOT verified against
-// actual textbook pages (unlike l8/l9, where photos were provided). Given
-// برفوي exam stakes and that l13/l14 in particular (quadrilaterals, 3D
-// perpendicularity) were topics I had no prior visibility into before
-// seeing the فهرس, these four lessons are strong candidates for a
-// page-by-page check against the real book if photos become available.
 const LESSON_CONTENT = {
   l11: {
     summary:

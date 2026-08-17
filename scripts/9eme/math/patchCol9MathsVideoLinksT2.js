@@ -1,4 +1,4 @@
-// scripts/patchCol9MathsVideoLinksL1.js
+// scripts/patchCol9MathsVideoLinksT2.js
 require("dotenv").config();
 const { initializeApp, cert } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
@@ -17,10 +17,32 @@ const GRADE_ID = "col-9";
 const SUBJECT_ID = "maths";
 
 const VIDEO_LINKS = {
-  l1: [
+  l6: [
     {
-      title: "النسب المئوية والنسبة والتناسب — رياضيات كامبريدج الصف التاسع (مع حل تمارين كتاب النشاط)",
-      url: "https://www.youtube.com/watch?v=xY7Jed4L4WY",
+      title: "الجذاءات المعتبرة - التفكيك",
+      url: "https://www.youtube.com/watch?v=jOffK2DuJqY",
+    },
+  ],
+  l7: [
+    {
+      title: "المعادلات والمتراجحات من الدرجة الأولى بمجهول واحد",
+      url: "https://www.youtube.com/watch?v=IbKuDG0XWms",
+    },
+  ],
+  l8: [
+    {
+      title: "تحليل السلسلة الإحصائية",
+      url: "https://www.youtube.com/watch?v=wO59b8x_S0g",
+    },
+    {
+      title: "تحليل السلسلة الإحصائية",
+      url: "https://www.youtube.com/watch?v=lLb3K_LXOUA",
+    },
+  ],
+  l10: [
+    {
+      title: "التعيين في المستوى",
+      url: "https://www.youtube.com/watch?v=nIsCgWmlLrY",
     },
   ],
 };
@@ -37,7 +59,8 @@ async function patchVideoLinks() {
   }
 
   await batch.commit();
-  console.log(`✔ patched videoLinks on ${count} lessonContent docs for ${GRADE_ID}_${SUBJECT_ID} (l1 only)`);
+  console.log(`✔ patched videoLinks on ${count} lessonContent docs for ${GRADE_ID}_${SUBJECT_ID} (Trimestre 2)`);
+  console.log(`  (l7, l8, l9, l10 have a title but empty url — check the Tadris.TN تاسعة أساسي playlist)`);
 }
 
 async function main() {

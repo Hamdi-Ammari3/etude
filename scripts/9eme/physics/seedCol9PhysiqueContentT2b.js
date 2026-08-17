@@ -16,11 +16,6 @@ const db = getFirestore(app);
 const GRADE_ID = "col-9";
 const SUBJECT_ID = "physique";
 
-// Trimestre 2, part B — lessons l16 through l20 (تأثير التركيز على الناقلية،
-// الأنيونات والكتيونات، المحلول الحامضي/القلوي، قياس pH، درجة الحموضة).
-// Chapter titles and stated pedagogical objectives confirmed from the real
-// textbook's table of contents. Content reconstructed to serve those
-// specific objectives — NOT verified against actual textbook pages/exercises.
 const LESSON_CONTENT = {
   l16: {
     summary:

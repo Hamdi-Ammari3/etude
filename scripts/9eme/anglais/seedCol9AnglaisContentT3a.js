@@ -16,10 +16,6 @@ const db = getFirestore(app);
 const GRADE_ID = "col-9";
 const SUBJECT_ID = "anglais";
 
-// Trimestre 3, part A — lessons l21 through l25 (Module 5: Entertainment).
-// Grammar points and functions confirmed from the real textbook synopsis.
-// Content reconstructed to teach that specific grammar — NOT verified
-// against actual textbook exercises/texts.
 const LESSON_CONTENT = {
   l21: {
     summary:

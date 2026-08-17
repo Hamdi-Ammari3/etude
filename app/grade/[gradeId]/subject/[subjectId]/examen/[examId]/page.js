@@ -9,7 +9,11 @@ import { findSubject } from "../../../../../../../lib/curriculum";
 import { useUser } from "../../../../../../../lib/auth";
 import LoadingSpinner from "../../../../../../components/LoadingSpinner";
 import AccessRequiredModal from "../../../../../../components/AccessRequiredModal";
-import '../../../../../../style.css';
+import "../../../../../../style.css";
+import "../../../../../../homePage.css";
+import "../../Subjectstyle.css";
+import "../examenPage.css";
+import "./examDetailPage.css";
 
 export default function CustomExamPage() {
   const { gradeId, subjectId, examId } = useParams();
@@ -86,59 +90,55 @@ export default function CustomExamPage() {
 
   if (loading || !userHydrated || !found) {
     return (
-      <div className="page-container page-container-sm">
+      <div className="loading-page">
         <LoadingSpinner />
       </div>
     );
   }
 
-  const { grade, subject } = found;
+  const { subject } = found;
 
   if (!user) {
     return (
-      <div className="page-container page-container-sm">
-        <nav className="breadcrumb">
-          <Link href="/" className="breadcrumb-link">Accueil</Link>
-          <span className="breadcrumb-sep">/</span>
-          <Link href={`/grade/${gradeId}`} className="breadcrumb-link">{grade.name}</Link>
-          <span className="breadcrumb-sep">/</span>
-          <Link href={`/grade/${gradeId}/subject/${subjectId}`} className="breadcrumb-link">
-            {subject.name}
-          </Link>
-          <span className="breadcrumb-sep">/</span>
-          <span className="breadcrumb-current">Examen à la demande</span>
-        </nav>
+      <div className="home-page">
+      <div className="grd-page">
+        <Link href={`/grade/${gradeId}/subject/${subjectId}/examen`} className="subj-back-link">
+          ← Examen à la demande
+        </Link>
 
-        <div className="quiz-intro" style={{ marginTop: "1.5rem" }}>
-          <p className="quiz-intro-title">Votre examen vous attend</p>
-          <p className="quiz-intro-text">
-            Connectez-vous pour accéder à votre examen personnalisé de {subject.name}, avec sa
-            correction détaillée.
+        <div className="exam-notice-card">
+          <p className="exam-notice-title">Votre examen vous attend</p>
+          <p className="exam-notice-text">
+            Connectez-vous pour accéder à votre examen personnalisé de {subject.name}, avec sa correction
+            détaillée.
           </p>
         </div>
 
         <AccessRequiredModal variant="login" gradeId={gradeId} onClose={() => {}} />
+      </div>
       </div>
     );
   }
 
   if (forbidden) {
     return (
-      <div className="page-container page-container-sm">
-        <div className="lesson-locked">
-          <p className="lesson-locked-title">Examen introuvable</p>
-          <p className="lesson-locked-text">
-            Cet examen n'existe pas ou ne vous appartient pas.
-          </p>
-          <Link href="/" className="btn btn-primary">Retour à l'accueil</Link>
+      <div className="home-page">
+      <div className="grd-page">
+        <div className="exam-locked-card">
+          <p className="exam-locked-title">Examen introuvable</p>
+          <p className="exam-locked-text">Cet examen n'existe pas ou ne vous appartient pas.</p>
+          <Link href="/" className="btn-pill btn-pill-primary">
+            Retour à l'accueil
+          </Link>
         </div>
+      </div>
       </div>
     );
   }
 
   if (!exam || !sections) {
     return (
-      <div className="page-container page-container-sm">
+      <div className="loading-page">
         <LoadingSpinner />
       </div>
     );
@@ -153,42 +153,18 @@ export default function CustomExamPage() {
   }
 
   return (
-    <div className="page-container page-container-sm">
-      <nav className="breadcrumb">
-        <Link href="/" className="breadcrumb-link">Accueil</Link>
-        <span className="breadcrumb-sep">/</span>
-        <Link href={`/grade/${gradeId}`} className="breadcrumb-link">{grade.name}</Link>
-        <span className="breadcrumb-sep">/</span>
-        <Link href={`/grade/${gradeId}/subject/${subjectId}`} className="breadcrumb-link">
-          {subject.name}
-        </Link>
-        <span className="breadcrumb-sep">/</span>
-        <Link href={`/grade/${gradeId}/subject/${subjectId}/examen`} className="breadcrumb-link">
-          Examen à la demande
-        </Link>
-        <span className="breadcrumb-sep">/</span>
-        <span className="breadcrumb-current">{exam.title}</span>
-      </nav>
+    <div className="home-page">
+    <div className="grd-page">
+      <Link href={`/grade/${gradeId}/subject/${subjectId}/examen`} className="subj-back-link">
+        ← Examen à la demande
+      </Link>
 
-      {phase === "intro" && (
-        <ExamIntro exam={exam} sections={sections} onStart={() => setPhase("taking")} />
-      )}
+      {phase === "intro" && <ExamIntro exam={exam} sections={sections} onStart={() => setPhase("taking")} />}
 
-      {phase === "taking" && (
-        <ExamTaking
-          exam={exam}
-          sections={sections}
-          onFinish={() => setPhase("correction")}
-        />
-      )}
+      {phase === "taking" && <ExamTaking exam={exam} sections={sections} onFinish={() => setPhase("correction")} />}
 
-      {phase === "correction" && (
-        <ExamCorrection
-          exam={exam}
-          sections={sections}
-          onSave={saveResult}
-        />
-      )}
+      {phase === "correction" && <ExamCorrection exam={exam} sections={sections} onSave={saveResult} />}
+    </div>
     </div>
   );
 }
@@ -197,19 +173,20 @@ function ExamIntro({ exam, sections, onStart }) {
   const questionCount = sections.reduce((acc, s) => acc + s.questions.length, 0);
 
   return (
-    <div className="quiz-intro" style={{marginTop:'20px'}}>
-      <p className="quiz-intro-title">{exam.title}</p>
-      <p className="quiz-intro-text">
+    <div className="exam-intro-card">
+      <h1 className="exam-detail-title">{exam.title}</h1>
+      <p className="exam-intro-meta">
         {sections.length} section{sections.length > 1 ? "s" : ""} · {questionCount} question
-        {questionCount > 1 ? "s" : ""} · <span className="quiz-intro-highlight">{exam.totalPoints} points</span>
-        <br />
-        Durée : <span className="quiz-intro-highlight">{exam.durationMinutes} minutes</span>
+        {questionCount > 1 ? "s" : ""} · <strong>{exam.totalPoints} points</strong>
       </p>
-      <p className="examen-generating-text" style={{ marginTop: "1rem" }}>
-        Répondez sur votre cahier comme pour un vrai devoir. À la fin, vous pourrez consulter la
-        correction et vous auto-évaluer.
+      <p className="exam-intro-meta">
+        Durée : <strong>{exam.durationMinutes} minutes</strong>
       </p>
-      <button onClick={onStart} className="btn btn-primary btn-lg" style={{ marginTop: "1.5rem" }}>
+      <p className="exam-intro-hint">
+        Répondez sur votre cahier comme pour un vrai devoir. À la fin, vous pourrez consulter la correction
+        et vous auto-évaluer.
+      </p>
+      <button onClick={onStart} className="btn-pill btn-pill-primary btn-pill-lg" style={{ marginTop: "1.5rem" }}>
         Commencer l'examen
       </button>
     </div>
@@ -234,31 +211,31 @@ function ExamTaking({ exam, sections, onFinish }) {
 
   return (
     <div>
-      <div className="quiz-timer-bar">
-        <div className="quiz-progress-text">Examen en cours</div>
-        <div className={`quiz-timer ${remaining < 60 ? "quiz-timer-low" : ""}`}>
+      <div className="exam-timer-bar">
+        <span className="exam-timer-label">Examen en cours</span>
+        <span className={`exam-timer ${remaining < 60 ? "exam-timer-low" : ""}`}>
           {String(mins).padStart(2, "0")}:{String(secs).padStart(2, "0")}
-        </div>
+        </span>
       </div>
 
-      <div className="quiz-questions">
+      <div className="exam-sections">
         {sections.map((section, si) => (
           <SectionBlock key={si} section={section} sectionIndex={si} showCorrection={false} />
         ))}
       </div>
 
-      <div className="quiz-submit-row">
+      <div className="exam-submit-row">
         {!confirmOpen ? (
-          <button onClick={() => setConfirmOpen(true)} className="btn btn-primary">
+          <button onClick={() => setConfirmOpen(true)} className="btn-pill btn-pill-primary">
             Terminer l'examen
           </button>
         ) : (
-          <div className="action-row">
-            <span className="btn-status">Voir la correction maintenant ?</span>
-            <button onClick={onFinish} className="btn btn-primary">
+          <div className="exam-confirm-row">
+            <span className="exam-confirm-text">Voir la correction maintenant ?</span>
+            <button onClick={onFinish} className="btn-pill btn-pill-primary">
               Oui, terminer
             </button>
-            <button onClick={() => setConfirmOpen(false)} className="btn btn-outline">
+            <button onClick={() => setConfirmOpen(false)} className="btn-pill btn-pill-outline">
               Continuer l'examen
             </button>
           </div>
@@ -270,21 +247,19 @@ function ExamTaking({ exam, sections, onFinish }) {
 
 function SectionBlock({ section, sectionIndex, showCorrection, scores, onScoreChange }) {
   return (
-    <div className="quiz-question-card">
-      <p className="quiz-question-number">
+    <div className="exam-section-card">
+      <p className="exam-section-eyebrow">
         Section {sectionIndex + 1} · {section.points} points
       </p>
-      <p className="quiz-question-text">{section.title}</p>
+      <p className="exam-section-card-title">{section.title}</p>
 
       {section.supportText && (
-        <div className="exercise-feedback" style={{ marginTop: "1rem", background: "var(--color-accent)" }}>
-          <p className="exercise-feedback-text" style={{ whiteSpace: "pre-line" }}>
-            {section.supportText}
-          </p>
+        <div className="exam-support-box">
+          <p className="exam-support-text">{section.supportText}</p>
         </div>
       )}
 
-      <div style={{ marginTop: "1.25rem", display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+      <div className="exam-questions-col">
         {section.questions.map((q, qi) => (
           <QuestionBlock
             key={qi}
@@ -304,8 +279,8 @@ function QuestionBlock({ question, path, showCorrection, scores, onScoreChange }
   if (question.type === "structuree") {
     return (
       <div>
-        <p style={{ fontWeight: 500 }}>{question.question}</p>
-        <div style={{ marginTop: "0.75rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
+        <p className="exam-question-text">{question.question}</p>
+        <div style={{ marginTop: "0.9rem", display: "flex", flexDirection: "column", gap: "1.1rem" }}>
           {question.subQuestions.map((sq, sqi) => (
             <SubQuestionBlock
               key={sqi}
@@ -323,24 +298,20 @@ function QuestionBlock({ question, path, showCorrection, scores, onScoreChange }
 
   return (
     <div>
-      <div className="exercise-badge-row">
-        <span className="exercise-level-badge">{question.points} pts</span>
+      <div className="exam-question-badge-row">
+        <span className="exam-points-badge">{question.points} pts</span>
       </div>
-      <p style={{ marginTop: "0.5rem", fontWeight: 500 }}>{question.question}</p>
+      <p className="exam-question-text">{question.question}</p>
 
       {question.type === "qcm" && (
-        <ul style={{ marginTop: "0.5rem", paddingLeft: "1.25rem", color: "var(--color-muted)" }}>
+        <ul className="exam-qcm-list">
           {question.options.map((opt, oi) => (
             <li key={oi}>{opt}</li>
           ))}
         </ul>
       )}
 
-      {!showCorrection && (
-        <div className="exercise-feedback" style={{ marginTop: "0.75rem" }}>
-          <p className="exercise-feedback-text">Répondez sur votre cahier.</p>
-        </div>
-      )}
+      {!showCorrection && <p className="exam-answer-hint">Répondez sur votre cahier.</p>}
 
       {showCorrection && (
         <CorrectionAndScore
@@ -359,18 +330,14 @@ function QuestionBlock({ question, path, showCorrection, scores, onScoreChange }
 
 function SubQuestionBlock({ subQuestion, path, showCorrection, scores, onScoreChange }) {
   return (
-    <div style={{ paddingLeft: "1rem", borderLeft: "2px solid var(--color-border)" }}>
-      <div className="exercise-badge-row">
-        <span className="option-letter">{subQuestion.label}</span>
-        <span className="exercise-level-badge">{subQuestion.points} pts</span>
+    <div className="exam-subquestion">
+      <div className="exam-subquestion-header">
+        <span className="exam-subquestion-label">{subQuestion.label}</span>
+        <span className="exam-points-badge">{subQuestion.points} pts</span>
       </div>
-      <p style={{ marginTop: "0.25rem" }}>{subQuestion.question}</p>
+      <p className="exam-subquestion-text">{subQuestion.question}</p>
 
-      {!showCorrection && (
-        <div className="exercise-feedback" style={{ marginTop: "0.5rem" }}>
-          <p className="exercise-feedback-text">Répondez sur votre cahier.</p>
-        </div>
-      )}
+      {!showCorrection && <p className="exam-answer-hint">Répondez sur votre cahier.</p>}
 
       {showCorrection && (
         <CorrectionAndScore
@@ -391,21 +358,24 @@ function CorrectionAndScore({ maxPoints, bareme, correctAnswer, explanation, pat
   const value = scores[path] ?? "";
 
   return (
-    <div className="exercise-feedback exercise-feedback-correct" style={{ marginTop: "0.75rem" }}>
+    <div className="exam-correction-box">
       {correctAnswer && (
-        <p className="exercise-feedback-title">Bonne réponse : {correctAnswer}</p>
+        <>
+          <p className="exam-correction-title">Bonne réponse</p>
+          <p className="exam-correction-text">{correctAnswer}</p>
+        </>
       )}
       {bareme && (
         <>
-          <p className="exercise-feedback-title">Barème</p>
-          <p className="exercise-feedback-text">{bareme}</p>
+          <p className="exam-correction-title">Barème</p>
+          <p className="exam-correction-text">{bareme}</p>
         </>
       )}
-      <p className="exercise-feedback-title" style={{ marginTop: "0.5rem" }}>Explication</p>
-      <p className="exercise-feedback-text">{explanation}</p>
+      <p className="exam-correction-title">Explication</p>
+      <p className="exam-correction-text">{explanation}</p>
 
-      <div style={{ marginTop: "0.75rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-        <label className="field-label" style={{ margin: 0 }}>Ma note :</label>
+      <div className="exam-score-row">
+        <label className="exam-score-label">Ma note :</label>
         <input
           type="number"
           min={0}
@@ -417,10 +387,9 @@ function CorrectionAndScore({ maxPoints, bareme, correctAnswer, explanation, pat
             const num = raw === "" ? "" : Math.max(0, Math.min(maxPoints, Number(raw)));
             onScoreChange(path, num);
           }}
-          className="text-input"
-          style={{ width: "5rem" }}
+          className="exam-score-input"
         />
-        <span style={{ fontSize: "0.875rem", color: "var(--color-muted)" }}>/ {maxPoints}</span>
+        <span className="exam-score-max">/ {maxPoints}</span>
       </div>
     </div>
   );
@@ -449,22 +418,22 @@ function ExamCorrection({ exam, sections, onSave }) {
 
   return (
     <div>
-      <div className="lesson-page-header" style={{ marginTop: 0 }}>
-        <h1 className="lesson-page-title">{exam.title}</h1>
-        <p className="lessons-subtitle">Correction et auto-évaluation</p>
+      <div className="exam-correction-header">
+        <h1 className="exam-detail-title">{exam.title}</h1>
+        <p className="exam-correction-subtitle">Correction et auto-évaluation</p>
       </div>
 
-      <div className="quiz-intro" style={{ marginTop: "1.5rem" }}>
-        <p className="quiz-score">
+      <div className="exam-score-display">
+        <p className="exam-score-big">
           {totalEarned}
-          <span className="quiz-score-total">/{exam.totalPoints}</span>
+          <span className="exam-score-big-total">/{exam.totalPoints}</span>
         </p>
-        <p className="quiz-intro-text">
+        <p className="exam-score-encouragement">
           {pct >= 0.6 ? "Excellent travail !" : "Continuez à réviser cette matière."}
         </p>
       </div>
 
-      <div className="quiz-questions" style={{ marginTop: "1.5rem" }}>
+      <div className="exam-sections" style={{ marginTop: "1.5rem" }}>
         {sections.map((section, si) => (
           <SectionBlock
             key={si}
@@ -477,11 +446,11 @@ function ExamCorrection({ exam, sections, onSave }) {
         ))}
       </div>
 
-      <div className="quiz-submit-row">
+      <div className="exam-submit-row">
         {saved ? (
-          <span className="btn-status">✓ Score enregistré</span>
+          <span className="exam-saved-chip">✓ Score enregistré</span>
         ) : (
-          <button onClick={handleSave} className="btn btn-primary">
+          <button onClick={handleSave} className="btn-pill btn-pill-primary">
             Enregistrer mon score
           </button>
         )}

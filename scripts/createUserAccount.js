@@ -1,4 +1,4 @@
-// scripts/createUserAccount.js
+// node scripts/createUserAccount.js
 require("dotenv").config();
 const { initializeApp, cert } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
@@ -14,9 +14,9 @@ const app = initializeApp({
 const db = getFirestore(app);
 
 // EDIT THESE FOR EACH NEW ACCOUNT ------------------------------------------
-const NAME = "Sami Ben Ali";
-const RAW_PHONE = "22942420";
-const GRADES = ["prim-4"]; // grade ids the user purchased
+const NAME = "Mayar";
+const RAW_PHONE = "28410184";
+const GRADES = ["col-7"];
 // ---------------------------------------------------------------------------
 
 function generatePin() {
@@ -39,8 +39,10 @@ async function createAccount() {
 
   await db.collection("users").doc(uid).set({
     name: NAME,
-    phone: canonicalPhone, // plain 8-digit number, no "tn", no "216", e.g. "51510183"
-    password: pin, // stored in plain text intentionally — retrievable for support lookups
+    phone: canonicalPhone, 
+    password: pin,
+    role: "student",
+    balance:0,
     purchasedGrades: GRADES,
     progress: {},
     createdAt: new Date().toISOString(),

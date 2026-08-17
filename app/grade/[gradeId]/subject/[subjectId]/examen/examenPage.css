@@ -1,0 +1,337 @@
+/* =========================================================
+   CUSTOM EXAM BUILDER PAGE
+   ========================================================= */
+
+/* ---------- Pill buttons (duplicated from lessonPage.css's system —
+   can't import across sibling dynamic-segment folders, so each page
+   keeps its own copy) ---------- */
+
+.btn-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.75rem 1.6rem;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 0.9rem;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+.btn-pill:hover {
+  transform: translateY(-2px);
+}
+
+.btn-pill:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-pill-primary {
+  background: var(--home-primary);
+  color: #fff;
+}
+
+.btn-pill-primary:hover:not(:disabled) {
+  box-shadow: 0 8px 20px rgba(24, 140, 235, 0.28);
+}
+
+.btn-pill-outline {
+  background: var(--home-card);
+  border: 2px solid var(--home-border);
+  color: var(--home-ink);
+}
+
+.btn-pill-outline:hover {
+  border-color: var(--home-primary);
+  color: var(--home-primary);
+}
+
+.btn-pill-lg {
+  padding: 0.95rem 2.2rem;
+  font-size: 1rem;
+}
+
+.exam-header {
+  margin: 0.6rem 0 1.75rem;
+}
+
+.exam-header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--home-wash-coral, #fff1ec);
+  color: var(--home-coral);
+  font-weight: 800;
+  font-size: 0.8rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+}
+
+.exam-header-title {
+  margin: 0.75rem 0 0.5rem;
+  font-family: var(--home-font-display);
+  font-size: clamp(1.8rem, 3.8vw, 2.4rem);
+  font-weight: 800;
+}
+
+.exam-header-sub {
+  color: var(--home-muted);
+  font-weight: 600;
+  line-height: 1.6;
+  max-width: 640px;
+  margin: 0;
+}
+
+/* ---------- Step indicator ---------- */
+
+.exam-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  list-style: none;
+  margin: 1.75rem 0;
+  padding: 0;
+}
+
+.exam-step-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.5rem 1rem 0.5rem 0.5rem;
+  border-radius: 999px;
+  background: var(--home-bg);
+  border: 2px solid var(--home-border);
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--home-muted);
+}
+
+.exam-step-badge-active {
+  background: var(--home-wash-blue);
+  border-color: var(--home-primary);
+  color: var(--home-primary-dark);
+}
+
+.exam-step-number {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--home-border);
+  color: #fff;
+  font-family: var(--home-font-display);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.exam-step-badge-active .exam-step-number {
+  background: var(--home-primary);
+}
+
+/* ---------- Panels ---------- */
+
+.exam-panel {
+  padding: 1.75rem;
+  border-radius: var(--home-radius-2xl, 28px);
+  background: var(--home-card);
+  border: 2px solid var(--home-border);
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 560px) {
+  .exam-panel {
+    padding: 1.25rem;
+  }
+}
+
+.exam-panel-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.exam-section-title {
+  font-family: var(--home-font-display);
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin: 0 0 0.3rem;
+}
+
+.exam-panel-sub {
+  color: var(--home-muted);
+  font-weight: 600;
+  font-size: 0.88rem;
+  margin: 0;
+}
+
+/* ---------- Lesson checklist ---------- */
+
+.exam-lesson-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.exam-lesson-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  width: 100%;
+  text-align: left;
+  padding: 0.9rem 1.1rem;
+  border-radius: var(--home-radius-md, 20px);
+  background: var(--home-bg);
+  border: 2px solid var(--home-border);
+  cursor: pointer;
+  transition: border-color 150ms ease, background 150ms ease;
+}
+
+.exam-lesson-row:hover {
+  border-color: var(--home-primary);
+}
+
+.exam-lesson-row-checked {
+  border-color: var(--home-primary);
+  background: var(--home-wash-blue);
+}
+
+.exam-lesson-check {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  margin-top: 0.1rem;
+  border-radius: 7px;
+  border: 2px solid var(--home-border);
+  background: #fff;
+  color: transparent;
+  font-weight: 800;
+  font-size: 0.75rem;
+  transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.exam-lesson-check-on {
+  background: var(--home-primary);
+  border-color: var(--home-primary);
+  color: #fff;
+}
+
+.exam-lesson-info {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.exam-lesson-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.exam-lesson-number {
+  flex-shrink: 0;
+  font-family: var(--home-font-display);
+  font-weight: 800;
+  font-size: 0.75rem;
+  color: var(--home-primary);
+}
+
+.exam-lesson-summary {
+  font-size: 0.82rem;
+  color: var(--home-muted);
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* ---------- Settings (difficulty / duration pills) ---------- */
+
+.exam-settings-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .exam-settings-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.exam-settings-label {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--home-ink);
+  margin: 0 0 0.7rem;
+}
+
+.exam-pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.exam-pill {
+  padding: 0.55rem 1.1rem;
+  border-radius: 999px;
+  border: 2px solid var(--home-border);
+  background: var(--home-card);
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--home-ink);
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.exam-pill:hover {
+  border-color: var(--home-primary);
+}
+
+.exam-pill-active {
+  background: var(--home-primary);
+  border-color: var(--home-primary);
+  color: #fff;
+}
+
+/* ---------- Generate CTA ---------- */
+
+.exam-generate-card {
+  text-align: center;
+  padding: 2.25rem 1.5rem;
+  border-radius: var(--home-radius-2xl, 28px);
+  background: var(--home-wash-blue, #e5f0fc);
+  border: 2px solid var(--home-border);
+}
+
+.exam-generate-hint {
+  font-weight: 700;
+  color: var(--home-primary-dark);
+  margin: 0 0 1.25rem;
+}
+
+.exam-error {
+  color: var(--home-coral);
+  font-weight: 700;
+  font-size: 0.88rem;
+  margin: -0.5rem 0 1.25rem;
+}
+
+.exam-generating-text {
+  margin: 1rem 0 0;
+  color: var(--home-muted);
+  font-weight: 600;
+  font-size: 0.85rem;
+}

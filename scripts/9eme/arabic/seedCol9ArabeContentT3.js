@@ -16,16 +16,6 @@ const db = getFirestore(app);
 const GRADE_ID = "col-9";
 const SUBJECT_ID = "arabe";
 
-// Trimestre 3 — lessons l17 through l24
-// IMPORTANT CONFIDENCE NOTE: l17-l20 (العروض / Arabic prosody) have NO
-// confirmed anchor from web search — this was my own guess that this grade
-// might cover poetry meter/rhyme, based on common patterns in Tunisian
-// collège curricula, but it is NOT verified for col-9 specifically. This is
-// the weakest-sourced content in the entire platform. l21-l24 (review
-// lessons) are reconstructed synthesis content, lower-stakes since they
-// reference already-covered material. Given برفوي exam stakes, l17-l20
-// should be treated with real skepticism until verified against an actual
-// source or textbook — they may not reflect the real program at all.
 const LESSON_CONTENT = {
   l17: {
     summary:

@@ -11,6 +11,8 @@ import { useUser } from "../../../../../../../lib/auth";
 import { canAccessLesson } from "../../../../../../../lib/access";
 import LoadingSpinner from "../../../../../../components/LoadingSpinner";
 import "../../../../../../style.css";
+import "../../Subjectstyle.css";
+import "./lessonPage.css";
 
 const TABS = [
   { id: "resume", label: "Résumé" },
@@ -66,8 +68,8 @@ export default function LessonPage() {
 
   if (loading || !found) {
     return (
-      <div className="page-container page-container-sm">
-        <LoadingSpinner/>
+      <div className="loading-page">
+        <LoadingSpinner />
       </div>
     );
   }
@@ -102,48 +104,38 @@ export default function LessonPage() {
   }
 
   return (
-    <div className="page-container page-container-sm">
-      <nav className="breadcrumb">
-        <Link href="/" className="breadcrumb-link">Accueil</Link>
-        <span className="breadcrumb-sep">/</span>
-        <Link href={`/grade/${gradeId}`} className="breadcrumb-link">{grade.name}</Link>
-        <span className="breadcrumb-sep">/</span>
-        <Link href={`/grade/${gradeId}/subject/${subjectId}`} className="breadcrumb-link">
-          {subject.name}
+    <div className="home-page">
+      <div className="grd-page">
+      {lesson.trimestre && (
+        <Link
+          href={`/grade/${gradeId}/subject/${subjectId}/trimestre/${lesson.trimestre}`}
+          className="subj-back-link"
+        >
+          ← {TRIMESTRE_META[lesson.trimestre]?.label || `Trimestre ${lesson.trimestre}`}
         </Link>
-        {lesson.trimestre && (
-          <>
-            <span className="breadcrumb-sep">/</span>
-            <Link
-              href={`/grade/${gradeId}/subject/${subjectId}/trimestre/${lesson.trimestre}`}
-              className="breadcrumb-link"
-            >
-              {TRIMESTRE_META[lesson.trimestre]?.label || `Trimestre ${lesson.trimestre}`}
-            </Link>
-          </>
-        )}
-      </nav>
+      )}
 
-      <header className="lesson-page-header">
-        <h1 className="lesson-page-title">{lesson.title}</h1>
-        <div className="lesson-page-progress">
+      <header className="lesson-header">
+        <h1 className="lesson-title">{lesson.title}</h1>
+        <div className="lesson-progress-wrap">
           <ProgressBar value={pct} />
         </div>
       </header>
 
       {!accessible ? (
-        <div className="lesson-locked">
+        <div className="lesson-locked-card">
+          <p className="lesson-locked-emoji">🔒</p>
           <p className="lesson-locked-title">Cette leçon est verrouillée</p>
           <p className="lesson-locked-text">
             Débloquez la classe {grade.name} pour accéder à cette leçon, ses exercices et son test.
           </p>
-          <Link href={`/grade/${gradeId}/unlock`} className="btn btn-primary">
+          <Link href={`/grade/${gradeId}/unlock`} className="btn-pill btn-pill-primary">
             Débloquer la classe
           </Link>
         </div>
       ) : (
         <>
-          <div className="tab-bar">
+          <div className="lesson-tabs">
             {TABS.map((t) => {
               const active = tab === t.id;
               const done =
@@ -156,18 +148,18 @@ export default function LessonPage() {
                 <button
                   key={t.id}
                   onClick={() => setTab(t.id)}
-                  className={`tab-button ${active ? "tab-button-active" : ""}`}
+                  className={`lesson-tab ${active ? "lesson-tab-active" : ""}`}
                 >
-                  <span className="tab-button-content">
+                  <span className="lesson-tab-content">
                     {t.label}
-                    {done && <span className="tab-done-dot" />}
+                    {done && <span className="lesson-tab-dot" />}
                   </span>
                 </button>
               );
             })}
           </div>
 
-          <div className="tab-panel">
+          <div className="lesson-panel">
             {tab === "resume" && (
               <SummarySection
                 summary={lesson.summary}
@@ -204,46 +196,42 @@ export default function LessonPage() {
         </>
       )}
     </div>
+    </div>
   );
 }
 
 function SummarySection({ summary, keyPoints, videoLinks, done, onDone, onNext }) {
   return (
-    <article className="prose-like">
-      <h2 className="prose-heading">Résumé de la leçon</h2>
-      <p className="prose-text">{summary}</p>
-      <h3 className="prose-subheading">Points clés</h3>
-      <ul className="key-points-list">
+    <article>
+      <h2 className="lesson-section-heading">📖 Résumé de la leçon</h2>
+      <p className="lesson-summary-text">{summary}</p>
+
+      <h3 className="lesson-subheading">✨ Points clés</h3>
+      <ul className="lesson-keypoints">
         {keyPoints.map((k, i) => (
-          <li key={i} className="key-point-item">
-            <span className="key-point-dot" />
+          <li key={i} className="lesson-keypoint-item">
+            <span className="lesson-keypoint-dot" />
             <span>{k}</span>
           </li>
         ))}
       </ul>
 
       {videoLinks?.length > 0 && (
-        <div className="video-links-section">
-          <h3 className="prose-subheading">Vidéos complémentaires</h3>
-          <div className="video-links-list">
+        <>
+          <h3 className="lesson-subheading">🎬 Vidéos complémentaires</h3>
+          <div className="lesson-video-list">
             {videoLinks.map((v, i) => (
-              <a
-                key={i}
-                href={v.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="video-link-card"
-              >
-                <span className="video-link-icon">
+              <a key={i} href={v.url} target="_blank" rel="noopener noreferrer" className="lesson-video-row">
+                <span className="lesson-video-icon">
                   <svg viewBox="0 0 24 24" fill="currentColor">
                     <path d="M8 5v14l11-7z" />
                   </svg>
                 </span>
-                <div className="video-link-info">
-                  <p className="video-link-title">{v.title}</p>
-                  {v.channel && <p className="video-link-channel">{v.channel}</p>}
+                <div className="lesson-video-info">
+                  <p className="lesson-video-title">{v.title}</p>
+                  {v.channel && <p className="lesson-video-channel">{v.channel}</p>}
                 </div>
-                <span className="video-link-external">
+                <span className="lesson-video-external">
                   <svg viewBox="0 0 20 20" fill="currentColor">
                     <path d="M11 3a1 1 0 100 2h2.586L8.293 10.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z" />
                     <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z" />
@@ -252,24 +240,24 @@ function SummarySection({ summary, keyPoints, videoLinks, done, onDone, onNext }
               </a>
             ))}
           </div>
-        </div>
+        </>
       )}
 
-      <div className="action-row">
+      <div className="lesson-action-row">
         {!done ? (
           <button
             onClick={() => {
               onDone();
               onNext();
             }}
-            className="btn btn-primary"
+            className="btn-pill btn-pill-primary"
           >
             J'ai compris — Passer aux exercices
           </button>
         ) : (
           <>
-            <span className="btn-status">✓ Résumé lu</span>
-            <button onClick={onNext} className="btn btn-primary">
+            <span className="lesson-status-chip">✓ Résumé lu</span>
+            <button onClick={onNext} className="btn-pill btn-pill-primary">
               Passer aux exercices
             </button>
           </>
@@ -294,28 +282,21 @@ function ExerciseSection({ exercise, done, onComplete, onNext }) {
 
   return (
     <div>
-      <div className="exercise-badge-row">
-        <span className="exercise-level-badge">Niveau · {label}</span>
-      </div>
-      <h2 className="exercise-question">{exercise.question}</h2>
+      <span className="lesson-level-badge">Niveau · {label}</span>
+      <h2 className="lesson-exercise-question">{exercise.question}</h2>
 
-      <div className="exercise-options">
+      <div className="lesson-options">
         {exercise.options.map((opt, i) => {
           const isSelected = selected === i;
           const isCorrect = submitted && i === exercise.answer;
           const isWrong = submitted && isSelected && i !== exercise.answer;
-          let cls = "exercise-option";
-          if (isCorrect) cls += " exercise-option-correct";
-          else if (isWrong) cls += " exercise-option-wrong";
-          else if (isSelected) cls += " exercise-option-selected";
+          let cls = "lesson-option";
+          if (isCorrect) cls += " lesson-option-correct";
+          else if (isWrong) cls += " lesson-option-wrong";
+          else if (isSelected) cls += " lesson-option-selected";
           return (
-            <button
-              key={i}
-              onClick={() => !submitted && setSelected(i)}
-              disabled={submitted}
-              className={cls}
-            >
-              <span className="option-letter">{String.fromCharCode(65 + i)}.</span>
+            <button key={i} onClick={() => !submitted && setSelected(i)} disabled={submitted} className={cls}>
+              <span className="lesson-option-letter">{String.fromCharCode(65 + i)}</span>
               {opt}
             </button>
           );
@@ -323,25 +304,19 @@ function ExerciseSection({ exercise, done, onComplete, onNext }) {
       </div>
 
       {submitted && (
-        <div className={`exercise-feedback ${correct ? "exercise-feedback-correct" : "exercise-feedback-wrong"}`}>
-          <p className="exercise-feedback-title">
-            {correct ? "Bonne réponse !" : "Ce n'est pas la bonne réponse."}
-          </p>
-          <p className="exercise-feedback-text">{exercise.explanation}</p>
+        <div className={`lesson-feedback ${correct ? "lesson-feedback-correct" : "lesson-feedback-wrong"}`}>
+          <p className="lesson-feedback-title">{correct ? "Bonne réponse !" : "Ce n'est pas la bonne réponse."}</p>
+          <p className="lesson-feedback-text">{exercise.explanation}</p>
         </div>
       )}
 
-      <div className="action-row">
+      <div className="lesson-action-row">
         {!submitted ? (
-          <button
-            onClick={() => setSubmitted(true)}
-            disabled={selected === null}
-            className="btn btn-primary"
-          >
+          <button onClick={() => setSubmitted(true)} disabled={selected === null} className="btn-pill btn-pill-primary">
             Valider ma réponse
           </button>
         ) : correct ? (
-          <button onClick={onNext} className="btn btn-primary">
+          <button onClick={onNext} className="btn-pill btn-pill-primary">
             Continuer →
           </button>
         ) : (
@@ -350,7 +325,7 @@ function ExerciseSection({ exercise, done, onComplete, onNext }) {
               setSelected(null);
               setSubmitted(false);
             }}
-            className="btn btn-outline"
+            className="btn-pill btn-pill-outline"
           >
             Réessayer
           </button>
@@ -386,14 +361,14 @@ function QuizSection({ questions, onFinish }) {
 
   if (!started) {
     return (
-      <div className="quiz-intro">
-        <p className="quiz-intro-title">Petit test final</p>
-        <p className="quiz-intro-text">
+      <div className="lesson-quiz-intro">
+        <p className="lesson-quiz-intro-title">Petit test final</p>
+        <p className="lesson-quiz-intro-text">
           {questions.length} questions à choix multiple. Vous disposez de{" "}
-          <span className="quiz-intro-highlight">10 minutes</span>. Le test se termine
-          automatiquement à la fin du temps.
+          <span className="lesson-quiz-highlight">10 minutes</span>. Le test se termine automatiquement à la fin du
+          temps.
         </p>
-        <button onClick={() => setStarted(true)} className="btn btn-primary btn-lg">
+        <button onClick={() => setStarted(true)} className="btn-pill btn-pill-primary btn-pill-lg">
           Commencer le test
         </button>
       </div>
@@ -403,13 +378,13 @@ function QuizSection({ questions, onFinish }) {
   if (finished) {
     const pass = score / questions.length >= 0.6;
     return (
-      <div className="quiz-intro">
-        <p className="quiz-intro-title">Test terminé</p>
-        <p className="quiz-score">
+      <div className="lesson-quiz-intro">
+        <p className="lesson-quiz-intro-title">Test terminé</p>
+        <p className="lesson-quiz-score">
           {score}
-          <span className="quiz-score-total">/{questions.length}</span>
+          <span className="lesson-quiz-score-total">/{questions.length}</span>
         </p>
-        <p className="quiz-intro-text">
+        <p className="lesson-quiz-intro-text">
           {pass ? "Excellent travail ! Leçon validée." : "Continuez à réviser et retentez le test."}
         </p>
         <button
@@ -419,7 +394,7 @@ function QuizSection({ questions, onFinish }) {
             setFinished(false);
             setStarted(false);
           }}
-          className="btn btn-outline"
+          className="btn-pill btn-pill-outline"
         >
           Recommencer
         </button>
@@ -433,19 +408,21 @@ function QuizSection({ questions, onFinish }) {
 
   return (
     <div>
-      <div className="quiz-timer-bar">
-        <div className="quiz-progress-text">{answered} / {questions.length} répondues</div>
-        <div className={`quiz-timer ${remaining < 60 ? "quiz-timer-low" : ""}`}>
+      <div className="lesson-quiz-timer-bar">
+        <div className="lesson-quiz-progress-text">
+          {answered} / {questions.length} répondues
+        </div>
+        <div className={`lesson-quiz-timer ${remaining < 60 ? "lesson-quiz-timer-low" : ""}`}>
           {String(mins).padStart(2, "0")}:{String(secs).padStart(2, "0")}
         </div>
       </div>
 
-      <div className="quiz-questions">
+      <div className="lesson-quiz-questions">
         {questions.map((q, qi) => (
-          <div key={qi} className="quiz-question-card">
-            <p className="quiz-question-number">Question {qi + 1}</p>
-            <p className="quiz-question-text">{q.question}</p>
-            <div className="quiz-options-grid">
+          <div key={qi} className="lesson-quiz-question-card">
+            <p className="lesson-quiz-question-number">Question {qi + 1}</p>
+            <p className="lesson-quiz-question-text">{q.question}</p>
+            <div className="lesson-quiz-options-grid">
               {q.options.map((opt, oi) => {
                 const sel = answers[qi] === oi;
                 return (
@@ -458,9 +435,9 @@ function QuizSection({ questions, onFinish }) {
                         return n;
                       })
                     }
-                    className={`quiz-option ${sel ? "quiz-option-selected" : ""}`}
+                    className={`lesson-quiz-option ${sel ? "lesson-quiz-option-selected" : ""}`}
                   >
-                    <span className="option-letter">{String.fromCharCode(65 + oi)}.</span>
+                    <span className="lesson-option-letter">{String.fromCharCode(65 + oi)}</span>
                     {opt}
                   </button>
                 );
@@ -470,13 +447,13 @@ function QuizSection({ questions, onFinish }) {
         ))}
       </div>
 
-      <div className="quiz-submit-row">
+      <div className="lesson-quiz-submit-row">
         <button
           onClick={() => {
             setFinished(true);
             onFinish(score, questions.length);
           }}
-          className="btn btn-primary"
+          className="btn-pill btn-pill-primary"
         >
           Terminer le test
         </button>
