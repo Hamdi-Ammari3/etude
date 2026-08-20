@@ -7,6 +7,7 @@ import { DB, auth } from "../../lib/firebaseConfig";
 import { completeLogin, logoutUser, useUser } from "../../lib/auth";
 import { ALL_GRADES, GRADE_GROUPS, GRADES_WITH_SPECIALIZATION, SPECIALIZATIONS } from "../../lib/liveGrades";
 import { getSubjectsForGrade } from "../../lib/liveSubjects";
+import { buildTunisiaDateTime, expandSlotsForMonth, getNextOccurrence, getTunisiaFields } from "../../lib/recurrence";
 import MonthCalendar from "../components/MonthCalendar";
 import LoadingSpinner from "../components/LoadingSpinner";
 import "../homePage.css";
@@ -30,55 +31,45 @@ function toJsDate(value) {
   return new Date(value);
 }
 
-// Distinguishes three states for a scheduled session, not just a single
-// "has the time arrived" boolean — a session from a previous day that
-// never got started is a fundamentally different case from "later
-// today" and must never show an actionable start button.
+// Compares purely via extracted Tunisia-local calendar fields — never
+// reconstructs a `new Date(y, m, d)` for comparison, since even for an
+// already-correct sessionTime, reading .getFullYear()/.getMonth()/
+// .getDate() back off it is still machine-timezone-dependent (that
+// read happens in whatever timezone the browser is configured to, not
+// necessarily Tunisia's — this was the root cause of the same course
+// showing a different day/status on different computers).
 function getSessionTimingState(sessionTime) {
   const now = new Date();
-  const sessionDay = new Date(sessionTime.getFullYear(), sessionTime.getMonth(), sessionTime.getDate());
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const sessionFields = getTunisiaFields(sessionTime);
+  const nowFields = getTunisiaFields(now);
 
-  if (sessionDay.getTime() < today.getTime()) return "past";
-  if (sessionDay.getTime() > today.getTime()) return "upcoming";
+  const sessionDayValue = sessionFields.year * 10000 + sessionFields.month * 100 + sessionFields.date;
+  const todayValue = nowFields.year * 10000 + nowFields.month * 100 + nowFields.date;
+
+  if (sessionDayValue < todayValue) return "past";
+  if (sessionDayValue > todayValue) return "upcoming";
   return now >= sessionTime ? "ready" : "upcoming";
 }
 
-function expandSlotsForMonth(weeklySlots, year, month, notBefore) {
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const out = [];
-  for (let day = 1; day <= daysInMonth; day++) {
-    const date = new Date(year, month, day);
-    const idx = (date.getDay() + 6) % 7; // Monday = 0
-    for (const slot of weeklySlots) {
-      if (slot.day !== idx || !slot.time) continue;
-      const [h, m] = slot.time.split(":").map(Number);
-      const occurrence = new Date(year, month, day, h, m || 0);
-      if (notBefore && occurrence < notBefore) continue;
-      out.push({
-        dateKey: `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
-        dateTime: occurrence,
-      });
-    }
-  }
-  return out;
+// Sort key for "Mes séances": each course's EARLIEST weekly slot
+// (day-of-week first, then time), so a Monday 18:00 course sorts before
+// a Monday 20:30 course, which sorts before a Tuesday 18:00 course — a
+// course with multiple slots in a week is ordered by whichever slot
+// comes first. Courses with no slots at all sort last (shouldn't happen
+// in practice, but avoids crashing on malformed data).
+function getEarliestSlotKey(weeklySlots) {
+  if (!weeklySlots || weeklySlots.length === 0) return { day: 7, time: "99:99" };
+  return [...weeklySlots].sort((a, b) => {
+    if (a.day !== b.day) return a.day - b.day;
+    return (a.time || "").localeCompare(b.time || "");
+  })[0];
 }
 
-function getNextOccurrence(weeklySlots) {
-  if (!weeklySlots || weeklySlots.length === 0) return null;
-  const now = new Date();
-  for (let offset = 0; offset < 8; offset++) {
-    const d = new Date(now);
-    d.setDate(d.getDate() + offset);
-    const idx = (d.getDay() + 6) % 7;
-    for (const slot of weeklySlots) {
-      if (slot.day !== idx || !slot.time) continue;
-      const [h, m] = slot.time.split(":").map(Number);
-      const candidate = new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m || 0);
-      if (candidate > now) return candidate;
-    }
-  }
-  return null;
+function compareCoursesBySlot(a, b) {
+  const aKey = getEarliestSlotKey(a.weeklySlots);
+  const bKey = getEarliestSlotKey(b.weeklySlots);
+  if (aKey.day !== bKey.day) return aKey.day - bKey.day;
+  return (aKey.time || "").localeCompare(bKey.time || "");
 }
 
 export default function EnseignantDashboard() {
@@ -133,7 +124,7 @@ export default function EnseignantDashboard() {
   const [subjectId, setSubjectId] = useState("");
   const [specializationId, setSpecializationId] = useState("");
   const [perWeek, setPerWeekRaw] = useState(1);
-  const [maxStudents, setMaxStudents] = useState(8);
+  const [maxStudents, setMaxStudents] = useState(1);
   const [monthlyPrice, setMonthlyPrice] = useState(60);
   const [slots, setSlots] = useState([{ day: 0, time: "" }]);
 
@@ -276,9 +267,7 @@ export default function EnseignantDashboard() {
 
     const grade = ALL_GRADES.find((g) => g.id === gradeId);
     const subject = subjectsForGrade.find((s) => s.id === subjectId);
-    const specialization = needsSpecialization
-      ? SPECIALIZATIONS.find((s) => s.id === specializationId)
-      : null;
+    const specialization = needsSpecialization ? SPECIALIZATIONS.find((s) => s.id === specializationId) : null;
     const roundedPricePerSession = Math.round(pricePerSession * 100) / 100;
 
     setSubmitting(true);
@@ -287,6 +276,7 @@ export default function EnseignantDashboard() {
         teacherId: user.uid,
         teacherName: user.name,
         teacherBio: user.bio || "",
+        teacherSex: user.sex || null,
         gradeId,
         gradeName: grade?.name || "",
         specializationId: specialization?.id || null,
@@ -395,8 +385,11 @@ export default function EnseignantDashboard() {
   const bookingEvents = teacherSessions
     .filter((s) => s.status !== "cancelled" && s.date)
     .filter((s) => {
-      const d = new Date(s.date);
-      return d.getFullYear() === calYear && d.getMonth() === calMonth;
+      // Tunisia-local fields, not machine-local — a session near a
+      // month boundary must land in the same calendar month regardless
+      // of which computer is viewing it.
+      const { year, month } = getTunisiaFields(new Date(s.date));
+      return year === calYear && month === calMonth;
     })
     .map((s) => ({
       date: s.date.slice(0, 10),
@@ -410,32 +403,51 @@ export default function EnseignantDashboard() {
 
   const totalRevenue = finishedSessions.reduce((sum, s) => sum + (s.price || 0), 0);
   const unpaidAmount = unpaidFinishedSessions.reduce((sum, s) => sum + (s.price || 0), 0);
-  //const finishedCount = finishedSessions.length;
 
+  // Counts distinct class occurrences, not student-session docs — a
+  // class with 5 students subscribed produces 5 separate session docs
+  // sharing the same (courseId, date), which should count as ONE
+  // finished class, not five.
   const finishedOccurrenceKeys = new Set(finishedSessions.map((s) => `${s.courseId}_${s.date}`));
   const finishedCount = finishedOccurrenceKeys.size;
 
+  // One card per course whose weekly pattern lands on the selected day,
+  // PLUS any real session for that day not already covered by an active
+  // course's pattern. That second part matters specifically for a
+  // course that was cancelled AFTER it already had real (including
+  // finished) sessions — a course can only be cancelled once
+  // enrolledCount is 0, but that doesn't erase the history of sessions
+  // that already happened before everyone left. Without this fallback,
+  // those sessions would still show a dot on the calendar (the dot
+  // logic reads teacherSessions directly, unaffected by course status)
+  // but vanish from the day-panel entirely once their course was
+  // cancelled, which is the exact bug this fixes.
   const selectedDayCourseCards = (() => {
     if (!selectedDateKey) return [];
 
     const [y, m, d] = selectedDateKey.split("-").map(Number);
-    const targetDate = new Date(y, m - 1, d);
-    const idx = (targetDate.getDay() + 6) % 7; // Monday = 0
+    // UTC noon anchor avoids any midnight-boundary edge case when
+    // reading the weekday back — same technique as expandSlotsForMonth
+    // in lib/recurrence.js.
+    const { weekday: idx } = getTunisiaFields(new Date(Date.UTC(y, m - 1, d, 12, 0)));
 
     const cards = [];
+    const coveredKeys = new Set();
+
     for (const c of myCourses) {
       if (c.status === "cancelled") continue;
       const matchingSlots = (c.weeklySlots || []).filter((slot) => slot.day === idx && slot.time);
       for (const slot of matchingSlots) {
         const [h, min] = slot.time.split(":").map(Number);
-        const occurrence = new Date(y, m - 1, d, h, min || 0);
+        const occurrence = buildTunisiaDateTime(y, m - 1, d, h, min || 0);
         if (c.createdAt && occurrence < c.createdAt) continue;
 
         const occurrenceIso = occurrence.toISOString();
-
         const realSessions = teacherSessions.filter(
           (s) => s.status !== "cancelled" && s.courseId === c.id && s.date === occurrenceIso
         );
+
+        coveredKeys.add(`${c.id}_${occurrenceIso}`);
 
         cards.push({
           courseId: c.id,
@@ -451,8 +463,41 @@ export default function EnseignantDashboard() {
       }
     }
 
+    // Fallback pass — real sessions for this date whose (courseId, date)
+    // wasn't already produced above, using the session doc's OWN
+    // denormalized fields directly, since the parent course may no
+    // longer be active (or, in principle, no longer exist at all).
+    const daySessions = teacherSessions.filter(
+      (s) => s.status !== "cancelled" && s.date?.slice(0, 10) === selectedDateKey
+    );
+    const orphanGroups = new Map();
+    for (const s of daySessions) {
+      const key = `${s.courseId}_${s.date}`;
+      if (coveredKeys.has(key)) continue;
+      if (!orphanGroups.has(key)) {
+        orphanGroups.set(key, {
+          courseId: s.courseId,
+          subjectName: s.subjectName,
+          gradeName: s.gradeName,
+          specializationName: s.specializationName,
+          date: s.date,
+          dateTime: new Date(s.date),
+          studentCount: 0,
+          status: s.status,
+          liveRoomId: s.liveRoomId || null,
+        });
+      }
+      orphanGroups.get(key).studentCount += 1;
+    }
+    cards.push(...orphanGroups.values());
+
     return cards.sort((a, b) => a.dateTime - b.dateTime);
   })();
+
+  // "Mes séances" ordering: earliest weekly slot first (Monday 18:00,
+  // then Monday 20:30, then Tuesday 18:00, ...) instead of Firestore's
+  // fetch order.
+  const sortedMyCourses = [...myCourses].sort(compareCoursesBySlot);
 
   if (!hydrated) {
     return (
@@ -659,7 +704,7 @@ export default function EnseignantDashboard() {
                 <input
                   type="number"
                   min={1}
-                  max={50}
+                  max={5}
                   value={maxStudents}
                   onChange={(e) => setMaxStudents(Number(e.target.value))}
                   className="ens-input"
@@ -829,7 +874,7 @@ export default function EnseignantDashboard() {
           <p className="ens-empty-text">Vous n'avez pas encore publié de séance.</p>
         ) : (
           <div className="ens-courses-grid">
-            {myCourses.map((c) => {
+            {sortedMyCourses.map((c) => {
               const isCancelled = c.status === "cancelled";
               const hasEnrolled = (c.enrolledCount || 0) > 0;
               const next = !isCancelled ? getNextOccurrence(c.weeklySlots || []) : null;

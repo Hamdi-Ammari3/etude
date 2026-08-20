@@ -13,8 +13,6 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import "../homePage.css";
 import "./profil.css";
 
-// Same small per-grade emoji map used on /lecons — duplicated locally
-// since there's no shared module for it yet across these two pages.
 function getGradeEmoji(gradeId) {
   const map = {
     "prim-4": "🐬",
@@ -44,6 +42,53 @@ function getSessionJoinState(status) {
   return { canJoin: false, label: "Pas encore commencée" };
 }
 
+// Its own component (not inline in a .map()) because the star picker
+// needs its own hover/selection state per card — calling useState
+// inside a .map() callback isn't valid, each list item needs a real
+// component boundary to hold that state.
+function TeacherRatingCard({ teacherId, teacherName, coursesTaken, submitting, message, onSubmit }) {
+  const [hoverStars, setHoverStars] = useState(0);
+  const [selectedStars, setSelectedStars] = useState(0);
+
+  return (
+    <li className="profil-teacher-rating-card">
+      <div className="profil-teacher-rating-head">
+        <span className="profil-course-avatar">{getInitial(teacherName)}</span>
+        <div>
+          <p className="profil-teacher-rating-name">{teacherName}</p>
+          <p className="profil-teacher-rating-courses">{coursesTaken.join(" · ")}</p>
+        </div>
+      </div>
+
+      <div className="profil-star-picker" onMouseLeave={() => setHoverStars(0)}>
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button
+            key={n}
+            type="button"
+            className={`profil-star-btn ${(hoverStars || selectedStars) >= n ? "profil-star-btn-filled" : ""}`}
+            onMouseEnter={() => setHoverStars(n)}
+            onClick={() => setSelectedStars(n)}
+            aria-label={`${n} étoile${n > 1 ? "s" : ""}`}
+          >
+            ★
+          </button>
+        ))}
+      </div>
+
+      <button
+        type="button"
+        disabled={selectedStars === 0 || submitting}
+        onClick={() => onSubmit(teacherId, selectedStars)}
+        className="profil-teacher-rating-submit"
+      >
+        {submitting ? "Envoi..." : "Envoyer ma note"}
+      </button>
+
+      {message && <p className="profil-teacher-rating-msg">{message}</p>}
+    </li>
+  );
+}
+
 export default function ProfilePage() {
   const { user, hydrated } = useUser();
   const router = useRouter();
@@ -65,6 +110,47 @@ export default function ProfilePage() {
   // the message shown when someone taps the (placeholder) join button.
   const [selectedDateKey, setSelectedDateKey] = useState(null);
   const [joinSessionMsg, setJoinSessionMsg] = useState(null);
+
+  // Frontend-only for now — the real teacher-rating API route isn't
+  // built yet (rating moved from per-course to per-teacher, so the
+  // earlier courseId-based route needs to be rebuilt, not reused). This
+  // lets the star-picker UI and submit flow be built and tested first.
+  const [ratingSubmittingId, setRatingSubmittingId] = useState(null);
+  const [ratingMessages, setRatingMessages] = useState(new Map());
+
+  async function handleSubmitRating(teacherId, stars) {
+    setRatingSubmittingId(teacherId);
+    setRatingMessages((prev) => {
+      const next = new Map(prev);
+      next.delete(teacherId);
+      return next;
+    });
+
+    try {
+      const idToken = await auth.currentUser.getIdToken();
+      const res = await fetch("/api/teachers/rate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ teacherId, stars }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setRatingMessages((prev) => new Map(prev).set(teacherId, data.error || "Une erreur est survenue."));
+        return;
+      }
+
+      setRatingMessages((prev) => new Map(prev).set(teacherId, `Merci ! Ta note de ${stars} ★ a été enregistrée.`));
+    } catch (err) {
+      console.error(err);
+      setRatingMessages((prev) => new Map(prev).set(teacherId, "Connexion impossible. Vérifiez votre réseau."));
+    } finally {
+      setRatingSubmittingId(null);
+    }
+  }
 
   useEffect(() => {
     if (!user) return;
@@ -256,6 +342,23 @@ export default function ProfilePage() {
 
   const nonCancelledSessions = sessions.filter((s) => s.status !== "cancelled");
 
+  // Grouped by teacher, from ANY finished session — not scoped to
+  // currently-subscribed courses like "Mes cours en direct" above. A
+  // student who finished their batch and didn't renew should still be
+  // able to rate the teacher; that course simply won't appear in the
+  // subscribed-only list anymore, but this section isn't tied to that.
+  const teacherSummaries = (() => {
+    const finished = sessions.filter((s) => s.status === "finished" && s.teacherId);
+    const map = new Map();
+    for (const s of finished) {
+      if (!map.has(s.teacherId)) {
+        map.set(s.teacherId, { teacherId: s.teacherId, teacherName: s.teacherName, courseLabels: new Set() });
+      }
+      map.get(s.teacherId).courseLabels.add(`${s.subjectName || "Séance"} · ${s.gradeName || ""}`);
+    }
+    return Array.from(map.values()).map((t) => ({ ...t, courseLabels: Array.from(t.courseLabels) }));
+  })();
+
   const calendarEvents = nonCancelledSessions.map((s) => ({
     date: s.date.slice(0, 10),
     title: `${s.subjectName || "Séance"} · ${s.teacherName || ""}`,
@@ -371,6 +474,31 @@ export default function ProfilePage() {
         )}
         {cancelMsg && <p className="profil-cancel-msg">{cancelMsg}</p>}
         {cancelError && <p className="profil-cancel-error">{cancelError}</p>}
+      </section>
+
+      <section className="profil-section">
+        <h2 className="profil-section-title">⭐ Note tes enseignants</h2>
+        {sessionsLoading ? (
+          <LoadingSpinner />
+        ) : teacherSummaries.length === 0 ? (
+          <p className="profil-empty-text">
+            Termine au moins une séance avec un enseignant pour pouvoir le noter.
+          </p>
+        ) : (
+          <ul className="profil-teacher-rating-list">
+            {teacherSummaries.map((t) => (
+              <TeacherRatingCard
+                key={t.teacherId}
+                teacherId={t.teacherId}
+                teacherName={t.teacherName}
+                coursesTaken={t.courseLabels}
+                submitting={ratingSubmittingId === t.teacherId}
+                message={ratingMessages.get(t.teacherId)}
+                onSubmit={handleSubmitRating}
+              />
+            ))}
+          </ul>
+        )}
       </section>
 
       <section className="profil-section">

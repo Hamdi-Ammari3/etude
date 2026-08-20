@@ -42,7 +42,7 @@
 /* ---------- Specialization gate ---------- */
 
 .dsub-spec-bar {
-  margin: 1.5rem 0 ;
+  margin: 1.5rem 0 0;
   padding: 1.1rem 1.4rem;
   border-radius: var(--home-radius-2xl, 28px);
   background: var(--home-grape, #c796eb);
@@ -136,6 +136,25 @@
   min-width: 0;
 }
 
+.dsub-teacher-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.dsub-teacher-rating {
+  flex-shrink: 0;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: var(--home-wash-blue, #e5f0fc);
+  color: var(--home-primary-dark, #0f6bb8);
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
+  background-color: yellow;
+}
+
 .dsub-teacher-name {
   font-family: var(--home-font-display);
   font-size: 1.25rem;
@@ -152,7 +171,7 @@
 
 .dsub-course-badge {
   display: inline-block;
-  margin: 0rem;
+  margin: 0px;
   padding: 0.3rem 0.75rem;
   border-radius: 999px;
   background: var(--home-mint, #73e0b4);

@@ -389,6 +389,103 @@
   margin-top: 1rem;
 }
 
+/* ---------- Teacher rating ---------- */
+
+.profil-teacher-rating-list {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.profil-teacher-rating-card {
+  padding: 1.1rem 1.25rem;
+  border-radius: var(--home-radius-2xl, 28px);
+  background: var(--home-card);
+  border: 2px solid var(--home-border);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+}
+
+.profil-teacher-rating-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+  min-width: 200px;
+}
+
+.profil-teacher-rating-name {
+  margin: 0;
+  font-weight: 800;
+  font-size: 0.95rem;
+}
+
+.profil-teacher-rating-courses {
+  margin: 0.15rem 0 0;
+  font-size: 0.78rem;
+  color: var(--home-muted);
+  font-weight: 600;
+}
+
+.profil-star-picker {
+  display: flex;
+  gap: 0.15rem;
+}
+
+.profil-star-btn {
+  background: none;
+  border: none;
+  padding: 0.1rem;
+  font-size: 1.4rem;
+  line-height: 1;
+  color: var(--home-border, #d4dfeb);
+  cursor: pointer;
+  transition: color 120ms ease, transform 120ms ease;
+}
+
+.profil-star-btn:hover {
+  transform: scale(1.15);
+}
+
+.profil-star-btn-filled {
+  color: var(--home-sun, #faca4b);
+}
+
+.profil-teacher-rating-submit {
+  flex-shrink: 0;
+  padding: 0.55rem 1.1rem;
+  border-radius: 999px;
+  border: none;
+  background: var(--home-primary);
+  color: var(--home-primary-foreground, #f9fcff);
+  font-weight: 800;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: transform 150ms ease;
+}
+
+.profil-teacher-rating-submit:hover:not(:disabled) {
+  transform: scale(1.05);
+}
+
+.profil-teacher-rating-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.profil-teacher-rating-msg {
+  width: 100%;
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--home-primary-dark, #0f6bb8);
+}
+
 /* ---------- Day detail panel ---------- */
 
 .profil-day-panel {
@@ -576,6 +673,25 @@
   }
 
   .profil-day-session-join-btn {
+    width: 100%;
+  }
+
+  .profil-teacher-rating-card {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .profil-teacher-rating-head {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .profil-star-picker {
+    justify-content: center;
+  }
+
+  .profil-teacher-rating-submit {
     width: 100%;
   }
 }
