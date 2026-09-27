@@ -1,5 +1,5 @@
 /* =========================================================
-   TEACHER LOGIN (split intro / form layout)
+   TEACHER LOGIN
    ========================================================= */
 
 .ens-login-page {
@@ -15,13 +15,6 @@
   max-width: 1000px;
   margin: 0 auto;
   display: grid;
-  /* minmax(0, 1fr) instead of a bare 1fr — grid items default to
-     min-width:auto, meaning they refuse to shrink below their own
-     content's natural width even inside a 1fr track. On a narrow phone
-     that's what was pushing this panel wider than the viewport (and
-     making it look off-center, since margin:auto can't center
-     something already wider than its container). minmax(0, 1fr)
-     explicitly overrides that default down to 0. */
   grid-template-columns: minmax(0, 1fr);
   gap: 1.5rem;
 }
@@ -32,8 +25,6 @@
     align-items: center;
   }
 }
-
-/* ---------- Intro panel (grape) ---------- */
 
 .ens-login-intro {
   padding: 2.25rem;
@@ -98,8 +89,6 @@
 .ens-login-whatsapp-btn:hover {
   transform: translateY(-2px);
 }
-
-/* ---------- Form panel ---------- */
 
 .ens-login-form-card {
   padding: 2rem;
@@ -249,31 +238,18 @@
   padding: 2.5rem 1.5rem 4rem;
 }
 
+@media (max-width: 480px) {
+  .ens-board {
+    padding: 1.75rem 1rem 3rem;
+  }
+}
+
 .ens-board-header {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-}
-
-.ens-logout-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  border: 2px solid var(--home-border, #d4dfeb);
-  background: var(--home-card, #ffffff);
-  padding: 0.5rem 1.25rem;
-  font-size: 0.875rem;
-  font-weight: 800;
-  color: var(--home-ink, #1a2846);
-  cursor: pointer;
-  transition: background-color 150ms ease;
-}
-
-.ens-logout-btn:hover {
-  background: var(--home-wash-blue, #e5f0fc);
 }
 
 .ens-board-title {
@@ -287,6 +263,61 @@
   color: var(--home-muted);
   font-weight: 600;
   margin: 0.4rem 0 0;
+}
+
+.ens-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.ens-new-video-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 999px;
+  background: var(--home-primary);
+  color: var(--home-primary-foreground, #f9fcff);
+  padding: 0.55rem 1.3rem;
+  font-size: 0.875rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+.ens-new-video-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 20px rgba(15, 107, 184, 0.25);
+}
+
+.ens-logout-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 2px solid var(--home-border, #d4dfeb);
+  background: var(--home-card, #ffffff);
+  padding: 0.45rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: var(--home-ink, #1a2846);
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.ens-logout-btn:hover {
+  background: var(--home-wash-blue, #e5f0fc);
+}
+
+.ens-success-banner {
+  margin: 1.25rem 0 0;
+  padding: 0.8rem 1rem;
+  border-radius: var(--home-radius-md, 20px);
+  background: #e3f8ec;
+  color: #146339;
+  font-weight: 700;
+  font-size: 0.88rem;
 }
 
 /* ---------- Stats row ---------- */
@@ -342,35 +373,504 @@
   margin: 0.25rem 0 0;
 }
 
-/* ---------- Main grid: form + calendar ---------- */
+/* ---------- Payout progress (inside the balance card) ---------- */
 
-.ens-main-grid {
+.ens-payout-track {
+  width: 100%;
+  height: 8px;
+  margin-top: 0.6rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(0, 55, 41, 0.15);
+}
+
+.ens-payout-bar {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--home-mint-foreground, #003729);
+  transition: width 400ms ease;
+}
+
+/* ---------- Payouts history ---------- */
+
+.ens-payouts {
   margin-top: 2rem;
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.5rem;
-}
-
-@media (min-width: 1024px) {
-  .ens-main-grid {
-    grid-template-columns: 1fr 1fr;
-    align-items: start;
-  }
-}
-
-.ens-form-card {
-  padding: 1.5rem;
+  padding: 1.25rem 1.4rem;
   border-radius: var(--home-radius-2xl, 28px);
   background: var(--home-card);
   border: 2px solid var(--home-border);
 }
 
-.ens-form-title {
-  font-family: var(--home-font-display);
-  font-size: 1.25rem;
-  font-weight: 800;
-  margin: 0 0 1.25rem;
+.ens-payouts-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
 }
+
+.ens-section-title-inline {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.ens-payouts-total {
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  background: var(--home-mint, #73e0b4);
+  color: var(--home-mint-foreground, #003729);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.ens-payout-list {
+  list-style: none;
+  margin: 0.9rem 0 0;
+  padding: 0;
+}
+
+.ens-payout-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.6rem 0;
+  border-top: 1px solid var(--home-border);
+  font-size: 0.9rem;
+}
+
+.ens-payout-item:first-child {
+  border-top: none;
+}
+
+.ens-payout-date {
+  font-weight: 600;
+  color: var(--home-muted);
+}
+
+.ens-payout-amount {
+  font-weight: 800;
+  color: var(--home-ink);
+}
+
+/* ---------- Section title ---------- */
+
+.ens-section-title {
+  margin: 2.5rem 0 0;
+  font-family: var(--home-font-display);
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+/* ---------- Empty state ---------- */
+
+.ens-empty-card {
+  margin-top: 1rem;
+  padding: 2.5rem 1.5rem;
+  border-radius: var(--home-radius-2xl, 28px);
+  background: var(--home-wash-blue, #e5f0fc);
+  text-align: center;
+}
+
+.ens-empty-emoji {
+  margin: 0;
+  font-size: 3rem;
+}
+
+.ens-empty-title {
+  margin: 0.5rem 0 0;
+  font-family: var(--home-font-display);
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.ens-empty-text {
+  margin: 0.4rem 0 1.25rem;
+  color: var(--home-muted);
+  font-weight: 600;
+}
+
+/* ---------- Video grid ---------- */
+
+.ens-video-grid {
+  margin-top: 1rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem 1.25rem;
+}
+
+@media (min-width: 560px) {
+  .ens-video-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 900px) {
+  .ens-video-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1100px) {
+  .ens-video-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.ens-video-card {
+  position: relative;
+  min-width: 0;
+}
+
+/* The card whose menu is open sits above its neighbours. */
+.ens-video-card-menu-open {
+  z-index: 20;
+}
+
+/* ---------- ⋮ menu ---------- */
+
+.ens-video-menu-wrap {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 3;
+}
+
+.ens-video-menu-btn {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--home-ink, #1a2846);
+  box-shadow: 0 2px 8px rgba(26, 40, 70, 0.18);
+  cursor: pointer;
+  transition: background-color 150ms ease, transform 150ms ease;
+}
+
+.ens-video-menu-btn:hover,
+.ens-video-menu-btn[aria-expanded="true"] {
+  background: #ffffff;
+  transform: scale(1.06);
+}
+
+.ens-video-menu-btn:focus-visible {
+  outline: 3px solid var(--home-primary);
+  outline-offset: 2px;
+}
+
+.ens-video-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 190px;
+  padding: 0.35rem;
+  border-radius: 16px;
+  border: 2px solid var(--home-border, #d4dfeb);
+  background: var(--home-card, #ffffff);
+  box-shadow: 0 16px 40px rgba(26, 40, 70, 0.18);
+  animation: ens-menu-in 120ms ease;
+  transform-origin: top right;
+}
+
+@keyframes ens-menu-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.ens-video-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: var(--home-ink, #1a2846);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ens-video-menu-item:hover,
+.ens-video-menu-item:focus-visible {
+  background: var(--home-wash-blue, #e5f0fc);
+  outline: none;
+}
+
+.ens-video-menu-item-danger {
+  color: #d64532;
+}
+
+.ens-video-menu-item-danger:hover,
+.ens-video-menu-item-danger:focus-visible {
+  background: var(--home-wash-coral, #fff1ec);
+}
+
+.ens-video-thumb {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: var(--home-radius-md, 20px);
+  text-decoration: none;
+  transition: transform 150ms ease;
+}
+
+
+.ens-video-thumb img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ens-video-thumb-emoji {
+  font-size: 3.5rem;
+}
+
+.ens-thumb-sun {
+  background: var(--home-sun, #faca4b);
+}
+.ens-thumb-coral {
+  background: var(--home-coral, #ff8573);
+}
+.ens-thumb-sky {
+  background: var(--home-sky, #8cc8ff);
+}
+.ens-thumb-mint {
+  background: var(--home-mint, #73e0b4);
+}
+.ens-thumb-grape {
+  background: var(--home-grape, #c796eb);
+}
+
+.ens-video-duration {
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0.5rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 8px;
+  background: rgba(26, 40, 70, 0.82);
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.ens-video-status {
+  position: absolute;
+  left: 0.5rem;
+  top: 0.5rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: var(--home-card, #ffffff);
+  color: var(--home-ink, #1a2846);
+  font-size: 0.72rem;
+  font-weight: 800;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.ens-video-status-rejected,
+.ens-video-status-failed {
+  background: var(--home-coral, #ff8573);
+  color: var(--home-coral-foreground, #fffbfa);
+}
+
+.ens-video-status-uploading,
+.ens-video-status-encoding {
+  background: var(--home-wash-blue, #e5f0fc);
+  color: var(--home-primary-dark, #0f6bb8);
+  animation: ens-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes ens-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.ens-video-play {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.ens-video-play span {
+  display: grid;
+  place-items: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 999px;
+  background: var(--home-card, #ffffff);
+  color: var(--home-ink, #1a2846);
+  font-size: 1.4rem;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+}
+
+.ens-video-card:hover .ens-video-play {
+  opacity: 1;
+}
+
+.ens-video-title {
+  margin: 0.6rem 0 0;
+  font-weight: 800;
+  line-height: 1.3;
+  color: var(--home-ink);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ens-video-meta {
+  margin-top: 0.4rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.ens-video-chip {
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: var(--home-wash-blue, #e5f0fc);
+  color: var(--home-primary-dark, #0f6bb8);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.ens-video-chip-muted {
+  background: #f1f4f8;
+  color: var(--home-ink, #1a2846);
+}
+
+.ens-video-views {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--home-muted);
+}
+
+/* =========================================================
+   PUBLISH MODAL
+   ========================================================= */
+
+.ens-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(26, 40, 70, 0.45);
+  backdrop-filter: blur(3px);
+  animation: ens-fade-in 150ms ease;
+}
+
+.ens-modal {
+  width: 100%;
+  max-width: 560px;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  padding: 1.5rem;
+  border-radius: var(--home-radius-2xl, 28px);
+  background: var(--home-card, #ffffff);
+  border: 2px solid var(--home-border);
+  box-shadow: 0 24px 60px rgba(26, 40, 70, 0.25);
+  animation: ens-pop-in 180ms ease;
+}
+
+@keyframes ens-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes ens-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.ens-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.ens-modal-title {
+  margin: 0;
+  font-family: var(--home-font-display);
+  font-size: 1.3rem;
+  font-weight: 800;
+}
+
+.ens-modal-desc {
+  margin: 0.3rem 0 0;
+  color: var(--home-muted);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.ens-modal-close {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  border: 2px solid var(--home-border);
+  background: var(--home-card);
+  color: var(--home-ink);
+  font-weight: 800;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.ens-modal-close:hover:not(:disabled) {
+  background: var(--home-wash-blue, #e5f0fc);
+}
+
+.ens-modal-close:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ens-modal-form {
+  margin-top: 1.25rem;
+  display: grid;
+  gap: 1rem;
+}
+
+/* ---------- Form fields ---------- */
 
 .ens-form-grid {
   display: grid;
@@ -400,8 +900,16 @@
   margin-bottom: 0.4rem;
 }
 
+.ens-field-hint {
+  margin: 0.4rem 0 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--home-muted);
+}
+
 .ens-select,
-.ens-input {
+.ens-input,
+.ens-file-input {
   width: 100%;
   padding: 0.7rem 0.9rem;
   border-radius: var(--home-radius-md, 20px);
@@ -415,20 +923,107 @@
 }
 
 .ens-select:focus,
-.ens-input:focus {
+.ens-input:focus,
+.ens-file-input:focus {
   border-color: var(--home-primary);
 }
 
-/* Matches Lovable's exact classes: mt-6 w-full rounded-full bg-primary
-   px-6 py-3 text-base font-extrabold text-primary-foreground
-   transition-transform hover:scale-[1.02] — a dedicated class since it
-   differs from the shared btn-pill-primary (which lifts + adds a shadow
-   on hover, used intentionally elsewhere). */
+.ens-select:disabled,
+.ens-input:disabled,
+.ens-file-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ens-file-input {
+  padding: 0.55rem 0.7rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.ens-file-input::file-selector-button {
+  margin-right: 0.75rem;
+  padding: 0.4rem 0.9rem;
+  border: none;
+  border-radius: 999px;
+  background: var(--home-wash-blue, #e5f0fc);
+  color: var(--home-primary-dark, #0f6bb8);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.ens-thumb-preview {
+  display: block;
+  width: 100%;
+  margin-top: 0.6rem;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: var(--home-radius-md, 20px);
+  border: 2px solid var(--home-border);
+}
+
+.ens-review-note {
+  margin: 0;
+  padding: 0.7rem 1rem;
+  border-radius: var(--home-radius-md, 20px);
+  background: var(--home-wash-blue, #e5f0fc);
+  color: var(--home-primary-dark, #0f6bb8);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+/* ---------- Upload progress ---------- */
+
+.ens-progress-track {
+  width: 100%;
+  height: 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--home-border, #d4dfeb);
+}
+
+.ens-progress-bar {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--home-primary);
+  transition: width 200ms ease;
+}
+
+.ens-progress-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.ens-progress-label {
+  margin: 0.4rem 0 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--home-muted);
+}
+
+.ens-progress-cancel {
+  flex-shrink: 0;
+  margin-top: 0.4rem;
+  padding: 0.3rem 0.85rem;
+  border-radius: 999px;
+  border: 2px solid var(--home-coral, #ff8573);
+  background: var(--home-card, #ffffff);
+  color: var(--home-coral, #ff8573);
+  font-size: 0.75rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.ens-progress-cancel:hover {
+  background: var(--home-wash-coral, #fff1ec);
+}
+
 .ens-publish-btn {
   display: block;
   width: 100%;
-  margin-top: 1.5rem;
-  padding: 0.75rem 1.5rem;
+  padding: 0.8rem 1.5rem;
   border: none;
   border-radius: 999px;
   background: var(--home-primary);
@@ -449,390 +1044,102 @@
   cursor: not-allowed;
 }
 
-.ens-field-hint {
-  margin: 0.4rem 0 0;
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--home-muted);
-}
+/* ---------- Edit mode ---------- */
 
-.ens-slot-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.ens-slot-day {
-  flex: 1.3;
-}
-
-.ens-slot-time {
-  flex: 1;
-}
-
-.ens-course-slots {
-  margin: 0.5rem 0 0;
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--home-ink);
-}
-
-.ens-course-card-cancelled {
-  opacity: 0.6;
-  background: #f7f8fa;
-}
- 
-.ens-course-cancel-btn {
-  display: inline-block;
-  margin-top: 0.85rem;
-  padding: 0.5rem 1rem;
-  border-radius: 999px;
-  border: 2px solid var(--home-coral, #ff8573);
-  background: var(--home-card);
-  color: var(--home-coral, #ff8573);
-  font-weight: 800;
-  font-size: 0.78rem;
-  cursor: pointer;
-  transition: background-color 150ms ease;
-}
- 
-.ens-course-cancel-btn:hover:not(:disabled) {
-  background: var(--home-wash-coral, #fff1ec);
-}
- 
-.ens-course-cancel-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
- 
-.ens-course-cancelled-badge {
-  display: inline-block;
-  margin-top: 0.85rem;
-  padding: 0.4rem 0.9rem;
-  border-radius: 999px;
-  background: var(--home-border, #d4dfeb);
+.ens-input:disabled[readonly] {
+  opacity: 1;
+  background: #f1f4f8;
   color: var(--home-muted, #606c84);
-  font-weight: 800;
-  font-size: 0.78rem;
+  cursor: default;
 }
 
-.ens-course-price-per-session {
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--home-muted);
-}
-
-.ens-dates-fieldset {
-  margin-top: 1.25rem;
-  border: none;
-  padding: 0;
-}
-
-.ens-dates-grid {
-  margin-top: 0.5rem;
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.6rem;
-}
-
-@media (min-width: 480px) {
-  .ens-dates-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.ens-date-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.ens-date-index {
-  flex-shrink: 0;
-  width: 1.25rem;
-  font-size: 0.8rem;
-  font-weight: 800;
-  color: var(--home-muted);
-}
-
-.ens-success-banner {
-  margin-top: 1rem;
-  padding: 0.8rem 1rem;
-  border-radius: var(--home-radius-md, 20px);
-  background: #e3f8ec;
-  color: #146339;
-  font-weight: 700;
-  font-size: 0.88rem;
-}
-
-.ens-submit-btn {
-  width: 100%;
-  margin-top: 1.5rem;
-}
-
-/* ---------- Course cards ---------- */
-
-.ens-courses-title {
-  margin-top: 2.5rem;
-  font-family: var(--home-font-display);
-  font-size: 1.4rem;
-  font-weight: 800;
-}
-
-.ens-empty-text {
-  margin-top: 0.75rem;
-  color: var(--home-muted);
-  font-weight: 600;
-}
-
-.ens-courses-grid {
-  margin-top: 1rem;
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1rem;
-}
-
-@media (min-width: 640px) {
-  .ens-courses-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-@media (min-width: 1024px) {
-  .ens-courses-grid {
-    grid-template-columns: 1fr 1fr 1fr;
-  }
-}
-
-.ens-course-card {
-  padding: 1.25rem;
-  border-radius: var(--home-radius-2xl, 28px);
-  background: var(--home-card);
-  border: 2px solid var(--home-border);
-}
-
-.ens-course-name {
-  font-family: var(--home-font-display);
-  font-weight: 800;
-  font-size: 1.05rem;
-  margin: 0;
-}
-
-.ens-course-meta {
-  margin: 0.4rem 0 0;
-  font-size: 0.82rem;
-  color: var(--home-muted);
-  font-weight: 600;
-}
-
-.ens-course-next {
-  margin: 0.6rem 0 0;
-  font-size: 0.85rem;
-  font-weight: 700;
-}
-
-.ens-course-price {
-  margin: 0.6rem 0 0;
-  font-family: var(--home-font-display);
-  font-size: 1.3rem;
-  font-weight: 800;
-  color: var(--home-primary);
-}
-
-/* ---------- Pill button outline variant (btn-pill/btn-pill-primary
-   already exist in this file from the login form) ---------- */
-
-.btn-pill-outline {
-  background: var(--home-card);
-  border: 2px solid var(--home-border);
-  color: var(--home-ink);
-}
-
-.btn-pill-outline:hover {
+.ens-input-editable {
   border-color: var(--home-primary);
-  color: var(--home-primary);
+  background: var(--home-card, #ffffff);
 }
 
-/* ---------- Day detail panel ---------- */
-
-.ens-day-panel {
-  margin-top: 1rem;
-  padding: 1.25rem;
-  border-radius: var(--home-radius-2xl, 28px);
-  background: var(--home-card);
-  border: 2px solid var(--home-border);
+.ens-thumb-readonly {
+  margin-top: 0;
+  opacity: 0.9;
 }
 
-.ens-day-panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
+/* ---------- Delete confirmation ---------- */
+
+.ens-modal-sm {
+  max-width: 420px;
+  text-align: center;
 }
 
-.ens-day-panel-title {
-  margin: 0;
-  font-family: var(--home-font-display);
-  font-size: 1.05rem;
-  font-weight: 800;
-  text-transform: capitalize;
+.ens-text-center {
+  text-align: center;
 }
 
-.ens-day-panel-close {
-  flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  border-radius: 999px;
-  border: 2px solid var(--home-border);
-  background: var(--home-card);
-  color: var(--home-ink);
-  font-weight: 800;
-  cursor: pointer;
+.ens-del-icon {
   display: grid;
   place-items: center;
-  transition: background-color 150ms ease;
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 0.9rem;
+  border-radius: 22px;
+  background: var(--home-wash-coral, #fff1ec);
+  font-size: 1.9rem;
 }
 
-.ens-day-panel-close:hover {
-  background: var(--home-wash-blue, #e5f0fc);
+.ens-del-video-title {
+  margin: 0.6rem 0 0;
+  font-weight: 800;
+  color: var(--home-ink);
+  overflow-wrap: anywhere;
 }
 
-.ens-day-panel-empty {
-  margin: 1rem 0 0;
-  color: var(--home-muted);
-  font-weight: 600;
+.ens-del-text {
+  margin: 0.6rem 0 0;
   font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--home-muted);
 }
 
-.ens-day-session-list {
-  list-style: none;
-  margin: 1rem 0 0;
-  padding: 0;
+.ens-del-actions {
   display: flex;
-  flex-direction: column;
   gap: 0.6rem;
+  margin-top: 1.4rem;
 }
 
-.ens-day-session-card {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.8rem 1rem;
-  border-radius: var(--home-radius-md, 20px);
+.ens-btn-ghost,
+.ens-btn-danger {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 150ms ease, background-color 150ms ease;
+}
+
+.ens-btn-ghost {
+  border: 2px solid var(--home-border);
+  background: var(--home-card, #ffffff);
+  color: var(--home-ink);
+}
+
+.ens-btn-ghost:hover:not(:disabled) {
   background: var(--home-wash-blue, #e5f0fc);
 }
 
-.ens-day-session-subject {
-  margin: 0;
-  font-weight: 800;
-  font-size: 0.9rem;
-}
-
-.ens-day-session-meta {
-  margin: 0.15rem 0 0;
-  font-size: 0.78rem;
-  color: var(--home-muted);
-  font-weight: 600;
-}
-
-.ens-day-session-status {
-  flex-shrink: 0;
-  padding: 0.4rem 0.9rem;
-  border-radius: 999px;
-  background: var(--home-mint, #73e0b4);
-  color: var(--home-mint-foreground, #003729);
-  font-weight: 800;
-  font-size: 0.75rem;
-}
-
-.ens-day-session-empty-msg {
-  flex-shrink: 0;
-  margin: 0;
-  font-size: 0.78rem;
-  color: var(--home-muted);
-  font-weight: 600;
-  text-align: right;
-}
-
-.ens-day-session-status-missed {
-  background: var(--home-border, #d4dfeb);
-  color: var(--home-muted, #606c84);
-}
-
-.ens-day-session-finish-btn {
-  flex-shrink: 0;
-  padding: 0.5rem 1.1rem;
-  border-radius: 999px;
+.ens-btn-danger {
   border: none;
-  background: var(--home-coral, #ff8573);
-  color: var(--home-coral-foreground, #fffbfa);
-  font-weight: 800;
-  font-size: 0.8rem;
-  cursor: pointer;
-  transition: transform 150ms ease;
+  background: #e5533d;
+  color: #ffffff;
 }
 
-.ens-day-session-finish-btn:hover:not(:disabled) {
-  transform: scale(1.05);
+.ens-btn-danger:hover:not(:disabled) {
+  transform: scale(1.03);
 }
 
-.ens-day-session-finish-btn:disabled {
+.ens-btn-ghost:disabled,
+.ens-btn-danger:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-}
-
-.ens-day-session-start-btn {
-  flex-shrink: 0;
-  padding: 0.5rem 1.1rem;
-  border-radius: 999px;
-  border: none;
-  background: var(--home-primary);
-  color: var(--home-primary-foreground, #f9fcff);
-  font-weight: 800;
-  font-size: 0.8rem;
-  cursor: pointer;
-  transition: transform 150ms ease;
-}
-
-.ens-day-session-start-btn:hover:not(:disabled) {
-  transform: scale(1.05);
-}
-
-.ens-day-session-start-btn:disabled {
-  background: var(--home-border, #d4dfeb);
-  color: var(--home-muted, #606c84);
-  cursor: not-allowed;
-}
-
-.ens-day-panel-msg {
-  margin-top: 1rem;
-  padding: 0.7rem 1rem;
-  border-radius: var(--home-radius-md, 20px);
-  background: var(--home-wash-blue, #e5f0fc);
-  color: var(--home-primary-dark, #0f6bb8);
-  font-weight: 700;
-  font-size: 0.85rem;
-  text-align: center;
-}
-
-.ens-day-panel-error {
-  margin-top: 1rem;
-  padding: 0.7rem 1rem;
-  border-radius: var(--home-radius-md, 20px);
-  background: var(--home-wash-coral, #fff1ec);
-  color: var(--home-coral, #ff8573);
-  font-weight: 800;
-  font-size: 0.85rem;
-  text-align: center;
-}
-
-/* ---------- Cancel-blocked hint ---------- */
-
-.ens-course-cancel-blocked {
-  margin-top: 0.85rem;
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--home-muted);
 }

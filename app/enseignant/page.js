@@ -1,14 +1,29 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { collection, addDoc, doc, updateDoc, getDocs, query, where, serverTimestamp } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
+import * as tus from "tus-js-client";
 import { DB, auth } from "../../lib/firebaseConfig";
 import { completeLogin, logoutUser, useUser } from "../../lib/auth";
 import { ALL_GRADES, GRADE_GROUPS, GRADES_WITH_SPECIALIZATION, SPECIALIZATIONS } from "../../lib/liveGrades";
 import { getSubjectsForGrade } from "../../lib/liveSubjects";
-import { buildTunisiaDateTime, expandSlotsForMonth, getNextOccurrence, getTunisiaFields } from "../../lib/recurrence";
-import MonthCalendar from "../components/MonthCalendar";
+import {
+  VIEW_RATE_DT,
+  PAYOUT_THRESHOLD_DT,
+  TEACHER_FIELDS,
+  millimesToDT,
+  REQUIRE_REVIEW,
+  MIN_DURATION_SEC,
+  MAX_VIDEO_BYTES,
+  MAX_THUMB_BYTES,
+  TITLE_MIN,
+  TITLE_MAX,
+  TRIMESTRES,
+  STATUS_LABELS,
+  IN_PROGRESS_STATUSES,
+  BUNNY_TUS_ENDPOINT,
+} from "../../lib/videoConfig";
 import LoadingSpinner from "../components/LoadingSpinner";
 import "../homePage.css";
 import "./enseignantPage.css";
@@ -16,14 +31,11 @@ import "./enseignantPage.css";
 const TEACHER_WHATSAPP = "2165110183";
 const WHATSAPP_MESSAGE = "Bonjour Droussy TN, je souhaite devenir enseignant sur la plateforme.";
 
-const WEEK_DAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
-const WEEKS_PER_MONTH = 4;
+const THUMB_COLORS = ["sun", "coral", "sky", "mint", "grape"];
+const STATUS_POLL_MS = 15000;
+const POLL_WINDOW_MS = 24 * 60 * 60 * 1000; // only poll videos created in the last 24h
 
-const SESSION_STATUS_LABELS = {
-  subscribed: "À venir",
-  started: "En cours",
-  finished: "Terminée",
-};
+// ---------- Helpers ----------
 
 function toJsDate(value) {
   if (!value) return null;
@@ -31,46 +43,136 @@ function toJsDate(value) {
   return new Date(value);
 }
 
-// Compares purely via extracted Tunisia-local calendar fields — never
-// reconstructs a `new Date(y, m, d)` for comparison, since even for an
-// already-correct sessionTime, reading .getFullYear()/.getMonth()/
-// .getDate() back off it is still machine-timezone-dependent (that
-// read happens in whatever timezone the browser is configured to, not
-// necessarily Tunisia's — this was the root cause of the same course
-// showing a different day/status on different computers).
-function getSessionTimingState(sessionTime) {
-  const now = new Date();
-  const sessionFields = getTunisiaFields(sessionTime);
-  const nowFields = getTunisiaFields(now);
-
-  const sessionDayValue = sessionFields.year * 10000 + sessionFields.month * 100 + sessionFields.date;
-  const todayValue = nowFields.year * 10000 + nowFields.month * 100 + nowFields.date;
-
-  if (sessionDayValue < todayValue) return "past";
-  if (sessionDayValue > todayValue) return "upcoming";
-  return now >= sessionTime ? "ready" : "upcoming";
+function formatDuration(sec) {
+  if (!Number.isFinite(sec) || sec <= 0) return "0:00";
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = String(Math.floor(sec % 60)).padStart(2, "0");
+  return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${s}` : `${m}:${s}`;
 }
 
-// Sort key for "Mes séances": each course's EARLIEST weekly slot
-// (day-of-week first, then time), so a Monday 18:00 course sorts before
-// a Monday 20:30 course, which sorts before a Tuesday 18:00 course — a
-// course with multiple slots in a week is ordered by whichever slot
-// comes first. Courses with no slots at all sort last (shouldn't happen
-// in practice, but avoids crashing on malformed data).
-function getEarliestSlotKey(weeklySlots) {
-  if (!weeklySlots || weeklySlots.length === 0) return { day: 7, time: "99:99" };
-  return [...weeklySlots].sort((a, b) => {
-    if (a.day !== b.day) return a.day - b.day;
-    return (a.time || "").localeCompare(b.time || "");
-  })[0];
+function formatNumber(n) {
+  return (n || 0).toLocaleString("fr-FR");
 }
 
-function compareCoursesBySlot(a, b) {
-  const aKey = getEarliestSlotKey(a.weeklySlots);
-  const bKey = getEarliestSlotKey(b.weeklySlots);
-  if (aKey.day !== bKey.day) return aKey.day - bKey.day;
-  return (aKey.time || "").localeCompare(bKey.time || "");
+function formatMoney(n) {
+  return (n || 0).toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 }
+
+function colorFor(key = "") {
+  let hash = 0;
+  for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
+  return THUMB_COLORS[hash % THUMB_COLORS.length];
+}
+
+function readVideoDuration(file) {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const el = document.createElement("video");
+    el.preload = "metadata";
+    el.onloadedmetadata = () => {
+      const d = el.duration;
+      URL.revokeObjectURL(url);
+      resolve(Number.isFinite(d) ? d : 0);
+    };
+    el.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(0);
+    };
+    el.src = url;
+  });
+}
+
+// Authenticated JSON request to our API (any method).
+async function apiRequest(url, { method = "POST", body } = {}) {
+  const idToken = await auth.currentUser?.getIdToken();
+  if (!idToken) throw new Error("Session expirée. Reconnectez-vous.");
+  const res = await fetch(url, {
+    method,
+    headers: {
+      Authorization: `Bearer ${idToken}`,
+      ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
+    },
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Une erreur est survenue.");
+  return data;
+}
+
+function authFetch(url, body) {
+  return apiRequest(url, { method: "POST", body });
+}
+
+// Thumbnail → Cloudinary (signed by our server, converted to WebP on upload).
+async function uploadThumbnailToCloudinary(file, onProgress) {
+  const sig = await authFetch("/api/uploads/thumbnail-signature", {});
+
+  const form = new FormData();
+  form.append("file", file);
+  form.append("api_key", sig.apiKey);
+  form.append("timestamp", String(sig.timestamp));
+  form.append("signature", sig.signature);
+  form.append("folder", sig.folder);
+  form.append("format", sig.format);
+  form.append("transformation", sig.transformation);
+
+  // XHR instead of fetch so we get upload progress events.
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `https://api.cloudinary.com/v1_1/${sig.cloudName}/image/upload`);
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress?.(e.loaded / e.total);
+    };
+    xhr.onload = () => {
+      let data = {};
+      try {
+        data = JSON.parse(xhr.responseText);
+      } catch {
+        /* ignore */
+      }
+      if (xhr.status >= 200 && xhr.status < 300 && data.secure_url) {
+        resolve({ url: data.secure_url, publicId: data.public_id });
+      } else {
+        console.error("Cloudinary upload failed", xhr.status, data);
+        reject(new Error("Impossible d'envoyer la miniature. Réessayez."));
+      }
+    };
+    xhr.onerror = () => reject(new Error("Impossible d'envoyer la miniature. Vérifiez votre connexion."));
+    xhr.send(form);
+  });
+}
+
+// Direct browser → Bunny upload. Resumes automatically after network drops.
+function uploadVideoToBunny(file, { bunnyVideoId, libraryId, signature, expires, title }, onProgress, uploadRef) {
+  return new Promise((resolve, reject) => {
+    const upload = new tus.Upload(file, {
+      endpoint: BUNNY_TUS_ENDPOINT,
+      retryDelays: [0, 3000, 5000, 10000, 20000, 60000],
+      chunkSize: 50 * 1024 * 1024,
+      storeFingerprintForResuming: false,
+      headers: {
+        AuthorizationSignature: signature,
+        AuthorizationExpire: String(expires),
+        VideoId: bunnyVideoId,
+        LibraryId: String(libraryId),
+      },
+      metadata: {
+        filetype: file.type,
+        title,
+      },
+      onError: reject,
+      onProgress: (sent, total) => onProgress?.(total ? sent / total : 0),
+      onSuccess: resolve,
+    });
+    if (uploadRef) uploadRef.current = upload;
+    upload.start();
+  });
+}
+
+// =========================================================
+// PAGE
+// =========================================================
 
 export default function EnseignantDashboard() {
   const { user, hydrated } = useUser();
@@ -119,385 +221,173 @@ export default function EnseignantDashboard() {
     router.push("/login");
   }
 
-  // ---- Create-course form state ----
-  const [gradeId, setGradeId] = useState(ALL_GRADES[0].id);
-  const [subjectId, setSubjectId] = useState("");
-  const [specializationId, setSpecializationId] = useState("");
-  const [perWeek, setPerWeekRaw] = useState(1);
-  const [maxStudents, setMaxStudents] = useState(1);
-  const [monthlyPrice, setMonthlyPrice] = useState(60);
-  const [slots, setSlots] = useState([{ day: 0, time: "" }]);
-
-  const needsSpecialization = GRADES_WITH_SPECIALIZATION.has(gradeId);
-  const subjectsForGrade = getSubjectsForGrade(gradeId);
-
-  useEffect(() => {
-    if (!needsSpecialization) setSpecializationId("");
-  }, [needsSpecialization]);
-
-  useEffect(() => {
-    if (subjectsForGrade.length === 0) {
-      setSubjectId("");
-      return;
-    }
-    if (!subjectsForGrade.some((s) => s.id === subjectId)) {
-      setSubjectId(subjectsForGrade[0].id);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gradeId]);
-
-  const [myCourses, setMyCourses] = useState([]);
-  const [coursesLoading, setCoursesLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [formError, setFormError] = useState(null);
-  const [successMsg, setSuccessMsg] = useState(null);
-  const [cancellingId, setCancellingId] = useState(null);
-
-  const nowInit = new Date();
-  const [calYear, setCalYear] = useState(nowInit.getFullYear());
-  const [calMonth, setCalMonth] = useState(nowInit.getMonth());
-
-  function handleCalendarMonthChange(year, month) {
-    setCalYear(year);
-    setCalMonth(month);
-  }
-
-  // Which calendar day is currently selected, and start-session state.
-  const [selectedDateKey, setSelectedDateKey] = useState(null);
-  const [startingKey, setStartingKey] = useState(null);
-  const [startMsg, setStartMsg] = useState(null);
-  const [startError, setStartError] = useState(null);
-
-  function handleDayClick(dateKey) {
-    setStartMsg(null);
-    setStartError(null);
-    setSelectedDateKey(dateKey);
-  }
-
-  const [teacherSessions, setTeacherSessions] = useState([]);
-  const [sessionsLoading, setSessionsLoading] = useState(true);
-
+  // ---- Dashboard state ----
   const isTeacher = hydrated && user?.role === "teacher";
+  const [myVideos, setMyVideos] = useState([]);
+  const [videosLoading, setVideosLoading] = useState(true);
+  const [videosError, setVideosError] = useState(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [successMsg, setSuccessMsg] = useState(null);
 
-  const sessionsPerMonth = perWeek * WEEKS_PER_MONTH;
-  const pricePerSession = sessionsPerMonth > 0 ? monthlyPrice / sessionsPerMonth : 0;
-
-  function setPerWeek(n) {
-    const count = Math.max(1, Math.min(7, n || 1));
-    setPerWeekRaw(count);
-    setSlots((prev) => Array.from({ length: count }, (_, i) => prev[i] ?? { day: 0, time: "" }));
-  }
-
-  function updateSlotDay(i, day) {
-    setSlots((prev) => {
-      const next = [...prev];
-      next[i] = { ...next[i], day };
-      return next;
-    });
-  }
-
-  function updateSlotTime(i, time) {
-    setSlots((prev) => {
-      const next = [...prev];
-      next[i] = { ...next[i], time };
-      return next;
-    });
-  }
+  // Card menu, edit and delete
+  const [openMenuId, setOpenMenuId] = useState(null);
+  const [editingVideo, setEditingVideo] = useState(null);
+  const [deletingVideo, setDeletingVideo] = useState(null);
 
   useEffect(() => {
     if (!isTeacher) return;
     let cancelled = false;
-    async function loadCourses() {
-      setCoursesLoading(true);
-      const q = query(
-        collection(DB, "courses"),
-        where("teacherId", "==", user.uid),
-        where("status", "==", "active")
-      );
-      const snap = await getDocs(q);
-      if (cancelled) return;
-      setMyCourses(
-        snap.docs.map((d) => {
-          const data = d.data();
-          return { id: d.id, ...data, createdAt: toJsDate(data.createdAt) };
-        })
-      );
-      setCoursesLoading(false);
-    }
-    loadCourses();
-    return () => {
-      cancelled = true;
-    };
-  }, [isTeacher, user?.uid]);
 
-  useEffect(() => {
-    if (!isTeacher) return;
-    let cancelled = false;
-    async function loadSessions() {
-      setSessionsLoading(true);
-      const q = query(collection(DB, "sessions"), where("teacherId", "==", user.uid));
-      const snap = await getDocs(q);
-      if (cancelled) return;
-      setTeacherSessions(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-      setSessionsLoading(false);
-    }
-    loadSessions();
-    return () => {
-      cancelled = true;
-    };
-  }, [isTeacher, user?.uid]);
-
-  async function handleCreateCourse(e) {
-    e.preventDefault();
-    setFormError(null);
-    setSuccessMsg(null);
-
-    if (!subjectId) {
-      return setFormError("Choisissez une matière.");
-    }
-    if (needsSpecialization && !specializationId) {
-      return setFormError("Merci de choisir une spécialité pour ce niveau.");
-    }
-    if (slots.some((s) => !s.time)) {
-      return setFormError("Merci de choisir le jour et l'heure de chaque séance hebdomadaire.");
-    }
-    if (!monthlyPrice || monthlyPrice <= 0) {
-      return setFormError("Le prix doit être supérieur à 0.");
-    }
-
-    const grade = ALL_GRADES.find((g) => g.id === gradeId);
-    const subject = subjectsForGrade.find((s) => s.id === subjectId);
-    const specialization = needsSpecialization ? SPECIALIZATIONS.find((s) => s.id === specializationId) : null;
-    const roundedPricePerSession = Math.round(pricePerSession * 100) / 100;
-
-    setSubmitting(true);
-    try {
-      const docRef = await addDoc(collection(DB, "courses"), {
-        teacherId: user.uid,
-        teacherName: user.name,
-        teacherBio: user.bio || "",
-        teacherSex: user.sex || null,
-        gradeId,
-        gradeName: grade?.name || "",
-        specializationId: specialization?.id || null,
-        specializationName: specialization?.name || null,
-        subjectId,
-        subjectName: subject?.name || "",
-        subjectEmoji: subject?.emoji || "📚",
-        weeklySlots: slots,
-        sessionsPerWeek: perWeek,
-        sessionsPerMonth,
-        maxStudents,
-        monthlyPrice,
-        pricePerSession: roundedPricePerSession,
-        enrolledCount: 0,
-        status: "active",
-        createdAt: serverTimestamp(),
-      });
-
-      setMyCourses((prev) => [
-        ...prev,
-        {
-          id: docRef.id,
-          teacherId: user.uid,
-          gradeName: grade?.name,
-          specializationName: specialization?.name || null,
-          subjectName: subject?.name,
-          subjectEmoji: subject?.emoji,
-          weeklySlots: slots,
-          sessionsPerWeek: perWeek,
-          sessionsPerMonth,
-          maxStudents,
-          monthlyPrice,
-          pricePerSession: roundedPricePerSession,
-          enrolledCount: 0,
-          status: "active",
-          createdAt: new Date(),
-        },
-      ]);
-      setSuccessMsg("Séance hebdomadaire publiée ! Elle se répète chaque semaine 🎉");
-      setSlots(Array.from({ length: perWeek }, () => ({ day: 0, time: "" })));
-    } catch (err) {
-      console.error(err);
-      setFormError("Une erreur est survenue. Réessayez.");
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  async function handleCancelCourse(courseId) {
-    const confirmed = window.confirm(
-      "Voulez-vous vraiment annuler cette séance ? Elle ne sera plus visible par les élèves."
-    );
-    if (!confirmed) return;
-
-    setCancellingId(courseId);
-    try {
-      await updateDoc(doc(DB, "courses", courseId), { status: "cancelled" });
-      setMyCourses((prev) => prev.map((c) => (c.id === courseId ? { ...c, status: "cancelled" } : c)));
-    } catch (err) {
-      console.error(err);
-      alert("Une erreur est survenue lors de l'annulation. Réessayez.");
-    } finally {
-      setCancellingId(null);
-    }
-  }
-
-  async function handleStartSession(courseId, dateIso) {
-    setStartMsg(null);
-    setStartError(null);
-    const key = `${courseId}_${dateIso}`;
-    setStartingKey(key);
-    try {
-      const idToken = await auth.currentUser.getIdToken();
-      const res = await fetch("/api/sessions/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
-        body: JSON.stringify({ courseId, date: dateIso }),
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        setStartError(data.error || "Une erreur est survenue.");
-        return;
+    async function loadVideos() {
+      setVideosLoading(true);
+      setVideosError(null);
+      try {
+        // Single-field query → no composite index needed; sorted client-side.
+        const snap = await getDocs(query(collection(DB, "videos"), where("teacherId", "==", user.uid)));
+        if (cancelled) return;
+        const list = snap.docs
+          .map((d) => {
+            const data = d.data();
+            return { id: d.id, ...data, createdAt: toJsDate(data.createdAt) };
+          })
+          .filter((v) => v.status !== "deleted" && v.status !== "failed")
+          .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+        setMyVideos(list);
+      } catch (err) {
+        console.error(err);
+        if (!cancelled) setVideosError("Impossible de charger vos vidéos. Réessayez plus tard.");
+      } finally {
+        if (!cancelled) setVideosLoading(false);
       }
-
-      // Straight into the room — no reason to make the teacher click
-      // twice once the session has actually started.
-      router.push(`/room/${data.roomId}`);
-    } catch (err) {
-      console.error(err);
-      setStartError("Connexion impossible. Vérifiez votre réseau.");
-    } finally {
-      setStartingKey(null);
     }
-  }
 
-  const patternEvents = myCourses
-    .filter((c) => c.status !== "cancelled")
-    .flatMap((c) =>
-      expandSlotsForMonth(c.weeklySlots || [], calYear, calMonth, c.createdAt).map((occ) => ({
-        date: occ.dateKey,
-        title: `${c.subjectName} · ${c.gradeName}`,
-      }))
-    );
+    loadVideos();
+    return () => {
+      cancelled = true;
+    };
+  }, [isTeacher, user?.uid]);
 
-  const bookingEvents = teacherSessions
-    .filter((s) => s.status !== "cancelled" && s.date)
-    .filter((s) => {
-      // Tunisia-local fields, not machine-local — a session near a
-      // month boundary must land in the same calendar month regardless
-      // of which computer is viewing it.
-      const { year, month } = getTunisiaFields(new Date(s.date));
-      return year === calYear && month === calMonth;
-    })
-    .map((s) => ({
-      date: s.date.slice(0, 10),
-      title: `${s.subjectName || "Séance"} · ${s.gradeName || ""}`,
-    }));
+  // ---- Poll Bunny for videos still uploading/encoding ----
+  const pollIds = myVideos
+    .filter(
+      (v) =>
+        IN_PROGRESS_STATUSES.includes(v.status) &&
+        (!v.createdAt || Date.now() - v.createdAt.getTime() < POLL_WINDOW_MS)
+    )
+    .map((v) => v.id)
+    .slice(0, 10);
+  const pollKey = pollIds.join(",");
 
-  const calendarEvents = [...patternEvents, ...bookingEvents];
+  useEffect(() => {
+    if (!isTeacher || !pollKey) return;
+    let cancelled = false;
 
-  const finishedSessions = teacherSessions.filter((s) => s.status === "finished");
-  const unpaidFinishedSessions = finishedSessions.filter((s) => !s.payed);
-
-  const totalRevenue = finishedSessions.reduce((sum, s) => sum + (s.price || 0), 0);
-  const unpaidAmount = unpaidFinishedSessions.reduce((sum, s) => sum + (s.price || 0), 0);
-
-  // Counts distinct class occurrences, not student-session docs — a
-  // class with 5 students subscribed produces 5 separate session docs
-  // sharing the same (courseId, date), which should count as ONE
-  // finished class, not five.
-  const finishedOccurrenceKeys = new Set(finishedSessions.map((s) => `${s.courseId}_${s.date}`));
-  const finishedCount = finishedOccurrenceKeys.size;
-
-  // One card per course whose weekly pattern lands on the selected day,
-  // PLUS any real session for that day not already covered by an active
-  // course's pattern. That second part matters specifically for a
-  // course that was cancelled AFTER it already had real (including
-  // finished) sessions — a course can only be cancelled once
-  // enrolledCount is 0, but that doesn't erase the history of sessions
-  // that already happened before everyone left. Without this fallback,
-  // those sessions would still show a dot on the calendar (the dot
-  // logic reads teacherSessions directly, unaffected by course status)
-  // but vanish from the day-panel entirely once their course was
-  // cancelled, which is the exact bug this fixes.
-  const selectedDayCourseCards = (() => {
-    if (!selectedDateKey) return [];
-
-    const [y, m, d] = selectedDateKey.split("-").map(Number);
-    // UTC noon anchor avoids any midnight-boundary edge case when
-    // reading the weekday back — same technique as expandSlotsForMonth
-    // in lib/recurrence.js.
-    const { weekday: idx } = getTunisiaFields(new Date(Date.UTC(y, m - 1, d, 12, 0)));
-
-    const cards = [];
-    const coveredKeys = new Set();
-
-    for (const c of myCourses) {
-      if (c.status === "cancelled") continue;
-      const matchingSlots = (c.weeklySlots || []).filter((slot) => slot.day === idx && slot.time);
-      for (const slot of matchingSlots) {
-        const [h, min] = slot.time.split(":").map(Number);
-        const occurrence = buildTunisiaDateTime(y, m - 1, d, h, min || 0);
-        if (c.createdAt && occurrence < c.createdAt) continue;
-
-        const occurrenceIso = occurrence.toISOString();
-        const realSessions = teacherSessions.filter(
-          (s) => s.status !== "cancelled" && s.courseId === c.id && s.date === occurrenceIso
+    async function poll() {
+      try {
+        const { videos } = await authFetch("/api/videos/sync-status", { videoIds: pollKey.split(",") });
+        if (cancelled || !videos) return;
+        setMyVideos((prev) =>
+          prev
+            .map((v) =>
+              videos[v.id] && !videos[v.id].error
+                ? { ...v, status: videos[v.id].status, durationSec: videos[v.id].durationSec || v.durationSec }
+                : v
+            )
+            .filter((v) => v.status !== "failed")
         );
-
-        coveredKeys.add(`${c.id}_${occurrenceIso}`);
-
-        cards.push({
-          courseId: c.id,
-          subjectName: c.subjectName,
-          gradeName: c.gradeName,
-          specializationName: c.specializationName,
-          date: occurrenceIso,
-          dateTime: occurrence,
-          studentCount: realSessions.length,
-          status: realSessions[0]?.status || null,
-          liveRoomId: realSessions[0]?.liveRoomId || null,
-        });
+      } catch (err) {
+        console.warn("Status polling failed", err);
       }
     }
 
-    // Fallback pass — real sessions for this date whose (courseId, date)
-    // wasn't already produced above, using the session doc's OWN
-    // denormalized fields directly, since the parent course may no
-    // longer be active (or, in principle, no longer exist at all).
-    const daySessions = teacherSessions.filter(
-      (s) => s.status !== "cancelled" && s.date?.slice(0, 10) === selectedDateKey
+    const t = setInterval(poll, STATUS_POLL_MS);
+    const first = setTimeout(poll, 3000);
+    return () => {
+      cancelled = true;
+      clearInterval(t);
+      clearTimeout(first);
+    };
+  }, [isTeacher, pollKey]);
+
+  useEffect(() => {
+    if (!successMsg) return;
+    const t = setTimeout(() => setSuccessMsg(null), 8000);
+    return () => clearTimeout(t);
+  }, [successMsg]);
+
+  // ---- Earnings account (fresh read: balance changes as students watch) ----
+  const [account, setAccount] = useState(null);
+  const [payouts, setPayouts] = useState([]);
+
+  useEffect(() => {
+    if (!isTeacher) return;
+    let cancelled = false;
+    async function loadAccount() {
+      try {
+        const [userSnap, payoutSnap] = await Promise.all([
+          getDoc(doc(DB, "users", user.uid)),
+          getDocs(query(collection(DB, "payouts"), where("teacherId", "==", user.uid))),
+        ]);
+        if (cancelled) return;
+        setAccount(userSnap.exists() ? userSnap.data() : {});
+        setPayouts(
+          payoutSnap.docs
+            .map((d) => ({ id: d.id, ...d.data(), paidAt: toJsDate(d.data().paidAt) }))
+            .sort((a, b) => (b.paidAt?.getTime() || 0) - (a.paidAt?.getTime() || 0))
+        );
+      } catch (err) {
+        console.error("Chargement du solde impossible", err);
+        if (!cancelled) setAccount({});
+      }
+    }
+    loadAccount();
+    return () => {
+      cancelled = true;
+    };
+  }, [isTeacher, user?.uid]);
+
+  function handleUploaded(video) {
+    setMyVideos((prev) => [video, ...prev.filter((v) => v.id !== video.id)]);
+    setModalOpen(false);
+    setSuccessMsg(
+      REQUIRE_REVIEW
+        ? "Vidéo envoyée ! 🎉 Elle est en cours de traitement, puis sera vérifiée par l'équipe Droussy avant d'être visible."
+        : "Vidéo envoyée ! 🎉 Elle sera visible dès la fin du traitement."
     );
-    const orphanGroups = new Map();
-    for (const s of daySessions) {
-      const key = `${s.courseId}_${s.date}`;
-      if (coveredKeys.has(key)) continue;
-      if (!orphanGroups.has(key)) {
-        orphanGroups.set(key, {
-          courseId: s.courseId,
-          subjectName: s.subjectName,
-          gradeName: s.gradeName,
-          specializationName: s.specializationName,
-          date: s.date,
-          dateTime: new Date(s.date),
-          studentCount: 0,
-          status: s.status,
-          liveRoomId: s.liveRoomId || null,
-        });
-      }
-      orphanGroups.get(key).studentCount += 1;
-    }
-    cards.push(...orphanGroups.values());
+  }
 
-    return cards.sort((a, b) => a.dateTime - b.dateTime);
-  })();
+  function handleEdited(id, title) {
+    setMyVideos((prev) => prev.map((v) => (v.id === id ? { ...v, title } : v)));
+    setEditingVideo(null);
+    setSuccessMsg("Titre mis à jour ✅");
+  }
 
-  // "Mes séances" ordering: earliest weekly slot first (Monday 18:00,
-  // then Monday 20:30, then Tuesday 18:00, ...) instead of Firestore's
-  // fetch order.
-  const sortedMyCourses = [...myCourses].sort(compareCoursesBySlot);
+  function handleDeleted(id) {
+    setMyVideos((prev) => prev.filter((v) => v.id !== id));
+    setDeletingVideo(null);
+    setSuccessMsg("Vidéo supprimée.");
+  }
+
+  function closeVideoModal() {
+    setModalOpen(false);
+    setEditingVideo(null);
+  }
+
+  // ---- Stats ----
+  // Balance & totals come from the teacher's account (server-written).
+  // Falls back to summing video views until the account has been read.
+  const summedViews = myVideos.reduce((sum, v) => sum + (v.views || 0), 0);
+  const totalViews = account?.[TEACHER_FIELDS.VIEWS_TOTAL] ?? summedViews;
+  const balanceDT = millimesToDT(account?.[TEACHER_FIELDS.BALANCE]);
+  const paidDT = millimesToDT(account?.[TEACHER_FIELDS.PAID_TOTAL]);
+  const payoutProgress = Math.min(100, Math.round((balanceDT / PAYOUT_THRESHOLD_DT) * 100));
+  const payoutReady = balanceDT >= PAYOUT_THRESHOLD_DT;
+  const publishedCount = myVideos.filter((v) => v.status === "published").length;
+  const waitingCount = myVideos.filter((v) => ["uploading", "encoding", "pending"].includes(v.status)).length;
+
+  // =========================================================
+  // RENDER
+  // =========================================================
 
   if (!hydrated) {
     return (
@@ -516,13 +406,13 @@ export default function EnseignantDashboard() {
               <span className="ens-login-badge">Espace professionnel</span>
               <h1 className="ens-login-intro-title">🏫 Connexion enseignant</h1>
               <p className="ens-login-intro-text">
-                Gérez vos séances en direct, vos tarifs mensuels et votre solde depuis votre tableau de
+                Publiez vos vidéos de cours, suivez vos vues du mois et vos revenus depuis votre tableau de
                 bord.
               </p>
               <ul className="ens-login-features">
-                <li>📅 Planning du mois interactif</li>
-                <li>💰 Suivi de vos revenus</li>
-                <li>🎓 Publication de nouvelles séances</li>
+                <li>🎬 Publication de vidéos de cours</li>
+                <li>👁 Suivi de vos vues chaque mois</li>
+                <li>💰 {formatMoney(VIEW_RATE_DT * 100)} DT pour chaque 100 vues</li>
               </ul>
               <a
                 href={`https://wa.me/${TEACHER_WHATSAPP}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`}
@@ -605,46 +495,711 @@ export default function EnseignantDashboard() {
   return (
     <div className="home-page">
       <div className="ens-board">
+        {/* ---------- Header ---------- */}
         <div className="ens-board-header">
           <div>
             <h1 className="ens-board-title">🏫 Bonjour {user.name?.split(" ")[0]}</h1>
-            <p className="ens-board-sub">Créez vos séances, fixez vos tarifs et suivez votre mois.</p>
+            <p className="ens-board-sub">Publiez vos vidéos et suivez vos vues du mois.</p>
           </div>
 
-          {/**
+          <div className="ens-header-actions">
+            <button type="button" onClick={() => setModalOpen(true)} className="ens-new-video-btn">
+              + Publier une vidéo
+            </button>
+            {/*
             <button type="button" onClick={handleLogout} className="ens-logout-btn">
               Déconnexion
             </button>
-          */}
-          
+            */}
+          </div>
         </div>
 
+        {successMsg && <p className="ens-success-banner">{successMsg}</p>}
+
+        {/* ---------- Stats ---------- */}
         <section className="ens-stats-grid">
           <div className="ens-stat-card ens-stat-card-mint">
-            <p className="ens-stat-label">💰 Revenu total</p>
-            <p className="ens-stat-value">{totalRevenue} DT</p>
-            <p className="ens-stat-hint">Séances terminées, payées et non payées</p>
+            <p className="ens-stat-label">💰 Solde à recevoir</p>
+            <p className="ens-stat-value">{formatMoney(balanceDT)} DT</p>
+            {/*
+            <div
+              className="ens-payout-track"
+              role="progressbar"
+              aria-valuenow={payoutProgress}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label={`Progression vers le versement de ${PAYOUT_THRESHOLD_DT} DT`}
+            >
+              <div className="ens-payout-bar" style={{ width: `${payoutProgress}%` }} />
+            </div>
+            <p className="ens-stat-hint">
+              {payoutReady
+                ? "🎉 Seuil atteint — votre versement est en préparation"
+                : `Versement dès ${PAYOUT_THRESHOLD_DT} DT · encore ${formatMoney(PAYOUT_THRESHOLD_DT - balanceDT)} DT`}
+            </p>
+            */}
           </div>
           <div className="ens-stat-card ens-stat-card-sun">
-            <p className="ens-stat-label">⏳ pas encore payées</p>
-            <p className="ens-stat-value">{unpaidAmount} DT</p>
-            <p className="ens-stat-hint">Séances terminées, pas encore payées</p>
+            <p className="ens-stat-label">👁 Vues totales</p>
+            <p className="ens-stat-value">{formatNumber(totalViews)}</p>
+            {/*
+            <p className="ens-stat-hint">
+              {formatMoney(VIEW_RATE_DT)} DT par vue · 1 élève = 1 vue par vidéo
+            </p>
+            */}
           </div>
           <div className="ens-stat-card">
-            <p className="ens-stat-label">✅ Séances terminées</p>
-            <p className="ens-stat-value">{finishedCount}</p>
-            <p className="ens-stat-hint">Payées et non payées confondues</p>
+            <p className="ens-stat-label">🎬 Vidéos publiées</p>
+            <p className="ens-stat-value">{publishedCount}</p>
+            {/*
+            <p className="ens-stat-hint">
+              {waitingCount > 0 ? `+ ${waitingCount} en traitement ou en validation` : "Au total"}
+            </p>
+            */}
           </div>
         </section>
 
-        <div className="ens-main-grid">
-          <form onSubmit={handleCreateCourse} className="ens-form-card">
-            <h2 className="ens-form-title">Ajouter une nouvelle séance</h2>
+        {/* ---------- Payouts ---------- */}
+        {payouts.length > 0 && (
+          <section className="ens-payouts">
+            <div className="ens-payouts-head">
+              <h2 className="ens-section-title ens-section-title-inline">💸 Mes versements</h2>
+              <span className="ens-payouts-total">Total versé : {formatMoney(paidDT)} DT</span>
+            </div>
+            <ul className="ens-payout-list">
+              {payouts.slice(0, 6).map((p) => (
+                <li key={p.id} className="ens-payout-item">
+                  <span className="ens-payout-date">
+                    {p.paidAt
+                      ? p.paidAt.toLocaleDateString("fr-TN", { day: "numeric", month: "long", year: "numeric" })
+                      : "—"}
+                  </span>
+                  <span className="ens-payout-amount">{formatMoney(millimesToDT(p.amountMillimes))} DT</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
+        {/* ---------- Videos ---------- */}
+        <h2 className="ens-section-title">Mes vidéos</h2>
+
+        {videosLoading ? (
+          <LoadingSpinner />
+        ) : videosError ? (
+          <p className="ens-login-error">{videosError}</p>
+        ) : myVideos.length === 0 ? (
+          <div className="ens-empty-card">
+            <p className="ens-empty-emoji">🎬</p>
+            <p className="ens-empty-title">Aucune vidéo pour l'instant</p>
+            <p className="ens-empty-text">Publiez votre première leçon et commencez à gagner avec vos vues.</p>
+            <button type="button" onClick={() => setModalOpen(true)} className="ens-new-video-btn">
+              + Publier une vidéo
+            </button>
+          </div>
+        ) : (
+          <div className="ens-video-grid">
+            {myVideos.map((v) => (
+              <TeacherVideoCard
+                key={v.id}
+                video={v}
+                menuOpen={openMenuId === v.id}
+                onToggleMenu={() => setOpenMenuId((cur) => (cur === v.id ? null : v.id))}
+                onCloseMenu={() => setOpenMenuId(null)}
+                onEdit={() => {
+                  setOpenMenuId(null);
+                  setEditingVideo(v);
+                }}
+                onDelete={() => {
+                  setOpenMenuId(null);
+                  setDeletingVideo(v);
+                }}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      <PublishVideoModal
+        open={modalOpen || !!editingVideo}
+        editVideo={editingVideo}
+        onClose={closeVideoModal}
+        user={user}
+        onUploaded={handleUploaded}
+        onEdited={handleEdited}
+      />
+
+      {deletingVideo && (
+        <DeleteVideoModal video={deletingVideo} onClose={() => setDeletingVideo(null)} onDeleted={handleDeleted} />
+      )}
+    </div>
+  );
+}
+
+// =========================================================
+// VIDEO CARD (with ⋮ menu)
+// =========================================================
+
+function TeacherVideoCard({ video, menuOpen, onToggleMenu, onCloseMenu, onEdit, onDelete }) {
+  const color = colorFor(video.subjectId || video.subjectName);
+  const trimestre = TRIMESTRES.find((t) => t.id === video.trimestre);
+  const menuRef = useRef(null);
+
+  // Close the menu on outside click or Escape.
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onDown(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) onCloseMenu();
+    }
+    function onKey(e) {
+      if (e.key === "Escape") onCloseMenu();
+    }
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("touchstart", onDown, { passive: true });
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("touchstart", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen, onCloseMenu]);
+
+  return (
+    <article className={`ens-video-card ${menuOpen ? "ens-video-card-menu-open" : ""}`}>
+      <div className={`ens-video-thumb ens-thumb-${color}`}>
+        {video.thumbnailUrl ? (
+          <img src={video.thumbnailUrl} alt={video.title} loading="lazy" />
+        ) : (
+          <span className="ens-video-thumb-emoji">{video.subjectEmoji || "🎬"}</span>
+        )}
+
+        {video.status && video.status !== "published" && (
+          <span className={`ens-video-status ens-video-status-${video.status}`}>
+            {STATUS_LABELS[video.status] || video.status}
+          </span>
+        )}
+
+        <span className="ens-video-duration">{formatDuration(video.durationSec)}</span>
+      </div>
+
+      <div className="ens-video-menu-wrap" ref={menuRef}>
+        <button
+          type="button"
+          className="ens-video-menu-btn"
+          onClick={onToggleMenu}
+          aria-label={`Options pour ${video.title}`}
+          aria-haspopup="menu"
+          aria-expanded={menuOpen}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="5" r="2" fill="currentColor" />
+            <circle cx="12" cy="12" r="2" fill="currentColor" />
+            <circle cx="12" cy="19" r="2" fill="currentColor" />
+          </svg>
+        </button>
+
+        {menuOpen && (
+          <div className="ens-video-menu" role="menu">
+            <button type="button" role="menuitem" className="ens-video-menu-item" onClick={onEdit}>
+              <span aria-hidden="true">✏️</span> Modifier le titre
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              className="ens-video-menu-item ens-video-menu-item-danger"
+              onClick={onDelete}
+            >
+              <span aria-hidden="true">🗑️</span> Supprimer
+            </button>
+          </div>
+        )}
+      </div>
+
+      <p className="ens-video-title">{video.title}</p>
+      <div className="ens-video-meta">
+        <span className="ens-video-chip">{video.gradeName}</span>
+        {video.specializationName && (
+          <span className="ens-video-chip ens-video-chip-muted">{video.specializationName}</span>
+        )}
+        <span className="ens-video-chip ens-video-chip-muted">
+          {video.subjectEmoji} {video.subjectName}
+        </span>
+        {trimestre && <span className="ens-video-chip ens-video-chip-muted">T{trimestre.id}</span>}
+      </div>
+      <p className="ens-video-views">👁 {formatNumber(video.views)} vues</p>
+    </article>
+  );
+}
+
+// =========================================================
+// DELETE CONFIRMATION
+// =========================================================
+
+function DeleteVideoModal({ video, onClose, onDeleted }) {
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    function onKey(e) {
+      if (e.key === "Escape" && !deleting) onClose();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [deleting, onClose]);
+
+  async function handleDelete() {
+    setDeleting(true);
+    setError(null);
+    try {
+      await apiRequest(`/api/videos/${video.id}`, { method: "DELETE" });
+      onDeleted(video.id);
+    } catch (err) {
+      setError(err.message);
+      setDeleting(false);
+    }
+  }
+
+  return (
+    <div
+      className="ens-modal-backdrop"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget && !deleting) onClose();
+      }}
+    >
+      <div className="ens-modal ens-modal-sm" role="alertdialog" aria-modal="true" aria-labelledby="ens-del-title">
+        <div className="ens-del-icon">🗑️</div>
+        <h2 id="ens-del-title" className="ens-modal-title ens-text-center">
+          Supprimer cette vidéo ?
+        </h2>
+        <p className="ens-del-video-title">« {video.title} »</p>
+        <p className="ens-del-text">
+          Elle ne sera plus visible par les élèves et ne pourra pas être récupérée.
+          {(video.views || 0) > 0 && (
+            <>
+              {" "}
+              Les <strong>{formatNumber(video.views)} vues</strong> déjà comptées restent dans votre solde.
+            </>
+          )}
+        </p>
+
+        {error && <p className="ens-login-error">{error}</p>}
+
+        <div className="ens-del-actions">
+          <button type="button" onClick={onClose} disabled={deleting} className="ens-btn-ghost">
+            Annuler
+          </button>
+          <button type="button" onClick={handleDelete} disabled={deleting} className="ens-btn-danger">
+            {deleting ? "Suppression..." : "Supprimer"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// =========================================================
+// PUBLISH / EDIT MODAL
+// In edit mode, everything is shown read-only except the title.
+// =========================================================
+
+function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdited }) {
+  const isEdit = !!editVideo;
+
+  const [gradeId, setGradeId] = useState(ALL_GRADES[0].id);
+  const [specializationId, setSpecializationId] = useState("");
+  const [subjectId, setSubjectId] = useState("");
+  const [title, setTitle] = useState("");
+
+  const [thumbFile, setThumbFile] = useState(null);
+  const [thumbPreview, setThumbPreview] = useState(null);
+  const [videoFile, setVideoFile] = useState(null);
+  const [durationSec, setDurationSec] = useState(0);
+  const [readingDuration, setReadingDuration] = useState(false);
+
+  const [submitting, setSubmitting] = useState(false);
+  const [stage, setStage] = useState(""); // human-readable step during submit
+  const [progress, setProgress] = useState(0);
+  const [error, setError] = useState(null);
+
+  const thumbInputRef = useRef(null);
+  const videoInputRef = useRef(null);
+  const tusRef = useRef(null);
+  const createdIdRef = useRef(null);
+
+  const needsSpecialization = GRADES_WITH_SPECIALIZATION.has(gradeId);
+  const subjectsForGrade = getSubjectsForGrade(gradeId);
+
+  // Pre-fill the title when editing.
+  useEffect(() => {
+    if (open && editVideo) {
+      setTitle(editVideo.title || "");
+      setError(null);
+    }
+  }, [open, editVideo]);
+
+  useEffect(() => {
+    if (!needsSpecialization) setSpecializationId("");
+  }, [needsSpecialization]);
+
+  useEffect(() => {
+    if (subjectsForGrade.length === 0) {
+      setSubjectId("");
+      return;
+    }
+    if (!subjectsForGrade.some((s) => s.id === subjectId)) {
+      setSubjectId(subjectsForGrade[0].id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gradeId]);
+
+  // Revoke thumbnail preview URLs to avoid leaking memory.
+  useEffect(() => {
+    return () => {
+      if (thumbPreview) URL.revokeObjectURL(thumbPreview);
+    };
+  }, [thumbPreview]);
+
+  // Escape to close + lock page scroll while open.
+  useEffect(() => {
+    if (!open) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    function onKey(e) {
+      if (e.key === "Escape" && !submitting) handleClose();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKey);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, submitting]);
+
+  // Warn before leaving the page mid-upload.
+  useEffect(() => {
+    if (!submitting || isEdit) return;
+    function onBeforeUnload(e) {
+      e.preventDefault();
+      e.returnValue = "";
+    }
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [submitting, isEdit]);
+
+  function resetForm() {
+    setTitle("");
+    setThumbFile(null);
+    setThumbPreview(null);
+    setVideoFile(null);
+    setDurationSec(0);
+    setProgress(0);
+    setStage("");
+    setError(null);
+    if (thumbInputRef.current) thumbInputRef.current.value = "";
+    if (videoInputRef.current) videoInputRef.current.value = "";
+  }
+
+  function handleClose() {
+    if (submitting) return;
+    resetForm();
+    onClose();
+  }
+
+  function onThumbChange(e) {
+    setError(null);
+    const f = e.target.files?.[0];
+    if (!f) {
+      setThumbFile(null);
+      setThumbPreview(null);
+      return;
+    }
+    if (!f.type.startsWith("image/")) {
+      setError("La miniature doit être une image (JPG, PNG, WEBP).");
+      e.target.value = "";
+      return;
+    }
+    if (f.size > MAX_THUMB_BYTES) {
+      setError("La miniature ne doit pas dépasser 5 Mo.");
+      e.target.value = "";
+      return;
+    }
+    setThumbFile(f);
+    setThumbPreview(URL.createObjectURL(f));
+  }
+
+  async function onVideoChange(e) {
+    setError(null);
+    const f = e.target.files?.[0];
+    if (!f) {
+      setVideoFile(null);
+      setDurationSec(0);
+      return;
+    }
+    if (!f.type.startsWith("video/")) {
+      setError("Le fichier doit être une vidéo (MP4 recommandé).");
+      e.target.value = "";
+      return;
+    }
+    if (f.size > MAX_VIDEO_BYTES) {
+      setError("La vidéo ne doit pas dépasser 2 Go.");
+      e.target.value = "";
+      return;
+    }
+    setVideoFile(f);
+    setReadingDuration(true);
+    const d = await readVideoDuration(f);
+    setDurationSec(d);
+    setReadingDuration(false);
+  }
+
+  // ---- Edit mode: only the title changes ----
+  async function handleSaveTitle(e) {
+    e.preventDefault();
+    setError(null);
+    const cleanTitle = title.trim().replace(/\s+/g, " ");
+    if (cleanTitle.length < TITLE_MIN) {
+      return setError(`Écrivez un titre clair pour la leçon (${TITLE_MIN} caractères minimum).`);
+    }
+    if (cleanTitle === editVideo.title) {
+      handleClose();
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const data = await apiRequest(`/api/videos/${editVideo.id}`, { method: "PATCH", body: { title: cleanTitle } });
+      setSubmitting(false);
+      resetForm();
+      onEdited(editVideo.id, data.title || cleanTitle);
+    } catch (err) {
+      setError(err.message);
+      setSubmitting(false);
+    }
+  }
+
+  // ---- Publish mode ----
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setError(null);
+
+    const cleanTitle = title.trim().replace(/\s+/g, " ");
+    if (cleanTitle.length < TITLE_MIN) {
+      return setError(`Écrivez un titre clair pour la leçon (${TITLE_MIN} caractères minimum).`);
+    }
+    if (!subjectId) return setError("Choisissez une matière.");
+    if (needsSpecialization && !specializationId) return setError("Choisissez une spécialité pour ce niveau.");
+    if (!thumbFile) return setError("Ajoutez une miniature pour votre vidéo.");
+    if (!videoFile) return setError("Ajoutez le fichier vidéo.");
+    if (readingDuration) return setError("Lecture de la vidéo en cours, patientez une seconde.");
+    if (durationSec > 0 && durationSec < MIN_DURATION_SEC) {
+      return setError(`La vidéo doit durer au moins ${Math.round(MIN_DURATION_SEC / 60)} minutes.`);
+    }
+
+    const grade = ALL_GRADES.find((g) => g.id === gradeId);
+    const subject = subjectsForGrade.find((s) => s.id === subjectId);
+    const specialization = needsSpecialization ? SPECIALIZATIONS.find((s) => s.id === specializationId) : null;
+
+    setSubmitting(true);
+    setProgress(0);
+    let createdVideoId = null;
+
+    try {
+      // 1) Thumbnail → Cloudinary as WebP (first 3% of the bar)
+      setStage("Envoi de la miniature...");
+      const thumb = await uploadThumbnailToCloudinary(thumbFile, (p) => setProgress(p * 0.03));
+
+      // 2) Server creates the Bunny video + Firestore doc, returns signed upload credentials
+      setStage("Préparation de l'envoi...");
+      const created = await authFetch("/api/videos/create-upload", {
+        title: cleanTitle,
+        gradeId,
+        gradeName: grade?.name || "",
+        specializationId: specialization?.id || null,
+        specializationName: specialization?.name || null,
+        subjectId,
+        subjectName: subject?.name || "",
+        subjectEmoji: subject?.emoji || "📚",
+        thumbnailUrl: thumb.url,
+        thumbnailPublicId: thumb.publicId,
+        clientDurationSec: Math.round(durationSec),
+      });
+      createdVideoId = created.videoId;
+      createdIdRef.current = created.videoId;
+
+      // 3) Video → Bunny directly (resumable TUS upload)
+      setStage("Envoi de la vidéo...");
+      await uploadVideoToBunny(
+        videoFile,
+        { ...created, title: cleanTitle },
+        (p) => setProgress(0.03 + p * 0.97),
+        tusRef
+      );
+
+      // 4) Ask the server to read the new status from Bunny
+      setStage("Finalisation...");
+      setProgress(1);
+      let status = "encoding";
+      try {
+        const { videos } = await authFetch("/api/videos/sync-status", { videoIds: [created.videoId] });
+        if (videos?.[created.videoId]?.status) status = videos[created.videoId].status;
+      } catch {
+        /* polling on the dashboard will pick it up */
+      }
+
+      const video = {
+        ...created.video,
+        id: created.videoId,
+        status: status === "uploading" ? "encoding" : status,
+        createdAt: new Date(),
+      };
+
+      setSubmitting(false);
+      tusRef.current = null;
+      createdIdRef.current = null;
+      resetForm();
+      onUploaded(video);
+    } catch (err) {
+      console.error(err);
+      // Clean up the half-created video so it doesn't sit in "uploading".
+      if (createdVideoId) {
+        authFetch("/api/videos/sync-status", { videoIds: [createdVideoId], abandon: true }).catch(() => {});
+      }
+      tusRef.current = null;
+      createdIdRef.current = null;
+      setError(
+        err?.message && !String(err.message).startsWith("tus:")
+          ? err.message
+          : "L'envoi a échoué. Vérifiez votre connexion et réessayez."
+      );
+      setSubmitting(false);
+      setStage("");
+    }
+  }
+
+  async function handleCancelUpload() {
+    if (!tusRef.current) return;
+    try {
+      await tusRef.current.abort(true);
+    } catch {
+      /* ignore */
+    }
+    // The pending promise never settles after abort, so reset and clean up here.
+    if (createdIdRef.current) {
+      authFetch("/api/videos/sync-status", { videoIds: [createdIdRef.current], abandon: true }).catch(() => {});
+    }
+    tusRef.current = null;
+    createdIdRef.current = null;
+    setSubmitting(false);
+    setStage("");
+    setProgress(0);
+    setError("Envoi annulé.");
+  }
+
+  if (!open) return null;
+
+  const percent = Math.round(progress * 100);
+
+  return (
+    <div
+      className="ens-modal-backdrop"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) handleClose();
+      }}
+    >
+      <div className="ens-modal" role="dialog" aria-modal="true" aria-labelledby="ens-modal-title">
+        <div className="ens-modal-header">
+          <div>
+            <h2 id="ens-modal-title" className="ens-modal-title">
+              {isEdit ? "Modifier la vidéo" : "Publier une nouvelle vidéo"}
+            </h2>
+            <p className="ens-modal-desc">
+              {isEdit
+                ? "Seul le titre peut être modifié. Pour changer le niveau, la matière ou la vidéo, publiez une nouvelle vidéo."
+                : "Choisissez le niveau, la matière, puis ajoutez votre vidéo."}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleClose}
+            disabled={submitting}
+            className="ens-modal-close"
+            aria-label="Fermer"
+          >
+            ✕
+          </button>
+        </div>
+
+        {isEdit ? (
+          /* ---------- EDIT MODE ---------- */
+          <form onSubmit={handleSaveTitle} className="ens-modal-form">
             <div className="ens-form-grid">
               <label className="ens-field">
                 <span className="ens-field-label">Niveau</span>
-                <select value={gradeId} onChange={(e) => setGradeId(e.target.value)} className="ens-select">
+                <input value={editVideo.gradeName || ""} disabled readOnly className="ens-input" />
+              </label>
+
+              {editVideo.specializationName && (
+                <label className="ens-field">
+                  <span className="ens-field-label">Spécialité</span>
+                  <input value={editVideo.specializationName} disabled readOnly className="ens-input" />
+                </label>
+              )}
+
+              <label className="ens-field">
+                <span className="ens-field-label">Matière</span>
+                <input
+                  value={`${editVideo.subjectEmoji || ""} ${editVideo.subjectName || ""}`.trim()}
+                  disabled
+                  readOnly
+                  className="ens-input"
+                />
+              </label>
+
+              <label className="ens-field ens-field-full">
+                <span className="ens-field-label">Titre de la leçon</span>
+                <input
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  maxLength={TITLE_MAX}
+                  disabled={submitting}
+                  autoFocus
+                  className="ens-input ens-input-editable"
+                />
+                <p className="ens-field-hint">
+                  {title.trim().length}/{TITLE_MAX} caractères
+                </p>
+              </label>
+            </div>
+
+            {editVideo.thumbnailUrl && (
+              <div className="ens-field">
+                <span className="ens-field-label">Miniature</span>
+                <img src={editVideo.thumbnailUrl} alt="" className="ens-thumb-preview ens-thumb-readonly" />
+              </div>
+            )}
+
+            {error && <p className="ens-login-error">{error}</p>}
+
+            <button type="submit" disabled={submitting} className="ens-publish-btn">
+              {submitting ? "Enregistrement..." : "Enregistrer"}
+            </button>
+          </form>
+        ) : (
+          /* ---------- PUBLISH MODE ---------- */
+          <form onSubmit={handleSubmit} className="ens-modal-form">
+            <div className="ens-form-grid">
+              <label className="ens-field">
+                <span className="ens-field-label">Niveau</span>
+                <select
+                  value={gradeId}
+                  onChange={(e) => setGradeId(e.target.value)}
+                  disabled={submitting}
+                  className="ens-select"
+                >
                   {GRADE_GROUPS.map((group) => (
                     <optgroup key={group.levelName} label={group.levelName}>
                       {group.grades.map((g) => (
@@ -663,6 +1218,7 @@ export default function EnseignantDashboard() {
                   <select
                     value={specializationId}
                     onChange={(e) => setSpecializationId(e.target.value)}
+                    disabled={submitting}
                     className="ens-select"
                   >
                     <option value="">— Choisir —</option>
@@ -677,7 +1233,12 @@ export default function EnseignantDashboard() {
 
               <label className="ens-field">
                 <span className="ens-field-label">Matière</span>
-                <select value={subjectId} onChange={(e) => setSubjectId(e.target.value)} className="ens-select">
+                <select
+                  value={subjectId}
+                  onChange={(e) => setSubjectId(e.target.value)}
+                  disabled={submitting}
+                  className="ens-select"
+                >
                   {subjectsForGrade.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.emoji} {s.name}
@@ -686,252 +1247,82 @@ export default function EnseignantDashboard() {
                 </select>
               </label>
 
-              <label className="ens-field">
-                <span className="ens-field-label">Séances par semaine</span>
-                <input
-                  type="number"
-                  min={1}
-                  max={7}
-                  value={perWeek}
-                  onChange={(e) => setPerWeek(Number(e.target.value))}
-                  className="ens-input"
-                />
-                <p className="ens-field-hint">≈ {sessionsPerMonth} séances / mois</p>
-              </label>
-
-              <label className="ens-field">
-                <span className="ens-field-label">Élèves max / séance</span>
-                <input
-                  type="number"
-                  min={1}
-                  max={5}
-                  value={maxStudents}
-                  onChange={(e) => setMaxStudents(Number(e.target.value))}
-                  className="ens-input"
-                />
-              </label>
-
               <label className="ens-field ens-field-full">
-                <span className="ens-field-label">Prix abonnement mensuel (DT)</span>
+                <span className="ens-field-label">Titre de la leçon</span>
                 <input
-                  type="number"
-                  min={0}
-                  value={monthlyPrice}
-                  onChange={(e) => setMonthlyPrice(Number(e.target.value))}
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  maxLength={TITLE_MAX}
+                  disabled={submitting}
+                  placeholder="Ex : Les fractions — addition et soustraction"
                   className="ens-input"
                 />
-                <p className="ens-field-hint">soit ≈ {pricePerSession.toFixed(2)} DT / séance</p>
+                <p className="ens-field-hint">Utilisez le nom de la leçon tel qu'il apparaît dans le programme.</p>
               </label>
             </div>
 
-            <fieldset className="ens-dates-fieldset">
-              <legend className="ens-field-label">Jour et heure de chaque séance (chaque semaine)</legend>
-              <div className="ens-dates-grid">
-                {slots.map((s, i) => (
-                  <div key={i} className="ens-slot-row">
-                    <span className="ens-date-index">{i + 1}.</span>
-                    <select
-                      value={s.day}
-                      onChange={(e) => updateSlotDay(i, Number(e.target.value))}
-                      className="ens-select ens-slot-day"
-                    >
-                      {WEEK_DAYS.map((w, idx) => (
-                        <option key={w} value={idx}>
-                          {w}
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      type="time"
-                      value={s.time}
-                      onChange={(e) => updateSlotTime(i, e.target.value)}
-                      className="ens-input ens-slot-time"
-                    />
-                  </div>
-                ))}
-              </div>
-              <p className="ens-field-hint">Ces créneaux se répètent chaque semaine jusqu'à l'arrêt du cours.</p>
-            </fieldset>
+            <label className="ens-field">
+              <span className="ens-field-label">Miniature (image)</span>
+              <input
+                ref={thumbInputRef}
+                type="file"
+                accept="image/*"
+                onChange={onThumbChange}
+                disabled={submitting}
+                className="ens-file-input"
+              />
+              {thumbPreview && <img src={thumbPreview} alt="Aperçu de la miniature" className="ens-thumb-preview" />}
+            </label>
 
-            {formError && <p className="ens-login-error">{formError}</p>}
-            {successMsg && <p className="ens-success-banner">{successMsg}</p>}
+            <label className="ens-field">
+              <span className="ens-field-label">Fichier vidéo</span>
+              <input
+                ref={videoInputRef}
+                type="file"
+                accept="video/*"
+                onChange={onVideoChange}
+                disabled={submitting}
+                className="ens-file-input"
+              />
+              <p className="ens-field-hint">
+                {readingDuration
+                  ? "Lecture de la vidéo..."
+                  : videoFile
+                  ? `Durée : ${formatDuration(durationSec)} · ${(videoFile.size / (1024 * 1024)).toFixed(0)} Mo`
+                  : `MP4 recommandé · ${Math.round(MIN_DURATION_SEC / 60)} min minimum · 2 Go maximum`}
+              </p>
+            </label>
 
-            <button type="submit" disabled={submitting} className="ens-publish-btn">
-              {submitting ? "Publication..." : "Publier la séance"}
-            </button>
-          </form>
-
-          <div>
-            <MonthCalendar
-              events={calendarEvents}
-              emptyMessage="Aucune séance programmée ce mois-ci."
-              onMonthChange={handleCalendarMonthChange}
-              onDayClick={handleDayClick}
-              selectedDateKey={selectedDateKey}
-            />
-
-            {selectedDateKey && (
-              <div className="ens-day-panel">
-                <div className="ens-day-panel-header">
-                  <p className="ens-day-panel-title">
-                    {new Date(`${selectedDateKey}T00:00:00`).toLocaleDateString("fr-TN", {
-                      weekday: "long",
-                      day: "numeric",
-                      month: "long",
-                    })}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedDateKey(null)}
-                    className="ens-day-panel-close"
-                    aria-label="Fermer"
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                {selectedDayCourseCards.length === 0 ? (
-                  <p className="ens-day-panel-empty">Aucune séance programmée ce jour-là.</p>
-                ) : (
-                  <ul className="ens-day-session-list">
-                    {selectedDayCourseCards.map((g, i) => {
-                      const groupKey = `${g.courseId}_${g.date}`;
-                      const hasStudents = g.studentCount > 0;
-                      const timingState = getSessionTimingState(g.dateTime);
-                      const isStarting = startingKey === groupKey;
-
-                      return (
-                        <li key={i} className="ens-day-session-card">
-                          <div className="ens-day-session-info">
-                            <p className="ens-day-session-subject">
-                              {g.subjectName} · {g.gradeName}
-                              {g.specializationName ? ` (${g.specializationName})` : ""}
-                            </p>
-                            <p className="ens-day-session-meta">
-                              {g.dateTime.toLocaleString("fr-TN", {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                                hour12: false,
-                              })}
-                              {hasStudents
-                                ? ` · ${g.studentCount} élève${g.studentCount > 1 ? "s" : ""} inscrit${
-                                    g.studentCount > 1 ? "s" : ""
-                                  }`
-                                : ""}
-                            </p>
-                          </div>
-
-                          {!hasStudents ? (
-                            <p className="ens-day-session-empty-msg">
-                              Aucun élève inscrit à une séance ce jour-là.
-                            </p>
-                          ) : g.status === "finished" ? (
-                            <span className="ens-day-session-status">
-                              {SESSION_STATUS_LABELS[g.status] || g.status}
-                            </span>
-                          ) : g.status === "started" ? (
-                            <button
-                              type="button"
-                              onClick={() => router.push(`/room/${g.liveRoomId}`)}
-                              className="ens-day-session-start-btn"
-                            >
-                              Rejoindre la séance
-                            </button>
-                          ) : timingState === "past" ? (
-                            <span className="ens-day-session-status ens-day-session-status-missed">
-                              Séance passée
-                            </span>
-                          ) : (
-                            <button
-                              type="button"
-                              disabled={timingState !== "ready" || isStarting}
-                              onClick={() => handleStartSession(g.courseId, g.date)}
-                              className="ens-day-session-start-btn"
-                            >
-                              {isStarting
-                                ? "Démarrage..."
-                                : timingState === "ready"
-                                ? "Démarrer la séance"
-                                : "Pas encore l'heure"}
-                            </button>
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-                {startMsg && <p className="ens-day-panel-msg">{startMsg}</p>}
-                {startError && <p className="ens-day-panel-error">{startError}</p>}
-              </div>
+            {REQUIRE_REVIEW && (
+              <p className="ens-review-note">
+                🛡️ Votre vidéo sera vérifiée par l'équipe Droussy avant d'être visible par les élèves.
+              </p>
             )}
-          </div>
-        </div>
 
-        <h2 className="ens-courses-title">Mes séances</h2>
-        {coursesLoading ? (
-          <LoadingSpinner />
-        ) : myCourses.length === 0 ? (
-          <p className="ens-empty-text">Vous n'avez pas encore publié de séance.</p>
-        ) : (
-          <div className="ens-courses-grid">
-            {sortedMyCourses.map((c) => {
-              const isCancelled = c.status === "cancelled";
-              const hasEnrolled = (c.enrolledCount || 0) > 0;
-              const next = !isCancelled ? getNextOccurrence(c.weeklySlots || []) : null;
-              return (
-                <article key={c.id} className={`ens-course-card ${isCancelled ? "ens-course-card-cancelled" : ""}`}>
-                  <p className="ens-course-name">
-                    {c.subjectEmoji} {c.subjectName} · {c.gradeName}
-                    {c.specializationName ? ` (${c.specializationName})` : ""}
+            {submitting && (
+              <div className="ens-progress" aria-live="polite">
+                <div className="ens-progress-track">
+                  <div className="ens-progress-bar" style={{ width: `${percent}%` }} />
+                </div>
+                <div className="ens-progress-row">
+                  <p className="ens-progress-label">
+                    {stage} {percent}% — ne fermez pas cette page.
                   </p>
-                  <p className="ens-course-meta">
-                    {c.sessionsPerWeek} séance{c.sessionsPerWeek > 1 ? "s" : ""} / semaine · ≈{" "}
-                    {c.sessionsPerMonth} / mois · {c.enrolledCount || 0}/{c.maxStudents} élèves
-                  </p>
-                  <p className="ens-course-slots">
-                    {(c.weeklySlots || []).map((s) => `${WEEK_DAYS[s.day]} ${s.time}`).join(" · ")}
-                  </p>
-                  {next && (
-                    <p className="ens-course-next">
-                      Prochaine :{" "}
-                      {next.toLocaleString("fr-TN", {
-                        weekday: "long",
-                        day: "numeric",
-                        month: "short",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        hour12: false,
-                      })}
-                    </p>
-                  )}
-                  <p className="ens-course-price">
-                    {c.monthlyPrice} DT / mois
-                    <span className="ens-course-price-per-session">
-                      {" "}
-                      ({c.pricePerSession?.toFixed(2)} DT / séance)
-                    </span>
-                  </p>
-
-                  {isCancelled ? (
-                    <span className="ens-course-cancelled-badge">Annulée</span>
-                  ) : hasEnrolled ? (
-                    <p className="ens-course-cancel-blocked">
-                      Annulation impossible : des élèves sont inscrits.
-                    </p>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => handleCancelCourse(c.id)}
-                      disabled={cancellingId === c.id}
-                      className="ens-course-cancel-btn"
-                    >
-                      {cancellingId === c.id ? "Annulation..." : "Annuler la séance"}
+                  {tusRef.current && (
+                    <button type="button" onClick={handleCancelUpload} className="ens-progress-cancel">
+                      Annuler
                     </button>
                   )}
-                </article>
-              );
-            })}
-          </div>
+                </div>
+              </div>
+            )}
+
+            {error && <p className="ens-login-error">{error}</p>}
+
+            <button type="submit" disabled={submitting || readingDuration} className="ens-publish-btn">
+              {submitting ? `Envoi... ${percent}%` : "Publier"}
+            </button>
+          </form>
         )}
       </div>
     </div>

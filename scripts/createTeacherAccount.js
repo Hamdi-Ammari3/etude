@@ -13,8 +13,8 @@ const app = initializeApp({
 });
 const db = getFirestore(app);
 
-const NAME = "Oumaima Ammari";
-const RAW_PHONE = "50375235";
+const NAME = "Houcine Farhani";
+const RAW_PHONE = "94804447";
 const COURSES = []; 
 const BIO = "";
 // ---------------------------------------------------------------------------
@@ -37,15 +37,21 @@ async function createAccount() {
 
   const pin = generatePin();
 
+  //man - woman
+
   await db.collection("users").doc(uid).set({
     name: NAME,
     phone: canonicalPhone, 
     password: pin, 
     role: "teacher",
+    sex:'man',
     courses:COURSES,
     bio: BIO,
     balance:0,
-    rating: null,
+    ratingAvg:5,
+    ratingCount:1,
+    ratingSum:5,
+    ratingWeighted:5,
     totalSessions: 0,
     loginAttempts: { count: 0, windowStart: 0 },
     createdAt: new Date().toISOString(),

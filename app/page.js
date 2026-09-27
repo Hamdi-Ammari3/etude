@@ -1,11 +1,7 @@
 import Link from "next/link";
-import MonthCalendar from "./components/MonthCalendar";
 import "./homePage.css";
 
 export default function HomePage() {
-  // TODO: once live-session bookings exist, replace this with the user's
-  // actual upcoming sessions for the current month.
-  const liveSessionEvents = [];
 
   return (
     <div className="home-page">
@@ -17,23 +13,23 @@ export default function HomePage() {
             Apprendre, c'est <em>amusant</em> !
           </h1>
           <p className="home-hero-sub">
-            Des cours en direct avec de super enseignants et des fiches de révision pleines de
-            couleurs, du primaire jusqu'au collège.
+            Des vidéos de cours avec de super enseignants et des fiches de révision pleines de couleurs,
+            du primaire jusqu'au bac.
           </p>
 
           <div className="home-hero-cards">
-            <Link href="/direct" className="home-service-card">
-              <div className="home-service-icon home-service-icon-sky">🎥</div>
-              <h2 className="home-service-title">Cours en direct</h2>
+            <Link href="/videos" className="home-service-card">
+              <div className="home-service-icon home-service-icon-sky">🎬</div>
+              <h2 className="home-service-title">Vidéos</h2>
               <p className="home-service-text">
-                Rejoins un enseignant en ligne, en petit groupe, chaque semaine.
+                Des leçons en vidéo par de super enseignants, à regarder quand tu veux.
               </p>
-              <span className="home-service-cta home-service-cta-primary">Je commence</span>
+              <span className="home-service-cta home-service-cta-primary">Je regarde</span>
             </Link>
 
             <Link href="/lecons" className="home-service-card">
               <div className="home-service-icon home-service-icon-sun">📚</div>
-              <h2 className="home-service-title">Leçons &amp; exercices</h2>
+              <h2 className="home-service-title">Documents</h2>
               <p className="home-service-text">
                 Résumés de cours et exercices corrigés à lire et à réviser.
               </p>
@@ -42,14 +38,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
-      {/* Calendar — upcoming live sessions for the month 
-      <section className="home-calendar-section">
-        <h2 className="home-section-title">🗓️ Mon mois d'apprentissage</h2>
-        <p className="home-section-sub">Toutes tes séances en direct du mois, en un coup d'œil.</p>
-        <MonthCalendar events={liveSessionEvents} />
-      </section>
-      */}
 
       {/* Become a teacher */}
       <section className="home-teacher-section">

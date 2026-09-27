@@ -6,7 +6,7 @@ import { useUser, logoutUser } from "../../lib/auth";
 import "./navbar.css";
 
 const STUDENT_NAV_ITEMS = [
-  { href: "/direct", label: "Cours en direct" },
+  { href: "/videos", label: "Vidéos" },
   { href: "/lecons", label: "Documents" },
 ];
 
