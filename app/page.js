@@ -18,15 +18,7 @@ export default function HomePage() {
           </p>
 
           <div className="home-hero-cards">
-            <Link href="/videos" className="home-service-card">
-              <div className="home-service-icon home-service-icon-sky">🎬</div>
-              <h2 className="home-service-title">Vidéos</h2>
-              <p className="home-service-text">
-                Des leçons en vidéo par de super enseignants, à regarder quand tu veux.
-              </p>
-              <span className="home-service-cta home-service-cta-primary">Je regarde</span>
-            </Link>
-
+            
             <Link href="/lecons" className="home-service-card">
               <div className="home-service-icon home-service-icon-sun">📚</div>
               <h2 className="home-service-title">Documents</h2>
@@ -35,6 +27,16 @@ export default function HomePage() {
               </p>
               <span className="home-service-cta home-service-cta-coral">Je révise</span>
             </Link>
+
+            <Link href="/videos" className="home-service-card">
+              <div className="home-service-icon home-service-icon-sky">🎬</div>
+              <h2 className="home-service-title">Vidéos</h2>
+              <p className="home-service-text">
+                Des leçons en vidéo par de super enseignants, à regarder quand tu veux.
+              </p>
+              <span className="home-service-cta home-service-cta-primary">Je regarde</span>
+            </Link>
+            
           </div>
         </div>
       </section>
