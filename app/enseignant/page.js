@@ -15,7 +15,6 @@ import {
   REQUIRE_REVIEW,
   MIN_DURATION_SEC,
   MAX_VIDEO_BYTES,
-  DEFAULT_THUMBNAIL_URL,
   TITLE_MIN,
   TITLE_MAX,
   TRIMESTRES,
@@ -33,13 +32,14 @@ import {
   formatSpeed,
 } from "../../lib/mobileUpload";
 import LoadingSpinner from "../components/LoadingSpinner";
+import VideoThumbnail from "../components/VideoThumbnail";
+import { getSubjectEmoji } from "../../lib/videoDisplay";
 import "../homePage.css";
 import "./enseignantPage.css";
 
 const TEACHER_WHATSAPP = "2165110183";
 const WHATSAPP_MESSAGE = "Bonjour Droussy TN, je souhaite devenir enseignant sur la plateforme.";
 
-const THUMB_COLORS = ["sun", "coral", "sky", "mint", "grape"];
 const STATUS_POLL_MS = 15000;
 const POLL_WINDOW_MS = 24 * 60 * 60 * 1000; // only poll videos created in the last 24h
 
@@ -65,12 +65,6 @@ function formatNumber(n) {
 
 function formatMoney(n) {
   return (n || 0).toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
-}
-
-function colorFor(key = "") {
-  let hash = 0;
-  for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
-  return THUMB_COLORS[hash % THUMB_COLORS.length];
 }
 
 // Authenticated JSON request to our API (any method).
@@ -565,7 +559,6 @@ export default function EnseignantDashboard() {
 // =========================================================
 
 function TeacherVideoCard({ video, menuOpen, onToggleMenu, onCloseMenu, onEdit, onDelete }) {
-  const color = colorFor(video.subjectId || video.subjectName);
   const trimestre = TRIMESTRES.find((t) => t.id === video.trimestre);
   const menuRef = useRef(null);
 
@@ -590,8 +583,8 @@ function TeacherVideoCard({ video, menuOpen, onToggleMenu, onCloseMenu, onEdit, 
 
   return (
     <article className={`ens-video-card ${menuOpen ? "ens-video-card-menu-open" : ""}`}>
-      <div className={`ens-video-thumb ens-thumb-${color}`}>
-        <img src={video.thumbnailUrl || DEFAULT_THUMBNAIL_URL} alt={video.title} loading="lazy" />
+      <div className="ens-video-thumb">
+        <VideoThumbnail video={video} showSubject={!video.status || video.status === "published"} />
 
         {video.status && video.status !== "published" && (
           <span className={`ens-video-status ens-video-status-${video.status}`}>
@@ -642,7 +635,7 @@ function TeacherVideoCard({ video, menuOpen, onToggleMenu, onCloseMenu, onEdit, 
           <span className="ens-video-chip ens-video-chip-muted">{video.specializationName}</span>
         )}
         <span className="ens-video-chip ens-video-chip-muted">
-          {video.subjectEmoji} {video.subjectName}
+          {getSubjectEmoji(video.subjectId, video.subjectEmoji)} {video.subjectName}
         </span>
         {trimestre && <span className="ens-video-chip ens-video-chip-muted">T{trimestre.id}</span>}
       </div>
@@ -1164,7 +1157,7 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
               <label className="ens-field">
                 <span className="ens-field-label">Matière</span>
                 <input
-                  value={`${editVideo.subjectEmoji || ""} ${editVideo.subjectName || ""}`.trim()}
+                  value={`${getSubjectEmoji(editVideo.subjectId, editVideo.subjectEmoji)} ${editVideo.subjectName || ""}`.trim()}
                   disabled
                   readOnly
                   className="ens-input"
@@ -1334,7 +1327,6 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
                     <span className="ens-pick-title">Choisir une vidéo</span>
                     <span className="ens-pick-sub">Galerie, fichiers, téléchargements</span>
                   </button>
-                  {/* 
                   <button
                     type="button"
                     className="ens-pick-btn"
@@ -1345,7 +1337,6 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
                     <span className="ens-pick-title">Filmer maintenant</span>
                     <span className="ens-pick-sub">Avec la caméra du téléphone</span>
                   </button>
-                  */}
                 </div>
               )}
               <p className="ens-field-hint">

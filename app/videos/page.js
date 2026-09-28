@@ -9,30 +9,14 @@ import { ALL_GRADES, GRADE_GROUPS, GRADES_WITH_SPECIALIZATION, SPECIALIZATIONS }
 import { getAccessibleGradeIds } from "../../lib/videoAccess";
 import LoadingSpinner from "../components/LoadingSpinner";
 import TrackedVideoPlayer from "../components/TrackedVideoPlayer";
+import VideoThumbnail from "../components/VideoThumbnail";
+import { getGradeEmoji, getSubjectEmoji, shortGradeLabel } from "../../lib/videoDisplay";
 import "../homePage.css";
 import "./videos.css";
 
 const DROUSSY_WHATSAPP = "2165110183";
 const PAGE_SIZE = 12;
 const MAX_VIDEOS_LOADED = 500; // plenty for launch; move to server-side paging later
-const THUMB_COLORS = ["sun", "coral", "sky", "mint", "grape"];
-
-const GRADE_EMOJI = {
-  "prim-1": "🌱",
-  "prim-2": "🐣",
-  "prim-3": "🐢",
-  "prim-4": "🐬",
-  "prim-5": "🦁",
-  "prim-6": "🚀",
-  "col-7": "📘",
-  "col-8": "🔬",
-  "col-9": "📐",
-  "sec-1":"📖",
-  "sec-2":"📏",
-  "sec-3":"🎯",
-  "bac":"🎓",
-};
-
 // Grades in curriculum order (1ère année → Bac).
 const ORDERED_GRADES = GRADE_GROUPS.flatMap((group) =>
   group.grades.map((g) => ({ ...g, levelName: group.levelName }))
@@ -66,24 +50,12 @@ function formatViews(n = 0) {
   return String(n);
 }
 
-function colorFor(key = "") {
-  let hash = 0;
-  for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
-  return THUMB_COLORS[hash % THUMB_COLORS.length];
-}
-
-// Card-sized Cloudinary image instead of the full 1280px one.
-function cardThumb(url) {
-  if (!url || !url.includes("res.cloudinary.com") || !url.includes("/upload/")) return url;
-  return url.replace("/upload/", "/upload/c_fill,w_480,h_270,f_auto,q_auto/");
-}
-
 function gradeById(id) {
   return ORDERED_GRADES.find((g) => g.id === id) || ALL_GRADES.find((g) => g.id === id) || null;
 }
 
 function gradeEmoji(id) {
-  return GRADE_EMOJI[id] || "🎒";
+  return getGradeEmoji(id);
 }
 
 function publishedTime(v) {
@@ -239,7 +211,7 @@ export default function VideosPage() {
       const cur = map.get(v.subjectId) || {
         id: v.subjectId,
         name: v.subjectName || v.subjectId,
-        emoji: v.subjectEmoji || "📚",
+        emoji: getSubjectEmoji(v.subjectId, v.subjectEmoji),
         count: 0,
       };
       cur.count += 1;
@@ -414,7 +386,7 @@ export default function VideosPage() {
 
       {/* ---------- Results ---------- */}
       <div className="vid-container vid-body">
-        
+
         {/* 
         {!user && (
           <Banner
@@ -573,20 +545,7 @@ export default function VideosPage() {
 // VIDEO CARD
 // =========================================================
 
-// "3ème année secondaire" → "3ème sec", "7ème année de base" → "7ème", etc.
-// Keeps the chip short so the grade + specialization fit on one line.
-function shortGradeLabel(name = "") {
-  return String(name)
-    .replace(/\s*année\s+secondaire/i, " sec")
-    .replace(/\s*année\s+primaire/i, "")
-    .replace(/\s*année\s+(de\s+base|collège|préparatoire)/i, "")
-    .replace(/\s*année/i, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
 function VideoCard({ video, locked, isLoggedIn, showGrade, showSection, onClick }) {
-  const color = colorFor(video.subjectId || video.subjectName);
   const duration = formatDuration(video.durationSec);
 
   const fullGrade = video.gradeName || gradeById(video.gradeId)?.name || "";
@@ -599,16 +558,12 @@ function VideoCard({ video, locked, isLoggedIn, showGrade, showSection, onClick 
     ? spec
     : "";
   const levelTooltip = [fullGrade, spec].filter(Boolean).join(" · ");
-  const subjectLabel = `${video.subjectEmoji || ""} ${video.subjectName || ""}`.trim();
+  const subjectLabel = `${getSubjectEmoji(video.subjectId, video.subjectEmoji)} ${video.subjectName || ""}`.trim();
 
   return (
     <button type="button" onClick={onClick} className="vid-card" title={video.title}>
-      <div className={`vid-thumb vid-thumb-${color}`}>
-        {video.thumbnailUrl ? (
-          <img src={cardThumb(video.thumbnailUrl)} alt="" loading="lazy" decoding="async" />
-        ) : (
-          <span className="vid-thumb-emoji">{video.subjectEmoji || "🎬"}</span>
-        )}
+      <div className="vid-thumb">
+        <VideoThumbnail video={video} />
         {duration && <span className="vid-duration">{duration}</span>}
         {locked ? (
           <span className="vid-locked-overlay">
@@ -678,7 +633,7 @@ function PlayerModal({ video, onClose }) {
         {video.title}
       </h2>
       <p className="vid-modal-desc">
-        {video.teacherName} · {video.subjectEmoji} {video.subjectName} · 👁 {formatViews(video.views || 0)}
+        {video.teacherName} · {getSubjectEmoji(video.subjectId, video.subjectEmoji)} {video.subjectName} · 👁 {formatViews(video.views || 0)}
       </p>
       <div className="vid-player">
         {error ? (
