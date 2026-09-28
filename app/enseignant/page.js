@@ -1179,13 +1179,15 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
                 </p>
               </label>
             </div>
-
+            
+            {/* 
             {editVideo.thumbnailUrl && (
               <div className="ens-field">
                 <span className="ens-field-label">Miniature</span>
                 <img src={editVideo.thumbnailUrl} alt="" className="ens-thumb-preview ens-thumb-readonly" />
               </div>
             )}
+            */}
 
             {error && <p className="ens-login-error">{error}</p>}
 
@@ -1327,6 +1329,8 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
                     <span className="ens-pick-title">Choisir une vidéo</span>
                     <span className="ens-pick-sub">Galerie, fichiers, téléchargements</span>
                   </button>
+
+                  {/* 
                   <button
                     type="button"
                     className="ens-pick-btn"
@@ -1337,6 +1341,7 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
                     <span className="ens-pick-title">Filmer maintenant</span>
                     <span className="ens-pick-sub">Avec la caméra du téléphone</span>
                   </button>
+                  */}
                 </div>
               )}
               <p className="ens-field-hint">
