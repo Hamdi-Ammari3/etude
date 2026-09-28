@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
-import * as tus from "tus-js-client";
 import { DB, auth } from "../../lib/firebaseConfig";
 import { completeLogin, logoutUser, useUser } from "../../lib/auth";
 import { ALL_GRADES, GRADE_GROUPS, GRADES_WITH_SPECIALIZATION, SPECIALIZATIONS } from "../../lib/liveGrades";
@@ -22,8 +21,20 @@ import {
   TRIMESTRES,
   STATUS_LABELS,
   IN_PROGRESS_STATUSES,
-  BUNNY_TUS_ENDPOINT,
 } from "../../lib/videoConfig";
+import {
+  isInAppBrowser,
+  isVideoFile,
+  isImageFile,
+  prepareThumbnail,
+  checkFileReadable,
+  readVideoDuration,
+  uploadThumbnail,
+  startVideoUpload,
+  keepScreenAwake,
+  formatEta,
+  formatSpeed,
+} from "../../lib/mobileUpload";
 import LoadingSpinner from "../components/LoadingSpinner";
 import "../homePage.css";
 import "./enseignantPage.css";
@@ -65,24 +76,6 @@ function colorFor(key = "") {
   return THUMB_COLORS[hash % THUMB_COLORS.length];
 }
 
-function readVideoDuration(file) {
-  return new Promise((resolve) => {
-    const url = URL.createObjectURL(file);
-    const el = document.createElement("video");
-    el.preload = "metadata";
-    el.onloadedmetadata = () => {
-      const d = el.duration;
-      URL.revokeObjectURL(url);
-      resolve(Number.isFinite(d) ? d : 0);
-    };
-    el.onerror = () => {
-      URL.revokeObjectURL(url);
-      resolve(0);
-    };
-    el.src = url;
-  });
-}
-
 // Authenticated JSON request to our API (any method).
 async function apiRequest(url, { method = "POST", body } = {}) {
   const idToken = await auth.currentUser?.getIdToken();
@@ -102,72 +95,6 @@ async function apiRequest(url, { method = "POST", body } = {}) {
 
 function authFetch(url, body) {
   return apiRequest(url, { method: "POST", body });
-}
-
-// Thumbnail → Cloudinary (signed by our server, converted to WebP on upload).
-async function uploadThumbnailToCloudinary(file, onProgress) {
-  const sig = await authFetch("/api/uploads/thumbnail-signature", {});
-
-  const form = new FormData();
-  form.append("file", file);
-  form.append("api_key", sig.apiKey);
-  form.append("timestamp", String(sig.timestamp));
-  form.append("signature", sig.signature);
-  form.append("folder", sig.folder);
-  form.append("format", sig.format);
-  form.append("transformation", sig.transformation);
-
-  // XHR instead of fetch so we get upload progress events.
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", `https://api.cloudinary.com/v1_1/${sig.cloudName}/image/upload`);
-    xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable) onProgress?.(e.loaded / e.total);
-    };
-    xhr.onload = () => {
-      let data = {};
-      try {
-        data = JSON.parse(xhr.responseText);
-      } catch {
-        /* ignore */
-      }
-      if (xhr.status >= 200 && xhr.status < 300 && data.secure_url) {
-        resolve({ url: data.secure_url, publicId: data.public_id });
-      } else {
-        console.error("Cloudinary upload failed", xhr.status, data);
-        reject(new Error("Impossible d'envoyer la miniature. Réessayez."));
-      }
-    };
-    xhr.onerror = () => reject(new Error("Impossible d'envoyer la miniature. Vérifiez votre connexion."));
-    xhr.send(form);
-  });
-}
-
-// Direct browser → Bunny upload. Resumes automatically after network drops.
-function uploadVideoToBunny(file, { bunnyVideoId, libraryId, signature, expires, title }, onProgress, uploadRef) {
-  return new Promise((resolve, reject) => {
-    const upload = new tus.Upload(file, {
-      endpoint: BUNNY_TUS_ENDPOINT,
-      retryDelays: [0, 3000, 5000, 10000, 20000, 60000],
-      chunkSize: 50 * 1024 * 1024,
-      storeFingerprintForResuming: false,
-      headers: {
-        AuthorizationSignature: signature,
-        AuthorizationExpire: String(expires),
-        VideoId: bunnyVideoId,
-        LibraryId: String(libraryId),
-      },
-      metadata: {
-        filetype: file.type,
-        title,
-      },
-      onError: reject,
-      onProgress: (sent, total) => onProgress?.(total ? sent / total : 0),
-      onSuccess: resolve,
-    });
-    if (uploadRef) uploadRef.current = upload;
-    upload.start();
-  });
 }
 
 // =========================================================
@@ -815,22 +742,31 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
   const [subjectId, setSubjectId] = useState("");
   const [title, setTitle] = useState("");
 
-  const [thumbFile, setThumbFile] = useState(null);
-  const [thumbPreview, setThumbPreview] = useState(null);
+  // Thumbnail is read + re-encoded as soon as it's picked (see lib/mobileUpload.js)
+  const [thumb, setThumb] = useState(null); // { blob, previewUrl, converted }
+  const [preparingThumb, setPreparingThumb] = useState(false);
+
   const [videoFile, setVideoFile] = useState(null);
   const [durationSec, setDurationSec] = useState(0);
-  const [readingDuration, setReadingDuration] = useState(false);
+  const [checkingVideo, setCheckingVideo] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
-  const [stage, setStage] = useState(""); // human-readable step during submit
+  const [stage, setStage] = useState(""); // human-readable step
+  const [netState, setNetState] = useState("uploading"); // uploading | retrying | offline | slow
   const [progress, setProgress] = useState(0);
+  const [transfer, setTransfer] = useState(null); // { speedBps, etaSec }
   const [error, setError] = useState(null);
+
+  // A failed video upload can be resumed where it stopped.
+  const [resumable, setResumable] = useState(null); // { created, title }
 
   const thumbInputRef = useRef(null);
   const videoInputRef = useRef(null);
-  const tusRef = useRef(null);
-  const createdIdRef = useRef(null);
+  const uploadCtlRef = useRef(null); // { abort, kick }
+  const createdRef = useRef(null); // response of /create-upload
+  const releaseWakeRef = useRef(null);
 
+  const inAppBrowser = typeof window !== "undefined" && isInAppBrowser();
   const needsSpecialization = GRADES_WITH_SPECIALIZATION.has(gradeId);
   const subjectsForGrade = getSubjectsForGrade(gradeId);
 
@@ -857,12 +793,13 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gradeId]);
 
-  // Revoke thumbnail preview URLs to avoid leaking memory.
+  // Free the preview URL when it changes / on unmount.
   useEffect(() => {
+    const url = thumb?.previewUrl;
     return () => {
-      if (thumbPreview) URL.revokeObjectURL(thumbPreview);
+      if (url) URL.revokeObjectURL(url);
     };
-  }, [thumbPreview]);
+  }, [thumb]);
 
   // Escape to close + lock page scroll while open.
   useEffect(() => {
@@ -891,56 +828,97 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, [submitting, isEdit]);
 
+  // Stop everything if the component unmounts mid-upload.
+  useEffect(
+    () => () => {
+      uploadCtlRef.current?.abort();
+      releaseWakeRef.current?.();
+    },
+    []
+  );
+
   function resetForm() {
     setTitle("");
-    setThumbFile(null);
-    setThumbPreview(null);
+    setThumb(null);
     setVideoFile(null);
     setDurationSec(0);
     setProgress(0);
+    setTransfer(null);
     setStage("");
+    setNetState("uploading");
     setError(null);
+    setResumable(null);
+    createdRef.current = null;
     if (thumbInputRef.current) thumbInputRef.current.value = "";
     if (videoInputRef.current) videoInputRef.current.value = "";
   }
 
+  // Tell the server the half-created video is abandoned (with the reason).
+  function abandonCreated(reason, extra = {}) {
+    const created = createdRef.current;
+    if (!created) return;
+    authFetch("/api/videos/sync-status", {
+      videoIds: [created.videoId],
+      abandon: true,
+      reason: String(reason).slice(0, 450),
+      clientInfo: {
+        fileType: videoFile?.type || "unknown",
+        fileSizeMB: videoFile ? Math.round(videoFile.size / (1024 * 1024)) : undefined,
+        online: typeof navigator !== "undefined" ? navigator.onLine : undefined,
+        userAgent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
+        ...extra,
+      },
+    }).catch(() => {});
+    createdRef.current = null;
+  }
+
   function handleClose() {
     if (submitting) return;
+    if (resumable) abandonCreated("closed_after_failed_upload", { stage: "video_upload" });
     resetForm();
     onClose();
   }
 
-  function onThumbChange(e) {
+  async function onThumbChange(e) {
     setError(null);
     const f = e.target.files?.[0];
     if (!f) {
-      setThumbFile(null);
-      setThumbPreview(null);
+      setThumb(null);
       return;
     }
-    if (!f.type.startsWith("image/")) {
+    if (!isImageFile(f)) {
       setError("La miniature doit être une image (JPG, PNG, WEBP).");
       e.target.value = "";
       return;
     }
-    if (f.size > MAX_THUMB_BYTES) {
-      setError("La miniature ne doit pas dépasser 5 Mo.");
+    if (f.size > MAX_THUMB_BYTES * 4) {
+      // Originals up to 20 MB are fine: we shrink them to ~150 KB anyway.
+      setError("Cette image est trop lourde (20 Mo maximum).");
       e.target.value = "";
       return;
     }
-    setThumbFile(f);
-    setThumbPreview(URL.createObjectURL(f));
+    setPreparingThumb(true);
+    try {
+      setThumb(await prepareThumbnail(f));
+    } catch (err) {
+      setThumb(null);
+      setError(err.message);
+      e.target.value = "";
+    } finally {
+      setPreparingThumb(false);
+    }
   }
 
   async function onVideoChange(e) {
     setError(null);
+    setResumable(null);
     const f = e.target.files?.[0];
     if (!f) {
       setVideoFile(null);
       setDurationSec(0);
       return;
     }
-    if (!f.type.startsWith("video/")) {
+    if (!isVideoFile(f)) {
       setError("Le fichier doit être une vidéo (MP4 recommandé).");
       e.target.value = "";
       return;
@@ -950,11 +928,20 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
       e.target.value = "";
       return;
     }
+    setCheckingVideo(true);
+    const readable = await checkFileReadable(f);
+    if (!readable) {
+      setCheckingVideo(false);
+      setVideoFile(null);
+      e.target.value = "";
+      setError(
+        "Votre téléphone ne permet pas de lire cette vidéo depuis le site. Téléchargez-la d'abord dans la galerie (si elle est sur Google Photos / Drive), puis choisissez-la depuis « Fichiers » ou « Galerie »."
+      );
+      return;
+    }
     setVideoFile(f);
-    setReadingDuration(true);
-    const d = await readVideoDuration(f);
-    setDurationSec(d);
-    setReadingDuration(false);
+    setDurationSec(await readVideoDuration(f));
+    setCheckingVideo(false);
   }
 
   // ---- Edit mode: only the title changes ----
@@ -981,6 +968,56 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
     }
   }
 
+  // ---- Video upload (used by the first attempt AND by "Reprendre") ----
+  async function runVideoUpload(created, cleanTitle) {
+    setStage("Envoi de la vidéo...");
+    setNetState("uploading");
+    const ctl = startVideoUpload(videoFile, created, {
+      title: cleanTitle,
+      onProgress: (fraction, info) => {
+        setProgress(0.03 + fraction * 0.97);
+        setTransfer({ speedBps: info.speedBps, etaSec: info.etaSec });
+      },
+      onState: (s) => setNetState(s),
+    });
+    uploadCtlRef.current = ctl;
+    await ctl.promise;
+    uploadCtlRef.current = null;
+  }
+
+  async function finishUpload(created) {
+    setStage("Finalisation...");
+    setProgress(1);
+    let status = "encoding";
+    try {
+      const { videos } = await authFetch("/api/videos/sync-status", { videoIds: [created.videoId] });
+      if (videos?.[created.videoId]?.status) status = videos[created.videoId].status;
+    } catch {
+      /* polling on the dashboard will pick it up */
+    }
+    const video = {
+      ...created.video,
+      id: created.videoId,
+      status: status === "uploading" ? "encoding" : status,
+      createdAt: new Date(),
+    };
+    createdRef.current = null;
+    setSubmitting(false);
+    resetForm();
+    onUploaded(video);
+  }
+
+  function onVideoUploadFailed(err) {
+    uploadCtlRef.current = null;
+    // Keep the Bunny video: the teacher can resume from where it stopped.
+    setResumable({ created: createdRef.current });
+    setError(err.message || "L'envoi a été interrompu.");
+    setSubmitting(false);
+    setStage("");
+    // Record why (the video stays "uploading" until resumed or abandoned).
+    console.error("Video upload stopped", err?.cause || err);
+  }
+
   // ---- Publish mode ----
   async function handleSubmit(e) {
     e.preventDefault();
@@ -992,9 +1029,10 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
     }
     if (!subjectId) return setError("Choisissez une matière.");
     if (needsSpecialization && !specializationId) return setError("Choisissez une spécialité pour ce niveau.");
-    if (!thumbFile) return setError("Ajoutez une miniature pour votre vidéo.");
+    if (preparingThumb) return setError("Préparation de la miniature en cours, patientez une seconde.");
+    if (!thumb) return setError("Ajoutez une miniature pour votre vidéo.");
     if (!videoFile) return setError("Ajoutez le fichier vidéo.");
-    if (readingDuration) return setError("Lecture de la vidéo en cours, patientez une seconde.");
+    if (checkingVideo) return setError("Vérification de la vidéo en cours, patientez une seconde.");
     if (durationSec > 0 && durationSec < MIN_DURATION_SEC) {
       return setError(`La vidéo doit durer au moins ${Math.round(MIN_DURATION_SEC / 60)} minutes.`);
     }
@@ -1005,15 +1043,24 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
 
     setSubmitting(true);
     setProgress(0);
-    let createdVideoId = null;
+    setTransfer(null);
+    releaseWakeRef.current = keepScreenAwake();
+    let stageName = "thumbnail";
 
     try {
-      // 1) Thumbnail → Cloudinary as WebP (first 3% of the bar)
+      // 1) Thumbnail → Cloudinary (already read & shrunk in memory; retries on bad network)
       setStage("Envoi de la miniature...");
-      const thumb = await uploadThumbnailToCloudinary(thumbFile, (p) => setProgress(p * 0.03));
+      const uploadedThumb = await uploadThumbnail(
+        thumb.blob,
+        () => authFetch("/api/uploads/thumbnail-signature", {}),
+        (p) => setProgress(p * 0.03),
+        () => setNetState("retrying")
+      );
 
       // 2) Server creates the Bunny video + Firestore doc, returns signed upload credentials
+      stageName = "create";
       setStage("Préparation de l'envoi...");
+      setNetState("uploading");
       const created = await authFetch("/api/videos/create-upload", {
         title: cleanTitle,
         gradeId,
@@ -1023,85 +1070,78 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
         subjectId,
         subjectName: subject?.name || "",
         subjectEmoji: subject?.emoji || "📚",
-        thumbnailUrl: thumb.url,
-        thumbnailPublicId: thumb.publicId,
+        thumbnailUrl: uploadedThumb.url,
+        thumbnailPublicId: uploadedThumb.publicId,
         clientDurationSec: Math.round(durationSec),
       });
-      createdVideoId = created.videoId;
-      createdIdRef.current = created.videoId;
+      createdRef.current = created;
 
-      // 3) Video → Bunny directly (resumable TUS upload)
-      setStage("Envoi de la vidéo...");
-      await uploadVideoToBunny(
-        videoFile,
-        { ...created, title: cleanTitle },
-        (p) => setProgress(0.03 + p * 0.97),
-        tusRef
-      );
+      // 3) Video → Bunny (resumable, self-healing)
+      stageName = "video_upload";
+      await runVideoUpload(created, cleanTitle);
 
-      // 4) Ask the server to read the new status from Bunny
-      setStage("Finalisation...");
-      setProgress(1);
-      let status = "encoding";
-      try {
-        const { videos } = await authFetch("/api/videos/sync-status", { videoIds: [created.videoId] });
-        if (videos?.[created.videoId]?.status) status = videos[created.videoId].status;
-      } catch {
-        /* polling on the dashboard will pick it up */
-      }
-
-      const video = {
-        ...created.video,
-        id: created.videoId,
-        status: status === "uploading" ? "encoding" : status,
-        createdAt: new Date(),
-      };
-
-      setSubmitting(false);
-      tusRef.current = null;
-      createdIdRef.current = null;
-      resetForm();
-      onUploaded(video);
+      // 4) Done
+      await finishUpload(created);
     } catch (err) {
-      console.error(err);
-      // Clean up the half-created video so it doesn't sit in "uploading".
-      if (createdVideoId) {
-        authFetch("/api/videos/sync-status", { videoIds: [createdVideoId], abandon: true }).catch(() => {});
+      if (stageName === "video_upload") {
+        onVideoUploadFailed(err);
+      } else {
+        console.error("Upload failed at stage", stageName, err);
+        setError(err?.message || "L'envoi a échoué. Vérifiez votre connexion et réessayez.");
+        setSubmitting(false);
+        setStage("");
       }
-      tusRef.current = null;
-      createdIdRef.current = null;
-      setError(
-        err?.message && !String(err.message).startsWith("tus:")
-          ? err.message
-          : "L'envoi a échoué. Vérifiez votre connexion et réessayez."
-      );
-      setSubmitting(false);
-      setStage("");
+    } finally {
+      releaseWakeRef.current?.();
+      releaseWakeRef.current = null;
+    }
+  }
+
+  // "Reprendre l'envoi" — continues the SAME Bunny video from the last byte received.
+  async function handleResume() {
+    const created = resumable?.created || createdRef.current;
+    if (!created || !videoFile) return;
+    setError(null);
+    setResumable(null);
+    setSubmitting(true);
+    releaseWakeRef.current = keepScreenAwake();
+    try {
+      await runVideoUpload(created, title.trim().replace(/\s+/g, " "));
+      await finishUpload(created);
+    } catch (err) {
+      onVideoUploadFailed(err);
+    } finally {
+      releaseWakeRef.current?.();
+      releaseWakeRef.current = null;
     }
   }
 
   async function handleCancelUpload() {
-    if (!tusRef.current) return;
-    try {
-      await tusRef.current.abort(true);
-    } catch {
-      /* ignore */
-    }
-    // The pending promise never settles after abort, so reset and clean up here.
-    if (createdIdRef.current) {
-      authFetch("/api/videos/sync-status", { videoIds: [createdIdRef.current], abandon: true }).catch(() => {});
-    }
-    tusRef.current = null;
-    createdIdRef.current = null;
+    const ctl = uploadCtlRef.current;
+    uploadCtlRef.current = null;
+    await ctl?.abort();
+    abandonCreated("cancelled_by_teacher", { stage: "video_upload", uploadedPercent: Math.round(progress * 100) });
+    releaseWakeRef.current?.();
+    releaseWakeRef.current = null;
     setSubmitting(false);
+    setResumable(null);
     setStage("");
     setProgress(0);
+    setTransfer(null);
     setError("Envoi annulé.");
   }
 
   if (!open) return null;
 
   const percent = Math.round(progress * 100);
+  const netLabel =
+    netState === "offline"
+      ? "📡 Connexion perdue — l'envoi reprendra automatiquement dès le retour du réseau."
+      : netState === "retrying"
+      ? "🔄 Connexion instable — nouvelle tentative en cours..."
+      : netState === "slow"
+      ? "🐢 Connexion lente — l'envoi continue, patientez."
+      : null;
 
   return (
     <div
@@ -1191,13 +1231,21 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
         ) : (
           /* ---------- PUBLISH MODE ---------- */
           <form onSubmit={handleSubmit} className="ens-modal-form">
+            {inAppBrowser && (
+              <p className="ens-warn-note">
+                ⚠️ Vous utilisez le navigateur de Facebook / Instagram. L'envoi de vidéos y fonctionne mal : ouvrez
+                cette page dans <strong>Chrome</strong> ou <strong>Safari</strong> (menu ⋮ → « Ouvrir dans le
+                navigateur »).
+              </p>
+            )}
+
             <div className="ens-form-grid">
               <label className="ens-field">
                 <span className="ens-field-label">Niveau</span>
                 <select
                   value={gradeId}
                   onChange={(e) => setGradeId(e.target.value)}
-                  disabled={submitting}
+                  disabled={submitting || !!resumable}
                   className="ens-select"
                 >
                   {GRADE_GROUPS.map((group) => (
@@ -1218,7 +1266,7 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
                   <select
                     value={specializationId}
                     onChange={(e) => setSpecializationId(e.target.value)}
-                    disabled={submitting}
+                    disabled={submitting || !!resumable}
                     className="ens-select"
                   >
                     <option value="">— Choisir —</option>
@@ -1236,7 +1284,7 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
                 <select
                   value={subjectId}
                   onChange={(e) => setSubjectId(e.target.value)}
-                  disabled={submitting}
+                  disabled={submitting || !!resumable}
                   className="ens-select"
                 >
                   {subjectsForGrade.map((s) => (
@@ -1253,7 +1301,7 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   maxLength={TITLE_MAX}
-                  disabled={submitting}
+                  disabled={submitting || !!resumable}
                   placeholder="Ex : Les fractions — addition et soustraction"
                   className="ens-input"
                 />
@@ -1268,10 +1316,16 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
                 type="file"
                 accept="image/*"
                 onChange={onThumbChange}
-                disabled={submitting}
+                disabled={submitting || !!resumable}
                 className="ens-file-input"
               />
-              {thumbPreview && <img src={thumbPreview} alt="Aperçu de la miniature" className="ens-thumb-preview" />}
+              {preparingThumb ? (
+                <p className="ens-field-hint">Préparation de l'image...</p>
+              ) : thumb?.previewUrl ? (
+                <img src={thumb.previewUrl} alt="Aperçu de la miniature" className="ens-thumb-preview" />
+              ) : thumb ? (
+                <p className="ens-field-hint">✅ Image prête (aperçu indisponible sur ce téléphone).</p>
+              ) : null}
             </label>
 
             <label className="ens-field">
@@ -1281,19 +1335,22 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
                 type="file"
                 accept="video/*"
                 onChange={onVideoChange}
-                disabled={submitting}
+                disabled={submitting || !!resumable}
                 className="ens-file-input"
               />
               <p className="ens-field-hint">
-                {readingDuration
-                  ? "Lecture de la vidéo..."
+                {checkingVideo
+                  ? "Vérification de la vidéo..."
                   : videoFile
-                  ? `Durée : ${formatDuration(durationSec)} · ${(videoFile.size / (1024 * 1024)).toFixed(0)} Mo`
+                  ? `${durationSec > 0 ? `Durée : ${formatDuration(durationSec)}` : "Durée : calculée après l'envoi"} · ${(
+                      videoFile.size /
+                      (1024 * 1024)
+                    ).toFixed(0)} Mo`
                   : `MP4 recommandé · ${Math.round(MIN_DURATION_SEC / 60)} min minimum · 2 Go maximum`}
               </p>
             </label>
 
-            {REQUIRE_REVIEW && (
+            {REQUIRE_REVIEW && !submitting && !resumable && (
               <p className="ens-review-note">
                 🛡️ Votre vidéo sera vérifiée par l'équipe Droussy avant d'être visible par les élèves.
               </p>
@@ -1302,26 +1359,53 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
             {submitting && (
               <div className="ens-progress" aria-live="polite">
                 <div className="ens-progress-track">
-                  <div className="ens-progress-bar" style={{ width: `${percent}%` }} />
+                  <div
+                    className={`ens-progress-bar ${netState !== "uploading" ? "ens-progress-bar-waiting" : ""}`}
+                    style={{ width: `${Math.max(percent, 2)}%` }}
+                  />
                 </div>
                 <div className="ens-progress-row">
                   <p className="ens-progress-label">
-                    {stage} {percent}% — ne fermez pas cette page.
+                    {stage} <strong>{percent}%</strong>
+                    {transfer?.etaSec != null && netState === "uploading" && percent > 3 && percent < 100 && (
+                      <>
+                        {" "}
+                        · {formatEta(transfer.etaSec)} restantes
+                        {transfer.speedBps ? ` (${formatSpeed(transfer.speedBps)})` : ""}
+                      </>
+                    )}
                   </p>
-                  {tusRef.current && (
+                  {uploadCtlRef.current && (
                     <button type="button" onClick={handleCancelUpload} className="ens-progress-cancel">
                       Annuler
                     </button>
                   )}
                 </div>
+                {netLabel && <p className="ens-net-note">{netLabel}</p>}
+                <p className="ens-progress-tip">📱 Gardez cette page ouverte et l'écran allumé pendant l'envoi.</p>
               </div>
             )}
 
             {error && <p className="ens-login-error">{error}</p>}
 
-            <button type="submit" disabled={submitting || readingDuration} className="ens-publish-btn">
-              {submitting ? `Envoi... ${percent}%` : "Publier"}
-            </button>
+            {resumable ? (
+              <div className="ens-resume-row">
+                <button type="button" onClick={handleResume} className="ens-publish-btn">
+                  ↻ Reprendre l'envoi ({percent}%)
+                </button>
+                <button type="button" onClick={handleClose} className="ens-btn-ghost">
+                  Abandonner
+                </button>
+              </div>
+            ) : (
+              <button
+                type="submit"
+                disabled={submitting || checkingVideo || preparingThumb}
+                className="ens-publish-btn"
+              >
+                {submitting ? `Envoi... ${percent}%` : "Publier"}
+              </button>
+            )}
           </form>
         )}
       </div>

@@ -414,6 +414,8 @@ export default function VideosPage() {
 
       {/* ---------- Results ---------- */}
       <div className="vid-container vid-body">
+        
+        {/* 
         {!user && (
           <Banner
             emoji="👋"
@@ -425,6 +427,7 @@ export default function VideosPage() {
             </Link>
           </Banner>
         )}
+        */}
 
         {gradeLocked && currentGrade && (
           <Banner

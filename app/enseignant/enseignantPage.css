@@ -1020,6 +1020,66 @@
   background: var(--home-wash-coral, #fff1ec);
 }
 
+.ens-progress-label strong {
+  color: var(--home-ink);
+}
+
+/* Bar pulses while waiting for the network (offline / retrying / slow). */
+.ens-progress-bar-waiting {
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--home-primary),
+    var(--home-primary) 10px,
+    rgba(26, 143, 227, 0.55) 10px,
+    rgba(26, 143, 227, 0.55) 20px
+  );
+  animation: ens-pulse 1.6s ease-in-out infinite;
+}
+
+.ens-net-note {
+  margin: 0.6rem 0 0;
+  padding: 0.55rem 0.8rem;
+  border-radius: 12px;
+  background: #fff7e0;
+  color: #7a5200;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.ens-progress-tip {
+  margin: 0.5rem 0 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--home-muted);
+}
+
+.ens-warn-note {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-radius: var(--home-radius-md, 20px);
+  background: #fff7e0;
+  border: 2px solid #f5d27a;
+  color: #7a5200;
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.ens-resume-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.ens-resume-row .ens-publish-btn {
+  flex: 2 1 200px;
+  width: auto;
+}
+
+.ens-resume-row .ens-btn-ghost {
+  flex: 1 1 120px;
+}
+
 .ens-publish-btn {
   display: block;
   width: 100%;
