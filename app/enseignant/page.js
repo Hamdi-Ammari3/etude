@@ -15,7 +15,7 @@ import {
   REQUIRE_REVIEW,
   MIN_DURATION_SEC,
   MAX_VIDEO_BYTES,
-  MAX_THUMB_BYTES,
+  DEFAULT_THUMBNAIL_URL,
   TITLE_MIN,
   TITLE_MAX,
   TRIMESTRES,
@@ -25,11 +25,8 @@ import {
 import {
   isInAppBrowser,
   isVideoFile,
-  isImageFile,
-  prepareThumbnail,
-  checkFileReadable,
+  probeFileStart,
   readVideoDuration,
-  uploadThumbnail,
   startVideoUpload,
   keepScreenAwake,
   formatEta,
@@ -594,11 +591,7 @@ function TeacherVideoCard({ video, menuOpen, onToggleMenu, onCloseMenu, onEdit, 
   return (
     <article className={`ens-video-card ${menuOpen ? "ens-video-card-menu-open" : ""}`}>
       <div className={`ens-video-thumb ens-thumb-${color}`}>
-        {video.thumbnailUrl ? (
-          <img src={video.thumbnailUrl} alt={video.title} loading="lazy" />
-        ) : (
-          <span className="ens-video-thumb-emoji">{video.subjectEmoji || "🎬"}</span>
-        )}
+        <img src={video.thumbnailUrl || DEFAULT_THUMBNAIL_URL} alt={video.title} loading="lazy" />
 
         {video.status && video.status !== "published" && (
           <span className={`ens-video-status ens-video-status-${video.status}`}>
@@ -742,10 +735,6 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
   const [subjectId, setSubjectId] = useState("");
   const [title, setTitle] = useState("");
 
-  // Thumbnail is read + re-encoded as soon as it's picked (see lib/mobileUpload.js)
-  const [thumb, setThumb] = useState(null); // { blob, previewUrl, converted }
-  const [preparingThumb, setPreparingThumb] = useState(false);
-
   const [videoFile, setVideoFile] = useState(null);
   const [durationSec, setDurationSec] = useState(0);
   const [checkingVideo, setCheckingVideo] = useState(false);
@@ -760,8 +749,9 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
   // A failed video upload can be resumed where it stopped.
   const [resumable, setResumable] = useState(null); // { created, title }
 
-  const thumbInputRef = useRef(null);
-  const videoInputRef = useRef(null);
+  const pickInputRef = useRef(null); // file chooser (gallery, files, downloads)
+  const cameraInputRef = useRef(null); // record now with the camera
+  const pickerRef = useRef("files");
   const uploadCtlRef = useRef(null); // { abort, kick }
   const createdRef = useRef(null); // response of /create-upload
   const releaseWakeRef = useRef(null);
@@ -792,14 +782,6 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gradeId]);
-
-  // Free the preview URL when it changes / on unmount.
-  useEffect(() => {
-    const url = thumb?.previewUrl;
-    return () => {
-      if (url) URL.revokeObjectURL(url);
-    };
-  }, [thumb]);
 
   // Escape to close + lock page scroll while open.
   useEffect(() => {
@@ -839,7 +821,6 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
 
   function resetForm() {
     setTitle("");
-    setThumb(null);
     setVideoFile(null);
     setDurationSec(0);
     setProgress(0);
@@ -849,8 +830,8 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
     setError(null);
     setResumable(null);
     createdRef.current = null;
-    if (thumbInputRef.current) thumbInputRef.current.value = "";
-    if (videoInputRef.current) videoInputRef.current.value = "";
+    if (pickInputRef.current) pickInputRef.current.value = "";
+    if (cameraInputRef.current) cameraInputRef.current.value = "";
   }
 
   // Tell the server the half-created video is abandoned (with the reason).
@@ -879,63 +860,58 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
     onClose();
   }
 
-  async function onThumbChange(e) {
+  // Sends phone-side problems to /api/uploads/report (Firestore: uploadErrors).
+  function reportProblem(where, extra = {}) {
+    authFetch("/api/uploads/report", {
+      where,
+      picker: pickerRef.current,
+      online: typeof navigator !== "undefined" ? navigator.onLine : undefined,
+      inAppBrowser,
+      userAgent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
+      ...extra,
+    }).catch(() => {});
+  }
+
+  function openPicker(kind) {
+    pickerRef.current = kind;
     setError(null);
-    const f = e.target.files?.[0];
-    if (!f) {
-      setThumb(null);
-      return;
-    }
-    if (!isImageFile(f)) {
-      setError("La miniature doit être une image (JPG, PNG, WEBP).");
-      e.target.value = "";
-      return;
-    }
-    if (f.size > MAX_THUMB_BYTES * 4) {
-      // Originals up to 20 MB are fine: we shrink them to ~150 KB anyway.
-      setError("Cette image est trop lourde (20 Mo maximum).");
-      e.target.value = "";
-      return;
-    }
-    setPreparingThumb(true);
-    try {
-      setThumb(await prepareThumbnail(f));
-    } catch (err) {
-      setThumb(null);
-      setError(err.message);
-      e.target.value = "";
-    } finally {
-      setPreparingThumb(false);
-    }
+    (kind === "camera" ? cameraInputRef : pickInputRef).current?.click();
   }
 
   async function onVideoChange(e) {
     setError(null);
     setResumable(null);
     const f = e.target.files?.[0];
-    if (!f) {
-      setVideoFile(null);
-      setDurationSec(0);
-      return;
-    }
+    e.target.value = ""; // allow choosing the same file again
+    if (!f) return;
+
+    const fileInfo = {
+      fileName: f.name,
+      fileType: f.type || "",
+      fileSizeMB: Math.round((f.size / (1024 * 1024)) * 10) / 10,
+      lastModified: f.lastModified || 0,
+    };
+
     if (!isVideoFile(f)) {
-      setError("Le fichier doit être une vidéo (MP4 recommandé).");
-      e.target.value = "";
+      reportProblem("select_not_video", fileInfo);
+      setError("Ce fichier n'est pas une vidéo. Choisissez une vidéo (MP4, MOV…).");
       return;
     }
     if (f.size > MAX_VIDEO_BYTES) {
       setError("La vidéo ne doit pas dépasser 2 Go.");
-      e.target.value = "";
       return;
     }
+
     setCheckingVideo(true);
-    const readable = await checkFileReadable(f);
-    if (!readable) {
+    const probe = await probeFileStart(f);
+    if (!probe.ok) {
+      reportProblem("read_check", { ...fileInfo, errorName: probe.errorName, errorMessage: probe.errorMessage });
       setCheckingVideo(false);
       setVideoFile(null);
-      e.target.value = "";
       setError(
-        "Votre téléphone ne permet pas de lire cette vidéo depuis le site. Téléchargez-la d'abord dans la galerie (si elle est sur Google Photos / Drive), puis choisissez-la depuis « Fichiers » ou « Galerie »."
+        pickerRef.current === "camera"
+          ? "Impossible de lire la vidéo filmée. Réessayez, ou choisissez-la depuis « Choisir une vidéo »."
+          : "Le téléphone ne permet pas de lire cette vidéo depuis le site. Essayez « 🎥 Filmer maintenant », ou choisissez la vidéo depuis l'application « Fichiers » (dossier DCIM › Camera ou Téléchargements)."
       );
       return;
     }
@@ -975,7 +951,7 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
     const ctl = startVideoUpload(videoFile, created, {
       title: cleanTitle,
       onProgress: (fraction, info) => {
-        setProgress(0.03 + fraction * 0.97);
+        setProgress(fraction);
         setTransfer({ speedBps: info.speedBps, etaSec: info.etaSec });
       },
       onState: (s) => setNetState(s),
@@ -1016,6 +992,15 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
     setStage("");
     // Record why (the video stays "uploading" until resumed or abandoned).
     console.error("Video upload stopped", err?.cause || err);
+    reportProblem("video_upload", {
+      errorName: err?.cause?.name || err?.name,
+      errorMessage: String(err?.cause?.message || err?.message || err).slice(0, 380),
+      httpStatus: err?.httpStatus || undefined,
+      uploadedPercent: Math.round((err?.fraction || 0) * 100),
+      fileType: videoFile?.type || "",
+      fileSizeMB: videoFile ? Math.round(videoFile.size / (1024 * 1024)) : undefined,
+      videoId: createdRef.current?.videoId,
+    });
   }
 
   // ---- Publish mode ----
@@ -1029,8 +1014,6 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
     }
     if (!subjectId) return setError("Choisissez une matière.");
     if (needsSpecialization && !specializationId) return setError("Choisissez une spécialité pour ce niveau.");
-    if (preparingThumb) return setError("Préparation de la miniature en cours, patientez une seconde.");
-    if (!thumb) return setError("Ajoutez une miniature pour votre vidéo.");
     if (!videoFile) return setError("Ajoutez le fichier vidéo.");
     if (checkingVideo) return setError("Vérification de la vidéo en cours, patientez une seconde.");
     if (durationSec > 0 && durationSec < MIN_DURATION_SEC) {
@@ -1045,19 +1028,10 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
     setProgress(0);
     setTransfer(null);
     releaseWakeRef.current = keepScreenAwake();
-    let stageName = "thumbnail";
+    let stageName = "create";
 
     try {
-      // 1) Thumbnail → Cloudinary (already read & shrunk in memory; retries on bad network)
-      setStage("Envoi de la miniature...");
-      const uploadedThumb = await uploadThumbnail(
-        thumb.blob,
-        () => authFetch("/api/uploads/thumbnail-signature", {}),
-        (p) => setProgress(p * 0.03),
-        () => setNetState("retrying")
-      );
-
-      // 2) Server creates the Bunny video + Firestore doc, returns signed upload credentials
+      // 1) Server creates the Bunny video + Firestore doc, returns signed upload credentials
       stageName = "create";
       setStage("Préparation de l'envoi...");
       setNetState("uploading");
@@ -1070,17 +1044,15 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
         subjectId,
         subjectName: subject?.name || "",
         subjectEmoji: subject?.emoji || "📚",
-        thumbnailUrl: uploadedThumb.url,
-        thumbnailPublicId: uploadedThumb.publicId,
         clientDurationSec: Math.round(durationSec),
       });
       createdRef.current = created;
 
-      // 3) Video → Bunny (resumable, self-healing)
+      // 2) Video → Bunny (resumable, self-healing)
       stageName = "video_upload";
       await runVideoUpload(created, cleanTitle);
 
-      // 4) Done
+      // 3) Done
       await finishUpload(created);
     } catch (err) {
       if (stageName === "video_upload") {
@@ -1309,46 +1281,79 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
               </label>
             </div>
 
-            <label className="ens-field">
-              <span className="ens-field-label">Miniature (image)</span>
-              <input
-                ref={thumbInputRef}
-                type="file"
-                accept="image/*"
-                onChange={onThumbChange}
-                disabled={submitting || !!resumable}
-                className="ens-file-input"
-              />
-              {preparingThumb ? (
-                <p className="ens-field-hint">Préparation de l'image...</p>
-              ) : thumb?.previewUrl ? (
-                <img src={thumb.previewUrl} alt="Aperçu de la miniature" className="ens-thumb-preview" />
-              ) : thumb ? (
-                <p className="ens-field-hint">✅ Image prête (aperçu indisponible sur ce téléphone).</p>
-              ) : null}
-            </label>
+            <div className="ens-field">
+              <span className="ens-field-label">Vidéo de la leçon</span>
 
-            <label className="ens-field">
-              <span className="ens-field-label">Fichier vidéo</span>
+              {/* Normal file chooser: gallery, Files app, downloads, WhatsApp… */}
               <input
-                ref={videoInputRef}
+                ref={pickInputRef}
+                type="file"
+                accept="video/*,.mp4,.mov,.m4v,.3gp,.webm,.mkv,application/octet-stream"
+                onChange={onVideoChange}
+                className="ens-hidden-input"
+                tabIndex={-1}
+                aria-hidden="true"
+              />
+              {/* Record directly with the phone camera */}
+              <input
+                ref={cameraInputRef}
                 type="file"
                 accept="video/*"
+                capture="environment"
                 onChange={onVideoChange}
-                disabled={submitting || !!resumable}
-                className="ens-file-input"
+                className="ens-hidden-input"
+                tabIndex={-1}
+                aria-hidden="true"
               />
+
+              {videoFile ? (
+                <div className="ens-file-card">
+                  <span className="ens-file-card-icon">🎬</span>
+                  <div className="ens-file-card-info">
+                    <p className="ens-file-card-name">{videoFile.name || "Vidéo"}</p>
+                    <p className="ens-file-card-meta">
+                      {(videoFile.size / (1024 * 1024)).toFixed(0)} Mo ·{" "}
+                      {durationSec > 0 ? `Durée ${formatDuration(durationSec)}` : "durée calculée après l'envoi"}
+                    </p>
+                  </div>
+                  {!submitting && !resumable && (
+                    <button type="button" className="ens-file-card-change" onClick={() => openPicker("files")}>
+                      Changer
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="ens-pick-row">
+                  <button
+                    type="button"
+                    className="ens-pick-btn"
+                    onClick={() => openPicker("files")}
+                    disabled={submitting || checkingVideo}
+                  >
+                    <span className="ens-pick-emoji">📁</span>
+                    <span className="ens-pick-title">Choisir une vidéo</span>
+                    <span className="ens-pick-sub">Galerie, fichiers, téléchargements</span>
+                  </button>
+                  {/* 
+                  <button
+                    type="button"
+                    className="ens-pick-btn"
+                    onClick={() => openPicker("camera")}
+                    disabled={submitting || checkingVideo}
+                  >
+                    <span className="ens-pick-emoji">🎥</span>
+                    <span className="ens-pick-title">Filmer maintenant</span>
+                    <span className="ens-pick-sub">Avec la caméra du téléphone</span>
+                  </button>
+                  */}
+                </div>
+              )}
               <p className="ens-field-hint">
                 {checkingVideo
                   ? "Vérification de la vidéo..."
-                  : videoFile
-                  ? `${durationSec > 0 ? `Durée : ${formatDuration(durationSec)}` : "Durée : calculée après l'envoi"} · ${(
-                      videoFile.size /
-                      (1024 * 1024)
-                    ).toFixed(0)} Mo`
                   : `MP4 recommandé · ${Math.round(MIN_DURATION_SEC / 60)} min minimum · 2 Go maximum`}
               </p>
-            </label>
+            </div>
 
             {REQUIRE_REVIEW && !submitting && !resumable && (
               <p className="ens-review-note">
@@ -1400,7 +1405,7 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
             ) : (
               <button
                 type="submit"
-                disabled={submitting || checkingVideo || preparingThumb}
+                disabled={submitting || checkingVideo}
                 className="ens-publish-btn"
               >
                 {submitting ? `Envoi... ${percent}%` : "Publier"}

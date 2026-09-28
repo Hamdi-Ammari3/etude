@@ -1,7 +1,7 @@
 import { deleteBunnyVideo } from "../../../../lib/bunny";
 import { destroyCloudinaryImage } from "../../../../lib/cloudinaryServer";
 import { adminDb, requireTeacher, jsonError, FieldValue } from "../../../../lib/videoServer";
-import { TITLE_MIN, TITLE_MAX } from "../../../../lib/videoConfig";
+import { TITLE_MIN, TITLE_MAX, DEFAULT_THUMBNAIL_PUBLIC_ID } from "../../../../lib/videoConfig";
 import { cleanTitle, normalizeText, buildSearchKeywords } from "../../../../lib/videoText";
 
 export const runtime = "nodejs";
@@ -93,7 +93,10 @@ export async function DELETE(request, ctx) {
           }
         )
       : true,
-    destroyCloudinaryImage(video.thumbnailPublicId),
+    // Never delete the shared default thumbnail (used by every video).
+    video.thumbnailPublicId && video.thumbnailPublicId !== DEFAULT_THUMBNAIL_PUBLIC_ID
+      ? destroyCloudinaryImage(video.thumbnailPublicId)
+      : true,
   ]);
   await ref.update({ bunnyDeleted: bunnyOk, thumbnailDeleted: thumbOk }).catch(() => {});
 

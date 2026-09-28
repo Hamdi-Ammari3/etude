@@ -1,7 +1,13 @@
 import { createBunnyVideo, deleteBunnyVideo, buildTusSignature, bunnyConfig } from "../../../../lib/bunny";
 import { adminDb, requireTeacher, jsonError, FieldValue } from "../../../../lib/videoServer";
-import { cloudinaryConfig, thumbnailFolderFor } from "../../../../lib/cloudinaryServer";
-import { TITLE_MIN, TITLE_MAX, TRIMESTRES, VIDEO_STATUS, MIN_DURATION_SEC } from "../../../../lib/videoConfig";
+import {
+  TITLE_MIN,
+  TITLE_MAX,
+  TRIMESTRES,
+  VIDEO_STATUS,
+  MIN_DURATION_SEC,
+  DEFAULT_THUMBNAIL_URL,
+} from "../../../../lib/videoConfig";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -55,22 +61,18 @@ export async function POST(request) {
   // Trimestre is optional — null when the form doesn't ask for it.
   const trimestreRaw = Number(body.trimestre);
   const trimestre = TRIMESTRES.some((t) => t.id === trimestreRaw) ? trimestreRaw : null;
-  const thumbnailUrl = cleanString(body.thumbnailUrl, 1000);
-  const thumbnailPublicId = cleanString(body.thumbnailPublicId, 300);
   const clientDurationSec = Math.max(0, Math.round(Number(body.clientDurationSec) || 0));
 
   if (title.length < TITLE_MIN) return jsonError("Le titre est trop court.");
   if (!gradeId || !gradeName) return jsonError("Niveau manquant.");
   if (!subjectId || !subjectName) return jsonError("Matière manquante.");
 
-  // Thumbnail must be one this teacher uploaded to OUR Cloudinary account.
-  const { cloudName } = cloudinaryConfig();
-  if (!thumbnailUrl.startsWith(`https://res.cloudinary.com/${cloudName}/`)) {
-    return jsonError("Miniature manquante ou invalide.");
-  }
-  if (!thumbnailPublicId.startsWith(`${thumbnailFolderFor(teacher.uid)}/`)) {
-    return jsonError("Miniature invalide.");
-  }
+  // Every video uses the shared default thumbnail (set on the server, so the
+  // browser can't point it anywhere else). thumbnailPublicId stays null so
+  // deleting a video never deletes the shared image.
+  const thumbnailUrl = DEFAULT_THUMBNAIL_URL;
+  const thumbnailPublicId = null;
+
   if (clientDurationSec > 0 && clientDurationSec < MIN_DURATION_SEC) {
     return jsonError(`La vidéo doit durer au moins ${Math.round(MIN_DURATION_SEC / 60)} minutes.`);
   }

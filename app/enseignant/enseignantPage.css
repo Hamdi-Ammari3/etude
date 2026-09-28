@@ -1203,3 +1203,147 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* ---------- Video picker (choose / record) ---------- */
+
+.ens-hidden-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ens-pick-row {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+@media (max-width: 380px) {
+  .ens-pick-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ens-pick-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 1rem 0.75rem;
+  border-radius: var(--home-radius-md, 20px);
+  border: 2px dashed var(--home-border, #d4dfeb);
+  background: var(--home-bg, #f8fbff);
+  color: var(--home-ink, #1a2846);
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+
+.ens-pick-btn:hover:not(:disabled),
+.ens-pick-btn:focus-visible {
+  border-color: var(--home-primary);
+  background: var(--home-wash-blue, #e5f0fc);
+  outline: none;
+}
+
+.ens-pick-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ens-pick-emoji {
+  font-size: 1.7rem;
+}
+
+.ens-pick-title {
+  font-weight: 800;
+  font-size: 0.92rem;
+}
+
+.ens-pick-sub {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--home-muted);
+}
+
+.ens-file-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--home-radius-md, 20px);
+  border: 2px solid var(--home-primary);
+  background: var(--home-wash-blue, #e5f0fc);
+}
+
+.ens-file-card-icon {
+  flex-shrink: 0;
+  font-size: 1.6rem;
+}
+
+.ens-file-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.ens-file-card-name {
+  margin: 0;
+  font-weight: 800;
+  font-size: 0.9rem;
+  color: var(--home-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ens-file-card-meta {
+  margin: 0.1rem 0 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--home-muted);
+}
+
+.ens-file-card-change {
+  flex-shrink: 0;
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+  border: 2px solid var(--home-border);
+  background: var(--home-card, #ffffff);
+  color: var(--home-ink);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* Grid children must be allowed to shrink below their content width,
+   otherwise a long file name pushes the modal wider than a phone screen. */
+.ens-modal-form {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.ens-modal-form > *,
+.ens-form-grid > * {
+  min-width: 0;
+}
+
+.ens-pick-row {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+@media (max-width: 380px) {
+  .ens-pick-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Width math includes padding + border everywhere in the modal,
+   whatever the global stylesheet does. */
+.ens-modal,
+.ens-modal *,
+.ens-modal *::before,
+.ens-modal *::after {
+  box-sizing: border-box;
+}
