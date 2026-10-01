@@ -1,4 +1,5 @@
 import { deleteBunnyVideo } from "../../../../lib/bunny";
+import { deleteObject } from "../../../../lib/bunnyStorage";
 import { adminDb, requireTeacher, jsonError, syncVideoFromBunny, FieldValue } from "../../../../lib/videoServer";
 import { VIDEO_STATUS } from "../../../../lib/videoConfig";
 
@@ -6,6 +7,20 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const MAX_IDS = 10;
+
+// Only known, primitive fields from the browser are stored.
+const CLIENT_INFO_KEYS = ["stage", "httpStatus", "fileType", "fileSizeMB", "uploadedPercent", "online", "userAgent"];
+function sanitizeClientInfo(info) {
+  if (!info || typeof info !== "object") return null;
+  const out = {};
+  for (const key of CLIENT_INFO_KEYS) {
+    const v = info[key];
+    if (typeof v === "number" && Number.isFinite(v)) out[key] = v;
+    else if (typeof v === "boolean") out[key] = v;
+    else if (typeof v === "string") out[key] = v.slice(0, 200);
+  }
+  return out;
+}
 
 /**
  * POST { videoIds: string[] }                  → refreshes status from Bunny
@@ -48,8 +63,18 @@ export async function POST(request) {
 
       if (body.abandon === true) {
         if (data.status === VIDEO_STATUS.UPLOADING) {
-          await deleteBunnyVideo(data.bunnyVideoId).catch(() => {});
-          await ref.update({ status: VIDEO_STATUS.FAILED, updatedAt: FieldValue.serverTimestamp() });
+          if (data.type === "pdf") await deleteObject(data.storageKey).catch(() => {});
+          else await deleteBunnyVideo(data.bunnyVideoId).catch(() => {});
+          // Keep the browser's error details so failures can be diagnosed.
+          const reason = typeof body.reason === "string" ? body.reason.slice(0, 500) : "client_abandoned";
+          const clientInfo = sanitizeClientInfo(body.clientInfo);
+          await ref.update({
+            status: VIDEO_STATUS.FAILED,
+            failureReason: reason,
+            failureClientInfo: clientInfo,
+            failedAt: FieldValue.serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp(),
+          });
           results[id] = { status: VIDEO_STATUS.FAILED, durationSec: data.durationSec || 0 };
         } else {
           results[id] = { status: data.status, durationSec: data.durationSec || 0 };

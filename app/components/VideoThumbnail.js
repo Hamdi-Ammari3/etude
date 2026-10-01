@@ -2,16 +2,16 @@
 
 // Branded video thumbnail drawn entirely in code — no image to upload or load.
 //   ┌──────────────────────────────────┐
-//   │ 📐 Mathématiques                 │  subject pill
-//   │                        📐 (faded)│
+//   │ 🎬 Vidéo  📐 Mathématiques        │  type tag (🎬 Vidéo / 📄 PDF) + subject pill
+//   │                        📐 (faded)│  faded emoji: subject for videos, 📄 for PDFs
 //   │   Les fractions — addition       │  lesson title (Arabic → right-to-left)
 //   │                                  │
-//   │ 🎒 Droussy TN · 📘 7ème     12:40 │  brand + grade (duration drawn by the card)
+//   │ 🎒 Droussy TN · 📘 7ème     12:40 │  brand + grade (duration / pages drawn by the card)
 //   └──────────────────────────────────┘
 // Set THUMBNAIL_MODE = "image" in lib/videoConfig.js to show the saved
 // Cloudinary thumbnail instead.
 
-import { THUMBNAIL_MODE, DEFAULT_THUMBNAIL_URL } from "../../lib/videoConfig";
+import { THUMBNAIL_MODE, DEFAULT_THUMBNAIL_URL, CONTENT_TYPES, contentTypeOf } from "../../lib/videoConfig";
 import { subjectTheme, getGradeEmoji, getSubjectEmoji, getSubjectName, getGradeName, shortGradeLabel } from "../../lib/videoDisplay";
 import "./videoThumbnail.css";
 
@@ -21,16 +21,26 @@ function cardImage(url) {
   return url.replace("/upload/", "/upload/c_fill,w_480,h_270,f_auto,q_auto/");
 }
 
-export default function VideoThumbnail({ video, showSubject = true, mode = THUMBNAIL_MODE }) {
+export default function VideoThumbnail({ video, showSubject = true, showType = true, mode = THUMBNAIL_MODE }) {
+  const isPdf = contentTypeOf(video) === CONTENT_TYPES.PDF;
+  const typeTag = showType && (
+    <span className="vthumb-type">
+      <span className="vthumb-emoji">{isPdf ? "📄" : "🎬"}</span> {isPdf ? "PDF" : "Vidéo"}
+    </span>
+  );
+
   if (mode === "image") {
     return (
-      <img
-        className="vthumb-img"
-        src={cardImage(video.thumbnailUrl || DEFAULT_THUMBNAIL_URL)}
-        alt=""
-        loading="lazy"
-        decoding="async"
-      />
+      <>
+        <img
+          className="vthumb-img"
+          src={cardImage(video.thumbnailUrl || DEFAULT_THUMBNAIL_URL)}
+          alt=""
+          loading="lazy"
+          decoding="async"
+        />
+        {typeTag && <span className="vthumb-type-float">{typeTag}</span>}
+      </>
     );
   }
 
@@ -43,12 +53,17 @@ export default function VideoThumbnail({ video, showSubject = true, mode = THUMB
 
   return (
     <div className="vthumb" style={{ "--vt-color": theme.cssColor }} aria-hidden="true">
-      <span className="vthumb-watermark">{subjectEmoji}</span>
+      <span className="vthumb-watermark">{isPdf ? "📄" : subjectEmoji}</span>
 
-      {showSubject && subjectName && (
-        <span className="vthumb-subject">
-          <span className="vthumb-emoji">{subjectEmoji}</span>
-          <span className="vthumb-subject-name">{subjectName}</span>
+      {(typeTag || (showSubject && subjectName)) && (
+        <span className="vthumb-top">
+          {typeTag}
+          {showSubject && subjectName && (
+            <span className="vthumb-subject">
+              <span className="vthumb-emoji">{subjectEmoji}</span>
+              <span className="vthumb-subject-name">{subjectName}</span>
+            </span>
+          )}
         </span>
       )}
 

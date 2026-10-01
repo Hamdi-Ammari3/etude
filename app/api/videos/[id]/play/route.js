@@ -38,6 +38,7 @@ export async function POST(request, { params }) {
   if (!canWatchVideo(viewer, video)) {
     return jsonError("Cette vidéo n'est pas incluse dans votre abonnement.", 403);
   }
+  if (video.type === "pdf") return jsonError("Ce contenu est un PDF.", 400);
   if (!video.bunnyVideoId) return jsonError("Vidéo indisponible.", 409);
 
   const { url, expires } = buildEmbedUrl(video.bunnyVideoId, { ttlSec: EMBED_TTL_SEC, autoplay: true });

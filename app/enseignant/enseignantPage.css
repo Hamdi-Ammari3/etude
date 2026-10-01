@@ -1216,7 +1216,8 @@
 
 .ens-pick-row {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
 }
 
 @media (max-width: 380px) {
@@ -1346,4 +1347,286 @@
 .ens-modal *::before,
 .ens-modal *::after {
   box-sizing: border-box;
+}
+
+/* =========================================================
+   PDF PUBLISHING
+   ========================================================= */
+
+/* ---------- Vidéo | PDF toggle (top of the publish modal) ---------- */
+
+.ens-type-toggle {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.3rem;
+  padding: 0.3rem;
+  border-radius: 999px;
+  background: var(--home-bg, #f8fbff);
+  border: 2px solid var(--home-border, #d4dfeb);
+}
+
+.ens-type-option {
+  padding: 0.6rem 0.75rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--home-muted);
+  font: inherit;
+  font-weight: 800;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease, box-shadow 150ms ease;
+}
+
+.ens-type-option:hover:not(:disabled):not(.ens-type-option-active) {
+  color: var(--home-ink, #1a2846);
+}
+
+.ens-type-option:focus-visible {
+  outline: 2px solid var(--home-primary);
+  outline-offset: 2px;
+}
+
+.ens-type-option-active {
+  background: var(--home-card, #ffffff);
+  color: var(--home-ink, #1a2846);
+  box-shadow: 0 2px 8px rgba(26, 40, 70, 0.12);
+}
+
+.ens-type-option:disabled {
+  cursor: not-allowed;
+}
+
+.ens-type-option:disabled:not(.ens-type-option-active) {
+  opacity: 0.5;
+}
+
+/* ---------- "Avec correction" checkbox ---------- */
+
+.ens-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--home-radius-md, 20px);
+  border: 2px solid var(--home-border, #d4dfeb);
+  background: var(--home-bg, #f8fbff);
+  cursor: pointer;
+}
+
+.ens-check:has(input:checked) {
+  border-color: var(--home-mint, #73e0b4);
+  background: #eafaf3;
+}
+
+.ens-check input {
+  flex-shrink: 0;
+  width: 1.15rem;
+  height: 1.15rem;
+  margin: 0.1rem 0 0;
+  accent-color: #12a26b;
+  cursor: pointer;
+}
+
+.ens-check-title {
+  display: block;
+  font-weight: 800;
+  font-size: 0.9rem;
+  color: var(--home-ink, #1a2846);
+}
+
+.ens-check-sub {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--home-muted);
+}
+
+/* Single "Choisir un PDF" button takes the full width */
+.ens-pick-row.ens-pick-row-single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* ---------- Cards ---------- */
+
+.ens-pdf-badge {
+  background: rgba(196, 44, 44, 0.92);
+}
+
+.ens-video-chip-pdf {
+  background: #fdecec;
+  color: #a12626;
+}
+
+.ens-video-chip-ok {
+  background: #eafaf3;
+  color: #0d7a50;
+}
+
+/* ---------- "Mes contenus" header + Tout / Vidéos / PDF ---------- */
+
+.ens-list-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.ens-list-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.ens-list-filter {
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
+  border: 2px solid var(--home-border, #d4dfeb);
+  background: var(--home-card, #ffffff);
+  color: var(--home-ink, #1a2846);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.ens-list-filter-active {
+  border-color: var(--home-ink, #1a2846);
+  background: var(--home-ink, #1a2846);
+  color: #ffffff;
+}
+
+.ens-list-filter-count {
+  margin-left: 0.15rem;
+  opacity: 0.65;
+  font-weight: 700;
+}
+
+/* =========================================================
+   MES INFORMATIONS + PUBLIC PROFILE BUTTON
+   ========================================================= */
+
+.ens-profile-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.45rem 1.25rem;
+  border-radius: 999px;
+  border: 2px solid var(--home-border, #d4dfeb);
+  background: var(--home-card, #ffffff);
+  color: var(--home-ink, #1a2846);
+  font-size: 0.875rem;
+  font-weight: 800;
+  text-decoration: none;
+  transition: background-color 150ms ease;
+}
+
+.ens-profile-btn:hover {
+  background: var(--home-wash-blue, #e5f0fc);
+}
+
+.ens-info-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding: 1.25rem 1.4rem;
+  border-radius: var(--home-radius-2xl, 28px);
+  background: var(--home-card, #ffffff);
+  border: 2px solid var(--home-border);
+}
+
+.ens-info-body {
+  flex: 1 1 260px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--home-ink, #1a2846);
+}
+
+.ens-info-title {
+  margin: 0 0 0.2rem;
+  font-family: var(--home-font-display);
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.ens-info-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.ens-info-tag {
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  background: #f1f4f8;
+  color: var(--home-muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.ens-info-tag-ok {
+  background: #eafaf3;
+  color: #0d7a50;
+}
+
+.ens-info-bio {
+  margin: 0.15rem 0 0;
+  line-height: 1.5;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.ens-info-muted {
+  color: var(--home-muted);
+}
+
+.ens-info-edit-btn {
+  flex-shrink: 0;
+  padding: 0.55rem 1.3rem;
+  border: none;
+  border-radius: 999px;
+  background: var(--home-grape, #c796eb);
+  color: var(--home-grape-foreground, #fdfbff);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 150ms ease;
+}
+
+.ens-info-edit-btn:hover:not(:disabled) {
+  transform: scale(1.05);
+}
+
+.ens-info-edit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Edit modal */
+.ens-info-phone-row:focus-within {
+  border-color: var(--home-primary);
+}
+
+.ens-textarea {
+  min-height: 6.5rem;
+  resize: vertical;
+  font: inherit;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.ens-info-save-btn {
+  background: var(--home-grape, #c796eb);
+  color: var(--home-grape-foreground, #fdfbff);
 }

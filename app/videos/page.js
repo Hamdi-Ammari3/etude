@@ -7,8 +7,10 @@ import { DB, auth } from "../../lib/firebaseConfig";
 import { useUser } from "../../lib/auth";
 import { ALL_GRADES, GRADE_GROUPS, GRADES_WITH_SPECIALIZATION, SPECIALIZATIONS } from "../../lib/liveGrades";
 import { getAccessibleGradeIds } from "../../lib/videoAccess";
+import { CONTENT_TYPES, contentTypeOf, PDF_CATEGORIES, getPdfCategory } from "../../lib/videoConfig";
 import LoadingSpinner from "../components/LoadingSpinner";
 import TrackedVideoPlayer from "../components/TrackedVideoPlayer";
+import ProtectedPdfViewer from "../components/ProtectedPdfViewer";
 import VideoThumbnail from "../components/VideoThumbnail";
 import { getGradeEmoji, getSubjectEmoji, shortGradeLabel } from "../../lib/videoDisplay";
 import "../homePage.css";
@@ -22,14 +24,13 @@ const ORDERED_GRADES = GRADE_GROUPS.flatMap((group) =>
   group.grades.map((g) => ({ ...g, levelName: group.levelName }))
 );
 
-// ---------- Helpers ----------
+const TYPE_FILTERS = [
+  { id: "all", label: "Tout" },
+  { id: CONTENT_TYPES.VIDEO, label: "🎬 Vidéos" },
+  { id: CONTENT_TYPES.PDF, label: "📄 PDF" },
+];
 
-function normalize(str = "") {
-  return String(str)
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "");
-}
+// ---------- Helpers ----------
 
 function toMillis(value) {
   if (!value) return 0;
@@ -62,29 +63,41 @@ function publishedTime(v) {
   return toMillis(v.publishedAt || v.encodedAt || v.createdAt);
 }
 
-// Filters live in the URL (?niveau=col-7&matiere=maths&tri=recentes) so the
-// back button, refresh and shared links keep the same view. We use the
+const isPdf = (item) => contentTypeOf(item) === CONTENT_TYPES.PDF;
+
+// "3 vidéos", "1 PDF", "5 contenus"
+function countLabel(n, type) {
+  if (type === CONTENT_TYPES.VIDEO) return `${n} vidéo${n > 1 ? "s" : ""}`;
+  if (type === CONTENT_TYPES.PDF) return `${n} PDF`;
+  return `${n} contenu${n > 1 ? "s" : ""}`;
+}
+
+// Filters live in the URL (?niveau=col-7&type=pdf&doc=serie&matiere=maths&tri=recentes)
+// so the back button, refresh and shared links keep the same view. We use the
 // History API directly to avoid Next's useSearchParams Suspense requirement.
 function readUrlFilters() {
   if (typeof window === "undefined") return {};
   const p = new URLSearchParams(window.location.search);
+  const type = p.get("type");
   return {
     grade: p.get("niveau") || null,
     section: p.get("section") || "all",
     subject: p.get("matiere") || "all",
+    type: type === CONTENT_TYPES.VIDEO || type === CONTENT_TYPES.PDF ? type : "all",
+    docCategory: p.get("doc") || "all",
     sort: p.get("tri") === "recentes" ? "recentes" : "populaires",
-    q: p.get("q") || "",
   };
 }
 
-function writeUrlFilters({ grade, section, subject, sort, search }) {
+function writeUrlFilters({ grade, section, subject, type, docCategory, sort }) {
   if (typeof window === "undefined") return;
   const p = new URLSearchParams();
   if (grade && grade !== "all") p.set("niveau", grade);
+  if (type !== "all") p.set("type", type);
+  if (type === CONTENT_TYPES.PDF && docCategory !== "all") p.set("doc", docCategory);
   if (section !== "all") p.set("section", section);
   if (subject !== "all") p.set("matiere", subject);
   if (sort !== "populaires") p.set("tri", sort);
-  if (search.trim()) p.set("q", search.trim());
   const qs = p.toString();
   const next = `${window.location.pathname}${qs ? `?${qs}` : ""}`;
   if (next !== `${window.location.pathname}${window.location.search}`) {
@@ -98,27 +111,28 @@ function writeUrlFilters({ grade, section, subject, sort, search }) {
 
 export default function VideosPage() {
   const { user, hydrated } = useUser();
-
-  const [videos, setVideos] = useState([]);
+  const [items, setItems] = useState([]); // videos AND PDFs
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
 
   const [grade, setGrade] = useState("all");
   const [section, setSection] = useState("all");
   const [subject, setSubject] = useState("all");
+  const [type, setType] = useState("all"); // all | video | pdf
+  const [docCategory, setDocCategory] = useState("all"); // PDF type (cours, série…)
   const [sort, setSort] = useState("populaires");
-  const [search, setSearch] = useState("");
   const [visible, setVisible] = useState(PAGE_SIZE);
   const [filtersReady, setFiltersReady] = useState(false);
 
   const [playing, setPlaying] = useState(null);
-  const [lockedVideo, setLockedVideo] = useState(null);
+  const [reading, setReading] = useState(null);
+  const [lockedItem, setLockedItem] = useState(null);
 
   const accessible = useMemo(() => getAccessibleGradeIds(user), [user]);
   const isStudent = !!user && user.role !== "teacher";
   const firstName = user?.name?.split(" ")[0];
 
-  // ---- Load published videos ----
+  // ---- Load published videos + PDFs ----
   useEffect(() => {
     if (!hydrated) return;
     let cancelled = false;
@@ -129,10 +143,10 @@ export default function VideosPage() {
         const snap = await getDocs(
           query(collection(DB, "videos"), where("status", "==", "published"), limit(MAX_VIDEOS_LOADED))
         );
-        if (!cancelled) setVideos(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+        if (!cancelled) setItems(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
       } catch (err) {
         console.error(err);
-        if (!cancelled) setLoadError("Impossible de charger les vidéos. Réessayez plus tard.");
+        if (!cancelled) setLoadError("Impossible de charger les documents. Réessayez plus tard.");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -151,31 +165,40 @@ export default function VideosPage() {
     setGrade(fromUrl.grade || (isStudent && myFirstGrade) || "all");
     setSection(fromUrl.section);
     setSubject(fromUrl.subject);
+    setType(fromUrl.type);
+    setDocCategory(fromUrl.docCategory);
     setSort(fromUrl.sort);
-    setSearch(fromUrl.q);
     setFiltersReady(true);
   }, [hydrated, filtersReady, accessible, isStudent]);
 
   // Keep the URL in sync, and restart paging whenever a filter changes.
   useEffect(() => {
     if (!filtersReady) return;
-    writeUrlFilters({ grade, section, subject, sort, search });
+    writeUrlFilters({ grade, section, subject, type, docCategory, sort });
     setVisible(PAGE_SIZE);
-  }, [filtersReady, grade, section, subject, sort, search]);
+  }, [filtersReady, grade, section, subject, type, docCategory, sort]);
 
   const hasSections = grade !== "all" && GRADES_WITH_SPECIALIZATION.has(grade);
   useEffect(() => {
     if (!hasSections && section !== "all") setSection("all");
   }, [hasSections, section]);
 
+  // The PDF-type filter only makes sense on the PDF tab.
+  useEffect(() => {
+    if (type !== CONTENT_TYPES.PDF && docCategory !== "all") setDocCategory("all");
+  }, [type, docCategory]);
+
+  const videoTotal = useMemo(() => items.filter((v) => !isPdf(v)).length, [items]);
+  const pdfTotal = items.length - videoTotal;
+
   // ---- Counts per grade (for the select + "explore" cards) ----
   const countsByGrade = useMemo(() => {
     const map = new Map();
-    videos.forEach((v) => map.set(v.gradeId, (map.get(v.gradeId) || 0) + 1));
+    items.forEach((v) => map.set(v.gradeId, (map.get(v.gradeId) || 0) + 1));
     return map;
-  }, [videos]);
+  }, [items]);
 
-  // Grades offered in the select: those with videos + the student's own grades.
+  // Grades offered in the select: those with content + the student's own grades.
   const gradeGroups = useMemo(
     () =>
       GRADE_GROUPS.map((group) => ({
@@ -185,24 +208,35 @@ export default function VideosPage() {
     [countsByGrade, accessible]
   );
 
-  // Videos matching grade + section (the base for subject counts).
-  const inScope = useMemo(
+  // Content matching grade + section (the base for type counts).
+  const inGrade = useMemo(
     () =>
-      videos.filter(
+      items.filter(
         (v) =>
           (grade === "all" || v.gradeId === grade) && (section === "all" || v.specializationId === section)
       ),
-    [videos, grade, section]
+    [items, grade, section]
+  );
+
+  const typeCounts = useMemo(() => {
+    const pdfs = inGrade.filter(isPdf).length;
+    return { all: inGrade.length, [CONTENT_TYPES.VIDEO]: inGrade.length - pdfs, [CONTENT_TYPES.PDF]: pdfs };
+  }, [inGrade]);
+
+  // + type (the base for subject and PDF-type counts).
+  const inScope = useMemo(
+    () => (type === "all" ? inGrade : inGrade.filter((v) => contentTypeOf(v) === type)),
+    [inGrade, type]
   );
 
   const sectionCounts = useMemo(() => {
     const map = new Map();
     if (!hasSections) return map;
-    videos
+    items
       .filter((v) => v.gradeId === grade && v.specializationId)
       .forEach((v) => map.set(v.specializationId, (map.get(v.specializationId) || 0) + 1));
     return map;
-  }, [videos, grade, hasSections]);
+  }, [items, grade, hasSections]);
 
   const subjectChips = useMemo(() => {
     const map = new Map();
@@ -220,32 +254,51 @@ export default function VideosPage() {
     return [...map.values()].sort((a, b) => a.name.localeCompare(b.name, "fr"));
   }, [inScope]);
 
-  // If the chosen subject has no video in the new grade, fall back to "all".
+  // PDF types present for this grade/subject (Cours, Série, Devoir…), in a fixed order.
+  const docCategoryChips = useMemo(() => {
+    if (type !== CONTENT_TYPES.PDF) return [];
+    const counts = new Map();
+    inScope
+      .filter((v) => subject === "all" || v.subjectId === subject)
+      .forEach((v) => v.pdfCategory && counts.set(v.pdfCategory, (counts.get(v.pdfCategory) || 0) + 1));
+    return PDF_CATEGORIES.filter((c) => counts.has(c.id)).map((c) => ({ ...c, count: counts.get(c.id) }));
+  }, [type, inScope, subject]);
+
+  // If the chosen subject has nothing in the new grade/type, fall back to "all".
   useEffect(() => {
     if (!filtersReady || loading || subject === "all") return;
     if (!subjectChips.some((s) => s.id === subject)) setSubject("all");
   }, [filtersReady, loading, subject, subjectChips]);
 
+  useEffect(() => {
+    if (!filtersReady || loading || docCategory === "all" || type !== CONTENT_TYPES.PDF) return;
+    if (!docCategoryChips.some((c) => c.id === docCategory)) setDocCategory("all");
+  }, [filtersReady, loading, docCategory, docCategoryChips, type]);
+
   // ---- Final results ----
   const results = useMemo(() => {
-    const q = normalize(search.trim());
     const list = inScope.filter(
       (v) =>
         (subject === "all" || v.subjectId === subject) &&
-        (!q || normalize(`${v.title} ${v.teacherName} ${v.subjectName}`).includes(q))
+        (docCategory === "all" || type !== CONTENT_TYPES.PDF || v.pdfCategory === docCategory)
     );
     return list.sort((a, b) =>
       sort === "populaires"
         ? (b.views || 0) - (a.views || 0) || publishedTime(b) - publishedTime(a)
         : publishedTime(b) - publishedTime(a)
     );
-  }, [inScope, subject, search, sort]);
+  }, [inScope, subject, docCategory, type, sort]);
 
   const currentGrade = grade !== "all" ? gradeById(grade) : null;
   const currentSubject = subjectChips.find((s) => s.id === subject);
+  const currentDocCategory = docCategory !== "all" ? getPdfCategory(docCategory) : null;
   const gradeLocked = !!user && grade !== "all" && !accessible.has(grade);
-  const activeFilters = (section !== "all" ? 1 : 0) + (subject !== "all" ? 1 : 0) + (search.trim() ? 1 : 0);
-  const gradesWithVideos = countsByGrade.size;
+  const activeFilters =
+    (section !== "all" ? 1 : 0) +
+    (subject !== "all" ? 1 : 0) +
+    (type !== "all" ? 1 : 0) +
+    (currentDocCategory ? 1 : 0);
+  const gradesWithContent = countsByGrade.size;
 
   const exploreGrades = ORDERED_GRADES.filter((g) => !accessible.has(g.id) && countsByGrade.has(g.id));
   const showExplore = isStudent && grade !== "all" && !gradeLocked && exploreGrades.length > 0;
@@ -255,15 +308,17 @@ export default function VideosPage() {
     [accessible, user]
   );
 
-  function openVideo(v) {
-    if (isLocked(v)) setLockedVideo(v);
+  function openItem(v) {
+    if (isLocked(v)) setLockedItem(v);
+    else if (isPdf(v)) setReading(v);
     else setPlaying(v);
   }
 
   function clearFilters() {
     setSection("all");
     setSubject("all");
-    setSearch("");
+    setType("all");
+    setDocCategory("all");
   }
 
   function jumpToGrade(id) {
@@ -289,20 +344,22 @@ export default function VideosPage() {
     );
   }
 
+  const lockedIsPdf = lockedItem && isPdf(lockedItem);
+
   return (
     <div className="home-page">
       {/* ---------- Hero ---------- */}
       <section className="vid-hero">
         <div className="vid-container">
-          <p className="vid-eyebrow">Vidéos à la demande 🎬</p>
+          <p className="vid-eyebrow">Vidéos & PDF à la demande 📚</p>
           <h1 className="vid-title">
-            {isStudent && firstName ? `Salut ${firstName} ! Qu'apprend-on aujourd'hui ?` : "Toutes nos vidéos de cours"}
+            {isStudent && firstName ? `Salut ${firstName} ! Qu'apprend-on aujourd'hui ?` : "Tous nos documents de cours"}
           </h1>
           <p className="vid-subtitle">
             {loading
               ? "Chargement du catalogue..."
-              : `${videos.length} vidéo${videos.length > 1 ? "s" : ""} · ${gradesWithVideos} niveau${
-                  gradesWithVideos > 1 ? "x" : ""
+              : `${countLabel(videoTotal, CONTENT_TYPES.VIDEO)} · ${countLabel(pdfTotal, CONTENT_TYPES.PDF)} · ${gradesWithContent} niveau${
+                  gradesWithContent > 1 ? "x" : ""
                 } · des enseignants tunisiens passionnés`}
           </p>
         </div>
@@ -334,14 +391,21 @@ export default function VideosPage() {
               ))}
             </select>
 
-            <input
-              type="search"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="🔍 Leçon ou enseignant…"
-              aria-label="Chercher une leçon ou un enseignant"
-              className="vid-search"
-            />
+            <div className="vid-type-toggle" role="radiogroup" aria-label="Type de document">
+              {TYPE_FILTERS.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={type === t.id}
+                  onClick={() => setType(t.id)}
+                  className={`vid-type-option ${type === t.id ? "vid-type-option-active" : ""}`}
+                >
+                  {t.label}
+                  {!loading && <span className="vid-type-count">{typeCounts[t.id] || 0}</span>}
+                </button>
+              ))}
+            </div>
 
             <select
               value={sort}
@@ -350,7 +414,7 @@ export default function VideosPage() {
               className="vid-select vid-select-sort"
             >
               <option value="populaires">🔥 Populaires</option>
-              <option value="recentes">🆕 Récentes</option>
+              <option value="recentes">🆕 Récents</option>
             </select>
           </div>
 
@@ -381,17 +445,31 @@ export default function VideosPage() {
               ))}
             </div>
           )}
+
+          {docCategoryChips.length > 1 && (
+            <div className="vid-chip-row" aria-label="Filtrer par type de PDF">
+              <span className="vid-chip-label">Type :</span>
+              <Chip small active={docCategory === "all"} onClick={() => setDocCategory("all")}>
+                Tous
+              </Chip>
+              {docCategoryChips.map((c) => (
+                <Chip small key={c.id} active={docCategory === c.id} onClick={() => setDocCategory(c.id)}>
+                  {c.emoji} {c.label}
+                  <span className="vid-chip-count">{c.count}</span>
+                </Chip>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
       {/* ---------- Results ---------- */}
       <div className="vid-container vid-body">
-
         {/* 
         {!user && (
           <Banner
             emoji="👋"
-            title="Connecte-toi pour regarder les vidéos de ta classe"
+            title="Connecte-toi pour voir les vidéos et les PDF de ta classe"
             text="Tu peux déjà parcourir tout notre catalogue."
           >
             <Link href="/login" className="vid-btn-primary">
@@ -405,7 +483,7 @@ export default function VideosPage() {
           <Banner
             emoji="👨‍👩‍👧"
             title={`${currentGrade.name} n'est pas inclus dans ton abonnement`}
-            text="Un autre enfant dans ce niveau ? Ajoutez-le et débloquez toutes ses vidéos."
+            text="Un autre enfant dans ce niveau ? Ajoutez-le et débloquez toutes ses vidéos et ses PDF."
           >
             <a href={subscribeLink(currentGrade.name)} target="_blank" rel="noopener noreferrer" className="vid-btn-primary">
               S'abonner
@@ -417,9 +495,9 @@ export default function VideosPage() {
           <LoadingSpinner />
         ) : loadError ? (
           <p className="vid-error">{loadError}</p>
-        ) : videos.length === 0 ? (
-          <EmptyState emoji="🎬" title="Les premières vidéos arrivent très bientôt">
-            Nos enseignants préparent leurs cours. Revenez dans quelques jours !
+        ) : items.length === 0 ? (
+          <EmptyState emoji="📚" title="Les premiers cours arrivent très bientôt">
+            Nos enseignants préparent leurs vidéos et leurs PDF. Revenez dans quelques jours !
           </EmptyState>
         ) : (
           <>
@@ -429,9 +507,7 @@ export default function VideosPage() {
                 {currentSubject && <span className="vid-results-accent"> · {currentSubject.name}</span>}
               </h2>
               <div className="vid-results-meta">
-                <span>
-                  {results.length} vidéo{results.length > 1 ? "s" : ""}
-                </span>
+                <span>{countLabel(results.length, type)}</span>
                 {activeFilters > 0 && (
                   <button type="button" onClick={clearFilters} className="vid-link-btn">
                     Effacer les filtres
@@ -442,14 +518,23 @@ export default function VideosPage() {
 
             {results.length === 0 ? (
               activeFilters > 0 ? (
-                <EmptyState emoji="🔎" title="Aucune vidéo ne correspond à ces filtres.">
+                <EmptyState
+                  emoji="🔎"
+                  title={
+                    type === CONTENT_TYPES.PDF
+                      ? "Aucun PDF ne correspond à ces filtres."
+                      : type === CONTENT_TYPES.VIDEO
+                      ? "Aucune vidéo ne correspond à ces filtres."
+                      : "Aucun document ne correspond à ces filtres."
+                  }
+                >
                   <button type="button" onClick={clearFilters} className="vid-btn-secondary">
                     Effacer les filtres
                   </button>
                 </EmptyState>
               ) : (
-                <EmptyState emoji="🎬" title="Pas encore de vidéos pour ce niveau">
-                  Elles arrivent très bientôt !
+                <EmptyState emoji="📚" title="Pas encore de documents pour ce niveau">
+                  Ils arrivent très bientôt !
                   <br />
                   <button type="button" onClick={() => jumpToGrade("all")} className="vid-btn-secondary">
                     Voir tous les niveaux
@@ -460,14 +545,14 @@ export default function VideosPage() {
               <>
                 <div className="vid-grid">
                   {results.slice(0, visible).map((v) => (
-                    <VideoCard
+                    <ContentCard
                       key={v.id}
-                      video={v}
+                      item={v}
                       locked={isLocked(v)}
                       isLoggedIn={!!user}
                       showGrade={grade === "all"}
                       showSection={hasSections && section === "all"}
-                      onClick={() => openVideo(v)}
+                      onClick={() => openItem(v)}
                     />
                   ))}
                 </div>
@@ -475,7 +560,7 @@ export default function VideosPage() {
                 {visible < results.length && (
                   <div className="vid-more">
                     <button type="button" onClick={() => setVisible((n) => n + PAGE_SIZE)} className="vid-btn-secondary">
-                      Voir plus de vidéos
+                      Voir plus
                     </button>
                     <p className="vid-more-count">
                       {Math.min(visible, results.length)} sur {results.length}
@@ -494,9 +579,7 @@ export default function VideosPage() {
                     <button key={g.id} type="button" onClick={() => jumpToGrade(g.id)} className="vid-explore-card">
                       <span className="vid-explore-emoji">{gradeEmoji(g.id)}</span>
                       <span className="vid-explore-name">{g.name}</span>
-                      <span className="vid-explore-count">
-                        {countsByGrade.get(g.id)} vidéo{countsByGrade.get(g.id) > 1 ? "s" : ""}
-                      </span>
+                      <span className="vid-explore-count">{countLabel(countsByGrade.get(g.id) || 0)}</span>
                     </button>
                   ))}
                 </div>
@@ -507,22 +590,27 @@ export default function VideosPage() {
       </div>
 
       {playing && <PlayerModal video={playing} onClose={() => setPlaying(null)} />}
+      {reading && <PdfReaderModal pdf={reading} onClose={() => setReading(null)} />}
 
-      {lockedVideo && (
-        <Modal onClose={() => setLockedVideo(null)} size="sm" labelledBy="vid-locked-title">
+      {lockedItem && (
+        <Modal onClose={() => setLockedItem(null)} size="sm" labelledBy="vid-locked-title">
           <div className="vid-locked">
             <div className="vid-locked-icon">{user ? "🔓" : "🔒"}</div>
             <h2 id="vid-locked-title" className="vid-modal-title">
-              Vidéo de {lockedVideo.gradeName || gradeById(lockedVideo.gradeId)?.name}
+              {lockedIsPdf ? "PDF" : "Vidéo"} de {lockedItem.gradeName || gradeById(lockedItem.gradeId)?.name}
             </h2>
             <p className="vid-locked-text">
               {user
-                ? "Cette vidéo n'est pas dans le niveau de ton compte. Un autre enfant dans ce niveau ? Ajoutez un abonnement pour tout débloquer."
-                : "Connecte-toi avec ton compte pour regarder les vidéos de ta classe."}
+                ? `${
+                    lockedIsPdf ? "Ce PDF n'est pas" : "Cette vidéo n'est pas"
+                  } dans le niveau de ton compte. Un autre enfant dans ce niveau ? Ajoutez un abonnement pour tout débloquer.`
+                : `Connecte-toi avec ton compte pour ${
+                    lockedIsPdf ? "lire les PDF" : "regarder les vidéos"
+                  } de ta classe.`}
             </p>
             {user ? (
               <a
-                href={subscribeLink(lockedVideo.gradeName || gradeById(lockedVideo.gradeId)?.name || "")}
+                href={subscribeLink(lockedItem.gradeName || gradeById(lockedItem.gradeId)?.name || "")}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="vid-btn-primary"
@@ -542,14 +630,21 @@ export default function VideosPage() {
 }
 
 // =========================================================
-// VIDEO CARD
+// CARD (video or PDF)
 // =========================================================
 
-function VideoCard({ video, locked, isLoggedIn, showGrade, showSection, onClick }) {
-  const duration = formatDuration(video.durationSec);
+function ContentCard({ item, locked, isLoggedIn, showGrade, showSection, onClick }) {
+  const pdf = isPdf(item);
+  const category = pdf ? getPdfCategory(item.pdfCategory) : null;
+  // The "🎬 Vidéo / 📄 PDF" tag is on the thumbnail; the corner badge gives the length.
+  const badge = pdf
+    ? item.pageCount
+      ? `${item.pageCount} page${item.pageCount > 1 ? "s" : ""}`
+      : ""
+    : formatDuration(item.durationSec);
 
-  const fullGrade = video.gradeName || gradeById(video.gradeId)?.name || "";
-  const spec = video.specializationName || "";
+  const fullGrade = item.gradeName || gradeById(item.gradeId)?.name || "";
+  const spec = item.specializationName || "";
   // Which level chip to show: grade (+ section) in "all grades" view,
   // section alone when one grade with sections is selected.
   const levelChip = showGrade
@@ -558,36 +653,43 @@ function VideoCard({ video, locked, isLoggedIn, showGrade, showSection, onClick 
     ? spec
     : "";
   const levelTooltip = [fullGrade, spec].filter(Boolean).join(" · ");
-  const subjectLabel = `${getSubjectEmoji(video.subjectId, video.subjectEmoji)} ${video.subjectName || ""}`.trim();
+  const subjectLabel = `${getSubjectEmoji(item.subjectId, item.subjectEmoji)} ${item.subjectName || ""}`.trim();
+
+  // PDFs: the document type comes first on the 2nd line ("✏️ Série d'exercices · ✅ Corrigé · Prof").
+  const secondLine = pdf
+    ? [category && `${category.emoji} ${category.label}`, item.hasCorrection && "✅ Corrigé", item.teacherName]
+        .filter(Boolean)
+        .join(" · ")
+    : item.teacherName;
 
   return (
-    <button type="button" onClick={onClick} className="vid-card" title={video.title}>
+    <button type="button" onClick={onClick} className="vid-card" title={item.title}>
       <div className="vid-thumb">
-        <VideoThumbnail video={video} />
-        {duration && <span className="vid-duration">{duration}</span>}
+        <VideoThumbnail video={item} />
+        {badge && <span className="vid-duration">{badge}</span>}
         {locked ? (
           <span className="vid-locked-overlay">
             <span>{isLoggedIn ? "🔓 À débloquer" : "🔒 Connecte-toi"}</span>
           </span>
         ) : (
           <span className="vid-play-overlay">
-            <span>▶</span>
+            <span>{pdf ? "📖" : "▶"}</span>
           </span>
         )}
       </div>
       <div className="vid-card-body">
-        <p className="vid-card-title">{video.title}</p>
-        <p className="vid-card-teacher">{video.teacherName || " "}</p>
+        <p className="vid-card-title">{item.title}</p>
+        <p className={`vid-card-teacher ${pdf ? "vid-card-doctype" : ""}`}>{secondLine || " "}</p>
         <div className="vid-card-meta">
           {levelChip && (
             <span className="vid-chip-grade" title={levelTooltip}>
               {levelChip}
             </span>
           )}
-          <span className="vid-chip-subject" title={video.subjectName}>
+          <span className="vid-chip-subject" title={item.subjectName}>
             {subjectLabel}
           </span>
-          <span className="vid-card-views">👁 {formatViews(video.views || 0)}</span>
+          <span className="vid-card-views">👁 {formatViews(item.views || 0)}</span>
         </div>
       </div>
     </button>
@@ -653,6 +755,34 @@ function PlayerModal({ video, onClose }) {
 }
 
 // =========================================================
+// PDF READER (protected viewer, full screen on phones)
+// =========================================================
+
+function PdfReaderModal({ pdf, onClose }) {
+  const category = getPdfCategory(pdf.pdfCategory);
+  return (
+    <Modal onClose={onClose} size="pdf" labelledBy="vid-reader-title">
+      <h2 id="vid-reader-title" className="vid-modal-title vid-modal-title-left vid-reader-title">
+        {pdf.title}
+      </h2>
+      <p className="vid-modal-desc vid-reader-desc">
+        {[
+          category && `${category.emoji} ${category.label}`,
+          pdf.hasCorrection && "✅ Corrigé",
+          pdf.teacherName,
+          `${getSubjectEmoji(pdf.subjectId, pdf.subjectEmoji)} ${pdf.subjectName || ""}`.trim(),
+        ]
+          .filter(Boolean)
+          .join(" · ")}
+      </p>
+      <div className="vid-reader">
+        <ProtectedPdfViewer docId={pdf.id} />
+      </div>
+    </Modal>
+  );
+}
+
+// =========================================================
 // SMALL UI PIECES
 // =========================================================
 
@@ -670,7 +800,7 @@ function Modal({ children, onClose, size = "md", labelledBy }) {
 
   return (
     <div
-      className="vid-modal-backdrop"
+      className={`vid-modal-backdrop vid-modal-backdrop-${size}`}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}

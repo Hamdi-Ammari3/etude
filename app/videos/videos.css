@@ -107,23 +107,62 @@
   max-width: 100%;
 }
 
-.vid-search {
-  flex: 1;
-  min-width: 180px;
-  padding: 0.55rem 1rem;
+/* ---------- Tout / Vidéos / PDF ---------- */
+
+.vid-type-toggle {
+  display: flex;
+  flex: 1 1 auto;
+  gap: 0.2rem;
+  padding: 0.2rem;
   border-radius: 999px;
   border: 2px solid var(--home-border);
   background: var(--home-bg, #f8fbff);
-  color: var(--home-ink);
-  font-size: 0.88rem;
-  font-weight: 600;
-  outline: none;
-  transition: border-color 150ms ease, box-shadow 150ms ease;
 }
 
-.vid-search:focus {
-  border-color: var(--home-primary);
-  box-shadow: 0 0 0 4px rgba(15, 107, 184, 0.12);
+.vid-type-option {
+  flex: 1 1 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  min-width: 0;
+  padding: 0.4rem 0.8rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--home-muted);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.vid-type-option:hover:not(.vid-type-option-active) {
+  color: var(--home-ink);
+}
+
+.vid-type-option:focus-visible {
+  outline: 2px solid var(--home-primary);
+  outline-offset: 2px;
+}
+
+.vid-type-option-active {
+  background: var(--home-primary);
+  color: var(--home-primary-foreground, #f9fcff);
+}
+
+.vid-type-count {
+  font-size: 0.75em;
+  opacity: 0.65;
+}
+
+@media (min-width: 601px) {
+  .vid-type-toggle {
+    flex: 0 1 auto;
+    min-width: 300px;
+  }
 }
 
 @media (max-width: 600px) {
@@ -135,7 +174,7 @@
     flex: 0 0 auto;
   }
 
-  .vid-search {
+  .vid-type-toggle {
     order: 3;
     flex: 1 1 100%;
   }
@@ -306,7 +345,7 @@
 .vid-results-title {
   margin: 0;
   font-family: var(--home-font-display);
-  font-size: 1.3rem;
+  font-size: 1.5rem;
   font-weight: 800;
   color: var(--home-ink);
 }
@@ -831,4 +870,82 @@
   font-weight: 600;
   color: var(--home-muted);
   line-height: 1.5;
+}
+
+/* =========================================================
+   PDF — card badge + protected reader
+   ========================================================= */
+
+.vid-badge-pdf {
+  background: rgba(196, 44, 44, 0.92);
+}
+
+/* PDFs: 2nd line shows the document type (still exactly 1 line). */
+.vid-card-doctype {
+  color: var(--home-ink);
+  font-weight: 700;
+}
+
+/* Reader: tall window on desktop, full screen on phones. */
+.vid-modal-pdf {
+  display: flex;
+  flex-direction: column;
+  max-width: 960px;
+  height: calc(100vh - 2rem);
+  height: calc(100dvh - 2rem);
+  overflow: hidden;
+}
+
+.vid-reader-title {
+  font-size: 1.05rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vid-reader-desc {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 2.75rem;
+}
+
+.vid-reader {
+  flex: 1;
+  min-height: 0;
+  margin-top: 0.75rem;
+}
+
+@media (max-width: 600px) {
+  .vid-modal-backdrop-pdf {
+    padding: 0;
+  }
+
+  .vid-modal-pdf {
+    max-width: none;
+    height: 100vh;
+    height: 100dvh;
+    max-height: none;
+    padding: 0.75rem 0.5rem 0.5rem;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .vid-modal-pdf .vid-modal-close {
+    top: 0.6rem;
+    right: 0.6rem;
+  }
+
+  .vid-modal-pdf .vid-modal-title-left,
+  .vid-modal-pdf .vid-reader-desc {
+    padding-left: 0.4rem;
+  }
+
+  .vid-reader {
+    margin-top: 0.5rem;
+  }
+
+  .vid-reader .pdfv {
+    border-radius: 12px;
+  }
 }

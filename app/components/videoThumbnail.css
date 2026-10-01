@@ -45,18 +45,58 @@
   user-select: none;
 }
 
-/* Subject pill (top-left) */
-.vthumb-subject {
+/* Top row: type tag + subject pill */
+.vthumb-top {
   position: relative;
-  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+  min-width: 0;
+  max-width: 100%;
+  font-size: 0.68rem;
+}
+
+/* "🎬 Vidéo" / "📄 PDF" — tells the two apart at first glance */
+.vthumb-type {
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   gap: 0.3em;
-  max-width: 75%;
+  padding: 0.25em 0.6em;
+  border-radius: 0.55em;
+  background: var(--home-card, #ffffff);
+  color: var(--home-ink, #1a2846);
+  font-size: 1.12em;
+  font-weight: 800;
+  line-height: 1.3;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(26, 40, 70, 0.12);
+}
+
+.vthumb-type-pdf {
+  color: #a12626;
+}
+
+/* Image mode: the tag floats over the picture */
+.vthumb-type-float {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 1;
+  font-size: 0.72rem;
+}
+
+/* Subject pill (next to the type tag) */
+.vthumb-subject {
+  position: relative;
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.3em;
   padding: 0.25em 0.7em;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.88);
-  font-size: 0.68rem;
+  font-size: 1em;
   font-weight: 800;
   line-height: 1.3;
   white-space: nowrap;
@@ -128,7 +168,7 @@
   .vthumb-watermark {
     font-size: 34cqw;
   }
-  .vthumb-subject {
+  .vthumb-top {
     font-size: clamp(0.6rem, 4cqw, 0.9rem);
   }
   .vthumb-title {

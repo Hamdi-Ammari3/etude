@@ -1,4 +1,5 @@
 import { deleteBunnyVideo } from "../../../../lib/bunny";
+import { deleteObject } from "../../../../lib/bunnyStorage";
 import { destroyCloudinaryImage } from "../../../../lib/cloudinaryServer";
 import { adminDb, requireTeacher, jsonError, FieldValue } from "../../../../lib/videoServer";
 import { TITLE_MIN, TITLE_MAX, DEFAULT_THUMBNAIL_PUBLIC_ID } from "../../../../lib/videoConfig";
@@ -84,7 +85,9 @@ export async function DELETE(request, ctx) {
 
   // Free the storage (best effort — the video is already hidden either way).
   const [bunnyOk, thumbOk] = await Promise.all([
-    video.bunnyVideoId
+    video.type === "pdf" && video.storageKey
+      ? deleteObject(video.storageKey)
+      : video.bunnyVideoId
       ? deleteBunnyVideo(video.bunnyVideoId).then(
           () => true,
           (err) => {

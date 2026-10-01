@@ -6,8 +6,8 @@ import { useUser, logoutUser } from "../../lib/auth";
 import "./navbar.css";
 
 const STUDENT_NAV_ITEMS = [
-  { href: "/lecons", label: "Documents" },
-  { href: "/videos", label: "Vidéos" },
+  { href: "/videos", label: "Documents" },
+  { href: "/lecons", label: "Curriculum" },
 ];
 
 export default function Navbar() {
