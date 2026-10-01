@@ -483,10 +483,13 @@ export default function EnseignantDashboard() {
             <button type="button" onClick={() => setModalOpen(true)} className="ens-new-video-btn">
               + Publier
             </button>
-            {/* Public profile page — built next (app/enseignants/[id]/page.js). */}
+
+            {/* 
             <Link href={`/enseignants/${user.uid}`} className="ens-profile-btn">
               👀 Mon profil public
             </Link>
+            */}
+            
             {/*
             <button type="button" onClick={handleLogout} className="ens-logout-btn">
               Déconnexion
