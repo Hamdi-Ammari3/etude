@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
 import { DB, auth } from "../../lib/firebaseConfig";
-import { completeLogin, logoutUser, useUser } from "../../lib/auth";
+import { logoutUser, useUser } from "../../lib/auth";
 import { ALL_GRADES, GRADE_GROUPS, GRADES_WITH_SPECIALIZATION, SPECIALIZATIONS } from "../../lib/liveGrades";
 import { getSubjectsForGrade } from "../../lib/liveSubjects";
 import {
@@ -133,43 +133,10 @@ export default function EnseignantDashboard() {
   const { user, hydrated } = useUser();
   const router = useRouter();
 
-  // ---- Login form state ----
-  const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
-  const [loginError, setLoginError] = useState(null);
-  const [loginLoading, setLoginLoading] = useState(false);
-
-  async function handleLogin(e) {
-    e.preventDefault();
-    setLoginError(null);
-
-    if (!/^\d{8}$/.test(phone.trim())) {
-      return setLoginError("Le numéro doit contenir exactement 8 chiffres.");
-    }
-    if (!/^\d{4}$/.test(password.trim())) {
-      return setLoginError("La clé enseignant doit contenir 4 chiffres.");
-    }
-
-    setLoginLoading(true);
-    try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: phone.trim(), password: password.trim(), loginAs: "teacher" }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setLoginError(data.error || "Connexion impossible.");
-        return;
-      }
-      await completeLogin(data.token);
-      router.push("/enseignant");
-    } catch {
-      setLoginError("Connexion impossible. Vérifiez votre réseau.");
-    } finally {
-      setLoginLoading(false);
-    }
-  }
+  // Logged out → the single login page (it sends teachers back here after login).
+  useEffect(() => {
+    if (hydrated && !user) router.replace("/login");
+  }, [hydrated, user, router]);
 
   function handleLogout() {
     logoutUser();
@@ -376,87 +343,8 @@ export default function EnseignantDashboard() {
 
   if (!user) {
     return (
-      <div className="home-page">
-        <div className="ens-login-page">
-          <div className="ens-login-grid">
-            <div className="ens-login-intro">
-              <span className="ens-login-badge">Espace professionnel</span>
-              <h1 className="ens-login-intro-title">🏫 Connexion enseignant</h1>
-              <p className="ens-login-intro-text">
-                Publiez vos vidéos de cours, suivez vos vues du mois et vos revenus depuis votre tableau de
-                bord.
-              </p>
-              <ul className="ens-login-features">
-                <li>🎬 Publication de vidéos de cours</li>
-                <li>👁 Suivi de vos vues chaque mois</li>
-                <li>💰 {formatMoney(VIEW_RATE_DT * 100)} DT pour chaque 100 vues</li>
-              </ul>
-              <a
-                href={`https://wa.me/${TEACHER_WHATSAPP}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="ens-login-whatsapp-btn"
-              >
-                💬 Créer un compte via WhatsApp
-              </a>
-            </div>
-
-            <form onSubmit={handleLogin} className="ens-login-form-card">
-              <h2 className="ens-login-form-title">Accès à votre compte</h2>
-              <p className="ens-login-form-sub">Réservé aux enseignants partenaires de Droussy TN.</p>
-
-              <div className="ens-login-field">
-                <label htmlFor="tphone" className="ens-login-label">
-                  📱 Numéro de téléphone
-                </label>
-                <div className="ens-login-phone-row">
-                  <span className="ens-login-phone-prefix">🇹🇳 +216</span>
-                  <input
-                    id="tphone"
-                    type="tel"
-                    inputMode="numeric"
-                    autoComplete="username"
-                    maxLength={8}
-                    placeholder="20112233"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 8))}
-                    className="ens-login-phone-input"
-                  />
-                </div>
-              </div>
-
-              <div className="ens-login-field">
-                <label htmlFor="tkey" className="ens-login-label">
-                  🔐 Clé enseignant (4 chiffres)
-                </label>
-                <input
-                  id="tkey"
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="current-password"
-                  maxLength={4}
-                  placeholder="1234"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                  className="ens-login-password-input"
-                />
-              </div>
-
-              {loginError && <p className="ens-login-error">{loginError}</p>}
-
-              <button type="submit" disabled={loginLoading} className="ens-login-submit-btn">
-                {loginLoading ? "Connexion..." : "Accéder à mon tableau de bord"}
-              </button>
-
-              <p className="ens-login-switch">
-                Vous êtes élève ?{" "}
-                <a href="/login" className="ens-login-switch-link">
-                  Connexion élève
-                </a>
-              </p>
-            </form>
-          </div>
-        </div>
+      <div className="page-container">
+        <LoadingSpinner />
       </div>
     );
   }
@@ -483,13 +371,10 @@ export default function EnseignantDashboard() {
             <button type="button" onClick={() => setModalOpen(true)} className="ens-new-video-btn">
               + Publier
             </button>
-
-            {/* 
+            {/* Public profile page — built next (app/enseignants/[id]/page.js). */}
             <Link href={`/enseignants/${user.uid}`} className="ens-profile-btn">
               👀 Mon profil public
             </Link>
-            */}
-            
             {/*
             <button type="button" onClick={handleLogout} className="ens-logout-btn">
               Déconnexion
@@ -1948,7 +1833,7 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
                   )}
                 </div>
               ) : (
-                <div className="ens-pick-row">
+                <div className="ens-pick-row ens-pick-row-single">
                   <button
                     type="button"
                     className="ens-pick-btn"

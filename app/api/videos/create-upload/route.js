@@ -103,6 +103,7 @@ export async function POST(request) {
   const { libraryId } = bunnyConfig();
   const docRef = db.collection("videos").doc();
   const payload = {
+    type: "video", // the catalog filters Vidéos / PDF on this field
     teacherId: teacher.uid,
     teacherName: teacher.name || "",
     gradeId,

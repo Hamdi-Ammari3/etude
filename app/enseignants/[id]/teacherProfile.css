@@ -1,0 +1,290 @@
+/* =========================================================
+   TEACHER PUBLIC PROFILE  (/enseignants/[id])
+   Cards, player and PDF reader reuse app/videos/videos.css.
+   ========================================================= */
+
+.tp-container {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+@media (max-width: 480px) {
+  .tp-container {
+    padding: 0 1rem;
+  }
+}
+
+/* ---------- Hero ---------- */
+
+.tp-hero {
+  padding: 2.5rem 0;
+  background: linear-gradient(160deg, var(--home-wash-blue, #e5f0fc) 0%, var(--home-bg, #f8fbff) 80%);
+}
+
+.tp-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 1.25rem;
+  padding: 1.5rem;
+  border-radius: var(--home-radius-2xl, 28px);
+  border: 2px solid var(--home-border, #d4dfeb);
+  background: var(--home-card, #ffffff);
+  box-shadow: 0 6px 0 var(--home-border, #d4dfeb);
+}
+
+.tp-avatar {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 80px;
+  height: 80px;
+  border-radius: 24px;
+  background: var(--home-grape, #c796eb);
+  font-size: 2.9rem;
+  line-height: 1;
+}
+
+.tp-main {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+
+.tp-name {
+  margin: 0;
+  font-family: var(--home-font-display);
+  font-size: clamp(1.6rem, 4vw, 2rem);
+  font-weight: 800;
+  line-height: 1.15;
+  color: var(--home-ink, #1a2846);
+  overflow-wrap: anywhere;
+}
+
+.tp-bio {
+  margin: 0.5rem 0 0;
+  font-weight: 600;
+  line-height: 1.55;
+  color: var(--home-muted, #5b6b85);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.tp-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.tp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  max-width: 100%;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  background: #f1f4f8;
+  color: var(--home-ink, #1a2846);
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.tp-chip-phone {
+  background: var(--home-secondary, #f7efd1);
+  color: var(--home-secondary-foreground, #55310f);
+}
+
+.tp-chip-whatsapp {
+  background: var(--home-mint, #73e0b4);
+  color: var(--home-mint-foreground, #003729);
+  transition: transform 150ms ease;
+}
+
+.tp-chip-whatsapp:hover,
+.tp-chip-phone:hover {
+  transform: translateY(-1px);
+}
+
+.tp-stats {
+  margin: 0.9rem 0 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--home-muted, #5b6b85);
+}
+
+.tp-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+@media (max-width: 640px) {
+  .tp-actions {
+    width: 100%;
+    align-items: stretch;
+  }
+}
+
+.tp-btn-primary,
+.tp-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem 1.3rem;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: transform 150ms ease, background-color 150ms ease;
+}
+
+.tp-btn-primary {
+  border: none;
+  background: var(--home-primary, #1a8cf0);
+  color: var(--home-primary-foreground, #f9fcff);
+}
+
+.tp-btn-primary:hover {
+  transform: scale(1.04);
+}
+
+.tp-btn-ghost {
+  border: 2px solid var(--home-border, #d4dfeb);
+  background: var(--home-card, #ffffff);
+  color: var(--home-ink, #1a2846);
+}
+
+.tp-btn-ghost:hover {
+  background: var(--home-wash-blue, #e5f0fc);
+}
+
+.tp-share-msg {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #146339;
+}
+
+/* ---------- Documents ---------- */
+
+.tp-body {
+  padding-top: 2rem;
+  padding-bottom: 4rem;
+}
+
+.tp-list-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.tp-list-title {
+  margin: 0;
+  font-family: var(--home-font-display);
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--home-ink, #1a2846);
+}
+
+.tp-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.tp-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  border: 2px solid var(--home-border, #d4dfeb);
+  background: var(--home-card, #ffffff);
+  color: var(--home-ink, #1a2846);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.tp-filter:hover:not(.tp-filter-active) {
+  background: var(--home-wash-blue, #e5f0fc);
+}
+
+.tp-filter-active {
+  border-color: var(--home-primary, #1a8cf0);
+  background: var(--home-primary, #1a8cf0);
+  color: var(--home-primary-foreground, #f9fcff);
+}
+
+.tp-filter-count {
+  font-size: 0.8em;
+  opacity: 0.65;
+}
+
+.tp-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+  padding: 0.9rem 1.1rem;
+  border-radius: var(--home-radius-md, 20px);
+  background: var(--home-sun, #faca4b);
+  color: var(--home-ink, #1a2846);
+}
+
+.tp-banner-emoji {
+  font-size: 1.6rem;
+}
+
+.tp-banner-text {
+  flex: 1 1 200px;
+  margin: 0;
+  font-weight: 800;
+  font-size: 0.92rem;
+}
+
+.tp-grid {
+  margin-top: 1.25rem;
+}
+
+.tp-empty {
+  margin: 1.25rem 0 0;
+  padding: 1.5rem;
+  border-radius: var(--home-radius-2xl, 28px);
+  background: var(--home-secondary, #f7efd1);
+  color: var(--home-secondary-foreground, #55310f);
+  font-weight: 800;
+  text-align: center;
+}
+
+/* ---------- Not found ---------- */
+
+.tp-notfound {
+  max-width: 28rem;
+  margin: 0 auto;
+  padding: 5rem 1rem;
+  text-align: center;
+}
+
+.tp-notfound-emoji {
+  margin: 0;
+  font-size: 3rem;
+}
+
+.tp-notfound-title {
+  margin: 0.75rem 0 1.5rem;
+  font-family: var(--home-font-display);
+  font-size: 1.5rem;
+  font-weight: 800;
+}

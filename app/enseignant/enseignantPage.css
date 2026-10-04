@@ -968,7 +968,7 @@
   border-radius: var(--home-radius-md, 20px);
   background: var(--home-wash-blue, #e5f0fc);
   color: var(--home-primary-dark, #0f6bb8);
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   font-weight: 700;
 }
 

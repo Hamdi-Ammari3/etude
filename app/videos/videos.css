@@ -876,7 +876,7 @@
    PDF — card badge + protected reader
    ========================================================= */
 
-.vid-badge-pdf {
+.vid-badge-pdff {
   background: rgba(196, 44, 44, 0.92);
 }
 
@@ -947,5 +947,229 @@
 
   .vid-reader .pdfv {
     border-radius: 12px;
+  }
+}
+
+/* Teacher name in the player / PDF reader → his public profile */
+.vid-teacher-link {
+  color: var(--home-primary, #1a8cf0);
+  font-weight: 800;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+  text-decoration-color: rgba(26, 140, 240, 0.35);
+  transition: text-decoration-color 150ms ease;
+}
+
+.vid-teacher-link:hover,
+.vid-teacher-link:focus-visible {
+  text-decoration-color: currentColor;
+}
+
+/* Teacher call-to-action at the bottom of the catalog (home page) */
+.vid-teacher-cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 4rem;
+  padding: 1.25rem 1.4rem;
+  border-radius: var(--home-radius-2xl, 28px);
+  background: var(--home-grape, #c796eb);
+  color: var(--home-grape-foreground, #fdfbff);
+}
+
+.vid-teacher-cta-emoji {
+  font-size: 2.2rem;
+}
+
+.vid-teacher-cta-text {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.vid-teacher-cta-title {
+  margin: 0;
+  font-family: var(--home-font-display);
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.vid-teacher-cta-sub {
+  margin: 0.2rem 0 0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  opacity: 0.92;
+}
+
+.vid-teacher-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.7rem 1.3rem;
+  border-radius: 999px;
+  background: var(--home-mint, #73e0b4);
+  color: var(--home-mint-foreground, #003729);
+  font-weight: 800;
+  font-size: 0.9rem;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: transform 150ms ease;
+}
+
+.vid-teacher-cta-btn:hover {
+  transform: translateY(-2px);
+}
+
+/* Visitor login strip (compact, above the results) */
+.vid-login-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin-bottom: 1.25rem;
+  padding: 0.65rem 0.75rem 0.65rem 1rem;
+  border-radius: var(--home-radius-md, 20px);
+  background: var(--home-sun, #faca4b);
+  color: var(--home-ink, #1a2846);
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.vid-login-strip span {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.vid-login-strip-btn {
+  padding: 0.45rem 1.1rem;
+  border-radius: 999px;
+  background: var(--home-primary);
+  color: var(--home-primary-foreground, #f9fcff);
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+/* Phones: a compact top so the first cards show without scrolling */
+@media (max-width: 600px) {
+  .vid-hero {
+    padding: 1.25rem 0 1rem;
+  }
+
+  .vid-eyebrow {
+    font-size: 0.75rem;
+  }
+
+  .vid-title {
+    font-size: 1.45rem;
+  }
+
+  .vid-subtitle {
+    margin-top: 0.35rem;
+    font-size: 0.82rem;
+  }
+
+  /* Level + sort on one row */
+  .vid-select-grade {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .vid-filterbar-inner {
+    gap: 0.5rem;
+    padding-top: 0.6rem;
+    padding-bottom: 0.6rem;
+  }
+
+  .vid-body {
+    padding-top: 1.25rem;
+  }
+
+  .vid-results-head {
+    margin-bottom: 0.8rem;
+  }
+
+  .vid-results-title {
+    font-size: 1.1rem;
+  }
+}
+
+/* Visitors (not logged in): no dark veil over the thumbnail, just a small
+   lock badge in the corner — the catalog should show what we offer. */
+.vid-locked-overlay.vid-locked-soft {
+  place-items: start end;
+  padding: 0.5rem;
+  background: none;
+}
+
+.vid-locked-overlay.vid-locked-soft span {
+  padding: 0.2rem 0.65rem;
+  font-size: 0.72rem;
+  box-shadow: 0 2px 8px rgba(26, 40, 70, 0.18);
+}
+
+/* ---------- Chip rows on computers: ‹ › arrows + fade at the cut edge ---------- */
+
+.vid-chip-scroller {
+  position: relative;
+  min-width: 0;
+}
+
+.vid-chip-arrow {
+  display: none; /* phones: swipe */
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .vid-chip-arrow {
+    position: absolute;
+    top: 50%;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    margin-top: -19px; /* row has 0.15rem bottom padding */
+    padding: 0;
+    border: 2px solid var(--home-border, #d4dfeb);
+    border-radius: 999px;
+    background: var(--home-card, #ffffff);
+    color: var(--home-ink, #1a2846);
+    font-size: 1.3rem;
+    font-weight: 800;
+    line-height: 1;
+    box-shadow: 0 2px 8px rgba(26, 40, 70, 0.15);
+    cursor: pointer;
+    transition: background-color 150ms ease;
+  }
+
+  .vid-chip-arrow:hover {
+    background: var(--home-wash-blue, #e5f0fc);
+  }
+
+  .vid-chip-arrow-left {
+    left: 0;
+  }
+
+  .vid-chip-arrow-right {
+    right: 0;
+  }
+
+  /* Fade the chips under the arrows so the cut looks intentional */
+  .vid-chip-scroller-left .vid-chip-row {
+    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 56px);
+    mask-image: linear-gradient(to right, transparent 0, #000 56px);
+  }
+
+  .vid-chip-scroller-right .vid-chip-row {
+    -webkit-mask-image: linear-gradient(to left, transparent 0, #000 56px);
+    mask-image: linear-gradient(to left, transparent 0, #000 56px);
+  }
+
+  .vid-chip-scroller-left.vid-chip-scroller-right .vid-chip-row {
+    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 56px, #000 calc(100% - 56px), transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0, #000 56px, #000 calc(100% - 56px), transparent 100%);
   }
 }

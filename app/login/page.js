@@ -8,6 +8,21 @@ import "../style.css";
 import "../homePage.css";
 import "./loginPage.css";
 
+// One login for everyone: the account's role (saved in the user doc) decides
+// where we go next.
+const HOME_BY_ROLE = { teacher: "/enseignant" };
+const homeFor = (role) => HOME_BY_ROLE[role] || "/";
+
+async function tryLogin(phone, password, loginAs) {
+  const res = await fetch("/api/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ phone, password, loginAs }),
+  });
+  const data = await res.json().catch(() => ({}));
+  return { ok: res.ok, status: res.status, data };
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const { user, hydrated } = useUser();
@@ -17,35 +32,45 @@ export default function LoginPage() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  // Already logged in (or just logged in): go to the right space for this role.
   useEffect(() => {
-    if (hydrated && user) router.push("/");
+    if (hydrated && user) router.replace(homeFor(user.role));
   }, [hydrated, user, router]);
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError(null);
 
-    if (!/^\d{8}$/.test(phone.trim())) {
+    const p = phone.trim();
+    const code = password.trim();
+    if (!/^\d{8}$/.test(p)) {
       return setError("Numéro invalide (8 chiffres).");
     }
-    if (!/^\d{4}$/.test(password.trim())) {
+    if (!/^\d{4}$/.test(code)) {
       return setError("Le code doit contenir 4 chiffres.");
     }
 
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: phone.trim(), password: password.trim(), loginAs: "student" }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || "Une erreur est survenue.");
+      // The login API still checks the account type, so we try the student
+      // account first, then the teacher account with the same number + code.
+      let result = await tryLogin(p, code, "student");
+      let role = "student";
+      if (!result.ok && result.status >= 400 && result.status < 500) {
+        const asTeacher = await tryLogin(p, code, "teacher");
+        if (asTeacher.ok) {
+          result = asTeacher;
+          role = "teacher";
+        }
+      }
+
+      if (!result.ok) {
+        setError(result.data.error || "Numéro ou code incorrect.");
         return;
       }
-      await completeLogin(data.token);
-      router.push("/");
+
+      await completeLogin(result.data.token);
+      router.replace(homeFor(result.data.role || result.data.user?.role || role));
     } catch {
       setError("Connexion impossible. Vérifiez votre réseau.");
     } finally {
@@ -58,7 +83,7 @@ export default function LoginPage() {
       <div className="login-wrap">
         <span className="login-icon-badge">🔑</span>
         <h1 className="login-title">Connexion</h1>
-        <p className="login-subtitle">Connectez-vous pour suivre votre progression</p>
+        <p className="login-subtitle">Élèves et enseignants : connectez-vous avec votre numéro et votre code</p>
 
         <div className="login-card">
           <form onSubmit={handleSubmit} className="login-form">

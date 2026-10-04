@@ -137,7 +137,7 @@ export default function ProfilePage() {
 
         {/* ---------- Video subscriptions ---------- */}
         <section className="profil-section">
-          <h2 className="profil-section-title">🎬 Mes abonnements vidéo</h2>
+          <h2 className="profil-section-title">📚 Mes documents</h2>
           {purchased.length > 0 && (
             <p className="profil-section-sub">
               Chaque abonnement débloque toutes les vidéos du niveau, pour toutes les matières.
@@ -193,7 +193,7 @@ export default function ProfilePage() {
 
         {/* ---------- Documents ---------- */}
         <section className="profil-section">
-          <h2 className="profil-section-title">📚 Mes documents</h2>
+          <h2 className="profil-section-title">🎯 Curriculum</h2>
           {docsLoading ? (
             <LoadingSpinner />
           ) : docGrades.length === 0 ? (

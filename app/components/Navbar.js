@@ -6,7 +6,7 @@ import { useUser, logoutUser } from "../../lib/auth";
 import "./navbar.css";
 
 const STUDENT_NAV_ITEMS = [
-  { href: "/videos", label: "Documents" },
+  { href: "/", label: "Documents" },
   { href: "/lecons", label: "Curriculum" },
 ];
 
@@ -25,6 +25,7 @@ function PublicNavbar({ user, hydrated }) {
 
   function isActive(href) {
     if (href === "/lecons") return pathname.startsWith("/lecons") || pathname.startsWith("/grade");
+    if (href === "/") return pathname === "/";
     return pathname === href || pathname.startsWith(`${href}/`);
   }
 
@@ -43,6 +44,7 @@ function PublicNavbar({ user, hydrated }) {
         <nav className="navbar-links">
           <span className="navbar-row-break" aria-hidden="true" />
 
+          {/* 
           {STUDENT_NAV_ITEMS.map((item) => (
             <Link
               key={item.href}
@@ -52,13 +54,10 @@ function PublicNavbar({ user, hydrated }) {
               {item.label}
             </Link>
           ))}
+          */}
 
-          {!user && (
-            <Link href="/enseignant" className={`navbar-link ${isActive("/enseignant") ? "navbar-link-active" : ""}`}>
-              Espace enseignant
-            </Link>
-          )}
-
+          {/* One "Connexion" for students AND teachers — the login page sends
+              each account to its own space based on its role. */}
           {!hydrated ? null : user ? (
             <Link
               href="/profil"
