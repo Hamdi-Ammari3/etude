@@ -13,8 +13,8 @@ const app = initializeApp({
 });
 const db = getFirestore(app);
 
-const NAME = "Anoir Chkir";
-const RAW_PHONE = "55235540";
+const NAME = "Yasmine Cherni";
+const RAW_PHONE = "29546425";
 const COURSES = []; 
 const BIO = "";
 // ---------------------------------------------------------------------------
