@@ -13,9 +13,9 @@ const app = initializeApp({
 });
 const db = getFirestore(app);
 
-const NAME = "Yasmine Cherni";
-const RAW_PHONE = "29546425";
-const COURSES = []; 
+const NAME = "Lassad Neifer";
+const RAW_PHONE = "98339874";
+const COURSES = [];
 const BIO = "";
 // ---------------------------------------------------------------------------
 

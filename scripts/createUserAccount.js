@@ -14,9 +14,9 @@ const app = initializeApp({
 const db = getFirestore(app);
 
 // EDIT THESE FOR EACH NEW ACCOUNT ------------------------------------------
-const NAME = "Rahma";
-const RAW_PHONE = "97786358";
-const GRADES = ["col-7"];
+const NAME = "Hamdi Ammari";
+const RAW_PHONE = "26955951";
+const GRADES = ["prim-1","prim-2","prim-3","prim-4","prim-5","prim-6","col-7","col-8","col-9","sec-1","sec-2","sec-3","bac"];
 // ---------------------------------------------------------------------------
 
 function generatePin() {
