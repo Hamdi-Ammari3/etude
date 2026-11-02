@@ -1,6 +1,8 @@
 import { buildEmbedUrl } from "../../../../../lib/bunny";
 import { adminDb, requireUser, jsonError } from "../../../../../lib/videoServer";
 import { canWatchVideo } from "../../../../../lib/videoAccess";
+import { subscriptionStatus, isFreeAccess, accessDeniedMessage } from "../../../../../lib/subscription";
+import { claimDocAccess } from "../../../../../lib/subscriptionServer";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -9,9 +11,10 @@ const EMBED_TTL_SEC = 300; // Bunny recommends short-lived tokens (1–5 min)
 
 /**
  * POST /api/videos/{id}/play
- * Checks that the logged-in user may watch this video (published + grade
- * purchased, or the teacher who uploaded it) and returns a short-lived
- * signed Bunny player URL.
+ * Checks that the logged-in user may watch this video (published + active
+ * subscription, or the teacher who uploaded it), counts it against the
+ * subscription's hidden usage limit (the same video never counts twice)
+ * and returns a short-lived signed Bunny player URL.
  */
 export async function POST(request, { params }) {
   let user;
@@ -32,14 +35,31 @@ export async function POST(request, { params }) {
 
   if (!videoSnap.exists) return jsonError("Vidéo introuvable.", 404);
   const video = videoSnap.data();
+  if (video.type === "pdf") return jsonError("Ce contenu est un PDF.", 400);
   const profile = userSnap.exists ? userSnap.data() : {};
 
   const viewer = { ...profile, uid: user.uid, role: user.role || profile.role };
   if (!canWatchVideo(viewer, video)) {
-    return jsonError("Cette vidéo n'est pas incluse dans votre abonnement.", 403);
+    if (!isFreeAccess(viewer, video) && video.status !== "published") return jsonError("Vidéo indisponible.", 404);
+    const st = subscriptionStatus(viewer);
+    return Response.json({ error: accessDeniedMessage(st.state), code: st.state }, { status: 403 });
   }
-  if (video.type === "pdf") return jsonError("Ce contenu est un PDF.", 400);
   if (!video.bunnyVideoId) return jsonError("Vidéo indisponible.", 409);
+
+  // Count it against the subscription (no-op if already opened in this subscription).
+  let access;
+  try {
+    access = await claimDocAccess(db, viewer, video, id);
+  } catch (err) {
+    console.error("claimDocAccess failed", id, user.uid, err);
+    return jsonError("Erreur temporaire. Réessaie dans un instant.", 500);
+  }
+  if (!access.ok) {
+    return Response.json(
+      { error: access.message, code: access.state },
+      { status: 403 }
+    );
+  }
 
   const { url, expires } = buildEmbedUrl(video.bunnyVideoId, { ttlSec: EMBED_TTL_SEC, autoplay: true });
 

@@ -1,0 +1,62 @@
+/* Teacher dashboard: open your own video / PDF from its card.
+   The whole thumbnail is clickable; the round ▶ / 📖 shows on hover
+   (computers) and always on phones. */
+
+.ens-preview-btn {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.ens-preview-icon {
+  display: grid;
+  place-items: center;
+  width: 3.4rem;
+  height: 3.4rem;
+  border-radius: 999px;
+  background: var(--home-card, #ffffff);
+  color: var(--home-ink, #1a2846);
+  font-size: 1.35rem;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+  opacity: 0;
+  transform: scale(0.9);
+  transition: opacity 150ms ease, transform 150ms ease;
+}
+
+.ens-preview-btn:hover .ens-preview-icon,
+.ens-preview-btn:focus-visible .ens-preview-icon {
+  opacity: 1;
+  transform: none;
+}
+
+.ens-preview-btn:focus-visible {
+  outline: 3px solid var(--home-primary, #1a8cf0);
+  outline-offset: -3px;
+  border-radius: var(--home-radius-md, 20px);
+}
+
+/* Phones / touch screens: no hover, so show the button all the time (smaller). */
+@media (hover: none) {
+  .ens-preview-icon {
+    width: 2.8rem;
+    height: 2.8rem;
+    font-size: 1.1rem;
+    opacity: 0.92;
+    transform: none;
+  }
+}
+
+/* The status pill and the duration stay above the clickable area. */
+.ens-video-thumb .ens-video-status,
+.ens-video-thumb .ens-video-duration {
+  z-index: 2;
+  pointer-events: none;
+}

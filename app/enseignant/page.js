@@ -26,8 +26,7 @@ import {
   MAX_PDF_BYTES,
   PDF_CATEGORIES,
   getPdfCategory,
-} from "../../lib/videoConfig";
-import { isPdfFile, checkPdfFile, startPdfUpload } from "../../lib/pdfUpload";
+} from "../../lib/videoConfig"; import { isPdfFile, checkPdfFile, startPdfUpload } from "../../lib/pdfUpload";
 import {
   isInAppBrowser,
   isVideoFile,
@@ -40,9 +39,11 @@ import {
 } from "../../lib/mobileUpload";
 import LoadingSpinner from "../components/LoadingSpinner";
 import VideoThumbnail from "../components/VideoThumbnail";
+import { PlayerModal, PdfReaderModal } from "../components/DocumentCards";
 import { getSubjectEmoji } from "../../lib/videoDisplay";
 import "../homePage.css";
 import "./enseignantPage.css";
+import "./teacherPreview.css";
 
 const TEACHER_WHATSAPP = "2165110183";
 const WHATSAPP_MESSAGE = "Bonjour Droussy TN, je souhaite devenir enseignant sur la plateforme.";
@@ -56,8 +57,7 @@ function toJsDate(value) {
   if (!value) return null;
   if (typeof value.toDate === "function") return value.toDate();
   return new Date(value);
-}
-
+} 
 function formatDuration(sec) {
   if (!Number.isFinite(sec) || sec <= 0) return "0:00";
   const h = Math.floor(sec / 3600);
@@ -119,8 +119,7 @@ async function apiRequest(url, { method = "POST", body } = {}) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || "Une erreur est survenue.");
   return data;
-}
-
+} 
 function authFetch(url, body) {
   return apiRequest(url, { method: "POST", body });
 }
@@ -156,6 +155,7 @@ export default function EnseignantDashboard() {
   const [openMenuId, setOpenMenuId] = useState(null);
   const [editingVideo, setEditingVideo] = useState(null);
   const [deletingVideo, setDeletingVideo] = useState(null);
+  const [previewing, setPreviewing] = useState(null); // own video / PDF opened on the dashboard (never counted)
   const [infoOpen, setInfoOpen] = useState(false);
 
   useEffect(() => {
@@ -189,8 +189,7 @@ export default function EnseignantDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [isTeacher, user?.uid]);
-
+  }, [isTeacher, user?.uid]); 
   // ---- Poll Bunny for videos still uploading/encoding ----
   const pollIds = myVideos
     .filter(
@@ -237,8 +236,7 @@ export default function EnseignantDashboard() {
     if (!successMsg) return;
     const t = setTimeout(() => setSuccessMsg(null), 8000);
     return () => clearTimeout(t);
-  }, [successMsg]);
-
+  }, [successMsg]); 
   // ---- Earnings account (fresh read: balance changes as students watch) ----
   const [account, setAccount] = useState(null);
   const [payouts, setPayouts] = useState([]);
@@ -299,8 +297,7 @@ export default function EnseignantDashboard() {
     setMyVideos((prev) => prev.filter((v) => v.id !== id));
     setDeletingVideo(null);
     setSuccessMsg(wasPdf ? "PDF supprimé." : "Vidéo supprimée.");
-  }
-
+  } 
   function handleInfoSaved(publicProfile) {
     setAccount((prev) => ({ ...(prev || {}), publicProfile: { ...(prev?.publicProfile || {}), ...publicProfile } }));
     setInfoOpen(false);
@@ -355,8 +352,7 @@ export default function EnseignantDashboard() {
         <LoadingSpinner />
       </div>
     );
-  }
-
+  } 
   return (
     <div className="home-page">
       <div className="ens-board">
@@ -425,12 +421,11 @@ export default function EnseignantDashboard() {
             </p>
             */}
           </div>
-        </section>
-
+        </section> 
         {/* ---------- My information ---------- */}
         <section className="ens-info-card">
           <div className="ens-info-body">
-            <p className="ens-info-title">ℹ️ Mes informations</p>
+            <p className="ens-info-title">🪪 Mes informations</p>
             {account === null ? (
               <p className="ens-info-line ens-info-muted">Chargement...</p>
             ) : (
@@ -549,12 +544,15 @@ export default function EnseignantDashboard() {
                   setOpenMenuId(null);
                   setDeletingVideo(v);
                 }}
+                onPreview={() => {
+                  setOpenMenuId(null);
+                  setPreviewing(v);
+                }}
               />
             ))}
           </div>
         )}
-      </div>
-
+      </div> 
       <PublishVideoModal
         open={modalOpen || !!editingVideo}
         editVideo={editingVideo}
@@ -567,6 +565,14 @@ export default function EnseignantDashboard() {
 
       {infoOpen && <TeacherInfoModal info={info} onClose={() => setInfoOpen(false)} onSaved={handleInfoSaved} />}
 
+      {/* Teacher previewing his own content: the server never counts it as a view */}
+      {previewing &&
+        (isPdf(previewing) ? (
+          <PdfReaderModal pdf={previewing} linkTeacher={false} onClose={() => setPreviewing(null)} />
+        ) : (
+          <PlayerModal video={previewing} linkTeacher={false} onClose={() => setPreviewing(null)} />
+        ))}
+
       {deletingVideo && (
         <DeleteVideoModal video={deletingVideo} onClose={() => setDeletingVideo(null)} onDeleted={handleDeleted} />
       )}
@@ -578,9 +584,13 @@ export default function EnseignantDashboard() {
 // VIDEO CARD (with ⋮ menu)
 // =========================================================
 
-function TeacherVideoCard({ video, menuOpen, onToggleMenu, onCloseMenu, onEdit, onDelete }) {
+// A video can be played once Bunny has finished encoding it; a PDF once its file is checked.
+const PREVIEWABLE_STATUSES = ["pending", "published", "rejected"];
+
+function TeacherVideoCard({ video, menuOpen, onToggleMenu, onCloseMenu, onEdit, onDelete, onPreview }) {
   const trimestre = TRIMESTRES.find((t) => t.id === video.trimestre);
   const pdf = isPdf(video);
+  const canPreview = PREVIEWABLE_STATUSES.includes(video.status || "published");
   const category = pdf ? getPdfCategory(video.pdfCategory) : null;
   const menuRef = useRef(null);
 
@@ -625,6 +635,19 @@ function TeacherVideoCard({ video, menuOpen, onToggleMenu, onCloseMenu, onEdit, 
         ) : (
           <span className="ens-video-duration">{formatDuration(video.durationSec)}</span>
         )}
+
+        {canPreview && (
+          <button
+            type="button"
+            className="ens-preview-btn"
+            onClick={onPreview}
+            aria-label={`${pdf ? "Lire" : "Regarder"} « ${video.title} »`}
+          >
+            <span className="ens-preview-icon" aria-hidden="true">
+              {pdf ? "📖" : "▶"}
+            </span>
+          </button>
+        )}
       </div>
 
       <div className="ens-video-menu-wrap" ref={menuRef}>
@@ -645,6 +668,11 @@ function TeacherVideoCard({ video, menuOpen, onToggleMenu, onCloseMenu, onEdit, 
 
         {menuOpen && (
           <div className="ens-video-menu" role="menu">
+            {canPreview && (
+              <button type="button" role="menuitem" className="ens-video-menu-item" onClick={onPreview}>
+                <span aria-hidden="true">{pdf ? "📖" : "▶️"}</span> {pdf ? "Lire le PDF" : "Regarder la vidéo"}
+              </button>
+            )}
             <button type="button" role="menuitem" className="ens-video-menu-item" onClick={onEdit}>
               <span aria-hidden="true">✏️</span> Modifier le titre
             </button>
@@ -658,8 +686,7 @@ function TeacherVideoCard({ video, menuOpen, onToggleMenu, onCloseMenu, onEdit, 
             </button>
           </div>
         )}
-      </div>
-
+      </div> 
       <p className="ens-video-title">{video.title}</p>
       <div className="ens-video-meta">
         {category && (
@@ -858,7 +885,7 @@ function DeleteVideoModal({ video, onClose, onDeleted }) {
       setDeleting(false);
     }
   }
-
+ 
   return (
     <div
       className="ens-modal-backdrop"
@@ -948,8 +975,7 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
 
   const inAppBrowser = typeof window !== "undefined" && isInAppBrowser();
   const needsSpecialization = GRADES_WITH_SPECIALIZATION.has(gradeId);
-  const subjectsForGrade = getSubjectsForGrade(gradeId);
-
+  const subjectsForGrade = getSubjectsForGrade(gradeId); 
   // Pre-fill the title when editing.
   useEffect(() => {
     if (open && editVideo) {
@@ -1039,8 +1065,7 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
     if (pickInputRef.current) pickInputRef.current.value = "";
     if (cameraInputRef.current) cameraInputRef.current.value = "";
     if (pdfInputRef.current) pdfInputRef.current.value = "";
-  }
-
+  } 
   // Tell the server the half-created video is abandoned (with the reason).
   function abandonCreated(reason, extra = {}) {
     const created = createdRef.current;
@@ -1108,8 +1133,7 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
     if (f.size > MAX_VIDEO_BYTES) {
       setError("La vidéo ne doit pas dépasser 2 Go.");
       return;
-    }
-
+    } 
     setCheckingVideo(true);
     const probe = await probeFileStart(f);
     if (!probe.ok) {
@@ -1192,8 +1216,7 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
     setProgress(0);
     setTransfer(null);
     releaseWakeRef.current = keepScreenAwake();
-    let stageName = "create";
-
+    let stageName = "create"; 
     try {
       // 1) Server creates the doc and a short-lived upload URL
       setStage("Préparation de l'envoi...");
@@ -1293,8 +1316,7 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
       setError(err.message);
       setSubmitting(false);
     }
-  }
-
+  } 
   // ---- Video upload (used by the first attempt AND by "Reprendre") ----
   async function runVideoUpload(created, cleanTitle) {
     setStage("Envoi de la vidéo...");
@@ -1357,8 +1379,7 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
   // ---- Publish mode ----
   async function handleSubmit(e) {
     e.preventDefault();
-    setError(null);
-
+    setError(null); 
     const cleanTitle = title.trim().replace(/\s+/g, " ");
     if (cleanTitle.length < TITLE_MIN) {
       return setError(`Écrivez un titre clair pour la leçon (${TITLE_MIN} caractères minimum).`);
@@ -1508,8 +1529,7 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
           >
             ✕
           </button>
-        </div>
-
+        </div> 
         {isEdit ? (
           /* ---------- EDIT MODE ---------- */
           <form onSubmit={handleSaveTitle} className="ens-modal-form">
@@ -1548,8 +1568,7 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
                     className="ens-input"
                   />
                 </label>
-              )}
-
+              )} 
               <label className="ens-field ens-field-full">
                 <span className="ens-field-label">Titre de la leçon</span>
                 <input
@@ -1601,8 +1620,7 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
                   <span aria-hidden="true">{t.emoji}</span> {t.label}
                 </button>
               ))}
-            </div>
-
+            </div> 
             {inAppBrowser && !pdfMode && (
               <p className="ens-warn-note">
                 ⚠️ Vous utilisez le navigateur de Facebook / Instagram. L'envoi de vidéos y fonctionne mal : ouvrez
@@ -1665,8 +1683,7 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
                     </option>
                   ))}
                 </select>
-              </label>
-
+              </label> 
               <label className="ens-field ens-field-full">
                 <span className="ens-field-label">Titre de la leçon</span>
                 <input
@@ -1719,8 +1736,7 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
                         ))}
                       </select>
                     </label>
-                  )}
-
+                  )} 
                   <label className="ens-check ens-field-full">
                     <input
                       type="checkbox"
@@ -1766,8 +1782,7 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
                         Changer
                       </button>
                     )}
-                  </div>
-                ) : (
+                  </div> ) : (
                   <div className="ens-pick-row ens-pick-row-single">
                     <button
                       type="button"
@@ -1814,8 +1829,7 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
                 className="ens-hidden-input"
                 tabIndex={-1}
                 aria-hidden="true"
-              />
-
+              /> 
               {videoFile ? (
                 <div className="ens-file-card">
                   <span className="ens-file-card-icon">🎬</span>
@@ -1833,7 +1847,7 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
                   )}
                 </div>
               ) : (
-                <div className="ens-pick-row ens-pick-row-single">
+                <div className="ens-pick-row">
                   <button
                     type="button"
                     className="ens-pick-btn"
@@ -1865,8 +1879,7 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
                   : `MP4 recommandé · ${Math.round(MIN_DURATION_SEC / 60)} min minimum · 2 Go maximum`}
               </p>
             </div>
-            )}
-
+            )} 
             {REQUIRE_REVIEW && !submitting && !resumable && (
               <p className="ens-review-note">
                 {pdfMode

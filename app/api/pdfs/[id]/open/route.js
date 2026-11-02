@@ -2,14 +2,18 @@ import { presignPdfRead } from "../../../../../lib/bunnyStorage";
 import { adminDb, requireUser, jsonError } from "../../../../../lib/videoServer";
 import { canWatchVideo } from "../../../../../lib/videoAccess";
 import { CONTENT_TYPES, PDF_URL_TTL_SEC } from "../../../../../lib/videoConfig";
+import { subscriptionStatus, isFreeAccess, accessDeniedMessage } from "../../../../../lib/subscription";
+import { claimDocAccess } from "../../../../../lib/subscriptionServer";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
  * POST /api/pdfs/{id}/open
- * Checks that the logged-in user may read this PDF (published + grade
- * purchased, or the teacher who uploaded it) and returns:
+ * Checks that the logged-in user may read this PDF (published + active
+ * subscription, or the teacher who uploaded it), counts it against the
+ * subscription's hidden usage limit (the same PDF never counts twice)
+ * and returns:
  *   - a signed file link valid a few minutes (the viewer downloads it at once
  *     and draws the pages itself — the link is never shown to the student),
  *   - the watermark text drawn on every page (name + phone of the reader),
@@ -40,9 +44,26 @@ export async function POST(request, { params }) {
   const profile = userSnap.exists ? userSnap.data() : {};
   const viewer = { ...profile, uid: user.uid, role: user.role || profile.role };
   if (!canWatchVideo(viewer, pdf)) {
-    return jsonError("Ce PDF n'est pas inclus dans votre abonnement.", 403);
+    if (!isFreeAccess(viewer, pdf) && pdf.status !== "published") return jsonError("Document introuvable.", 404);
+    const st = subscriptionStatus(viewer);
+    return Response.json({ error: accessDeniedMessage(st.state), code: st.state }, { status: 403 });
   }
   if (!pdf.storageKey) return jsonError("PDF indisponible.", 409);
+
+  // Count it against the subscription (no-op if already opened in this subscription).
+  let access;
+  try {
+    access = await claimDocAccess(db, viewer, pdf, id);
+  } catch (err) {
+    console.error("claimDocAccess failed", id, user.uid, err);
+    return jsonError("Erreur temporaire. Réessaie dans un instant.", 500);
+  }
+  if (!access.ok) {
+    return Response.json(
+      { error: access.message, code: access.state },
+      { status: 403 }
+    );
+  }
 
   let url;
   try {
@@ -67,7 +88,7 @@ export async function POST(request, { params }) {
       pageCount: pdf.pageCount || null,
       lastPage: Math.max(1, Number(view?.lastPage) || 1),
       counted: !!view?.counted,
-    },
+      },
     { headers: { "Cache-Control": "no-store" } }
   );
 }

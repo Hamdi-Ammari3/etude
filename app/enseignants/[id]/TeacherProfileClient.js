@@ -1,51 +1,27 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useUser } from "../../../lib/auth";
-import { getAccessibleGradeIds } from "../../../lib/videoAccess";
-import { CONTENT_TYPES, contentTypeOf } from "../../../lib/videoConfig";
-import { ContentCard, DocumentViewer, isPdf } from "../../components/DocumentCards";
+import DocumentsCatalog from "../../components/DocumentsCatalog";
 import "../../homePage.css";
 import "./teacherProfile.css";
-
-const KIND_FILTERS = [
-  { id: "all", emoji: "✨", label: "Tout" },
-  { id: CONTENT_TYPES.VIDEO, emoji: "🎬", label: "Vidéos" },
-  { id: CONTENT_TYPES.PDF, emoji: "📄", label: "PDF" },
-];
 
 // "20112233" → "20 112 233"
 function formatPhone(d = "") {
   return d.length === 8 ? `${d.slice(0, 2)} ${d.slice(2, 5)} ${d.slice(5)}` : d;
 }
 
-export default function TeacherProfileClient({ teacher, items }) {
-  const { user, hydrated } = useUser();
-  const [kind, setKind] = useState("all");
-  const [opened, setOpened] = useState(null);
+/**
+ * Public teacher profile: his card at the top, then his documents with the
+ * same catalog as the home page (search, level, subject, type filters,
+ * loaded 40 at a time) limited to this teacher.
+ */
+export default function TeacherProfileClient({ teacher, stats }) {
+  const { user } = useUser();
   const [shareMsg, setShareMsg] = useState(null);
 
-  const accessible = useMemo(() => getAccessibleGradeIds(user), [user]);
   const isOwner = !!user && user.uid === teacher.id;
-
-  // Same rules as the documents page: logged in + grade subscribed (or own content).
-  const isLocked = useCallback(
-    (v) => !user || !(accessible.has(String(v.gradeId)) || v.teacherId === user.uid),
-    [accessible, user]
-  );
-
-  const counts = useMemo(() => {
-    const pdfs = items.filter(isPdf).length;
-    return { all: items.length, [CONTENT_TYPES.VIDEO]: items.length - pdfs, [CONTENT_TYPES.PDF]: pdfs };
-  }, [items]);
-
-  const shown = useMemo(
-    () => (kind === "all" ? items : items.filter((v) => contentTypeOf(v) === kind)),
-    [items, kind]
-  );
-
-  const totalViews = useMemo(() => items.reduce((sum, v) => sum + (v.views || 0), 0), [items]);
 
   const whatsappHref = teacher.phone
     ? `https://wa.me/216${teacher.phone}?text=${encodeURIComponent(
@@ -53,8 +29,16 @@ export default function TeacherProfileClient({ teacher, items }) {
       )}`
     : null;
 
+  const statsLine = [
+    stats?.videos != null && `${stats.videos} vidéo${stats.videos > 1 ? "s" : ""}`,
+    stats?.pdfs != null && `${stats.pdfs} PDF`,
+    stats?.views != null && `👁 ${stats.views.toLocaleString("fr-FR")} vue${stats.views > 1 ? "s" : ""}`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
   async function share() {
-    const url = window.location.href;
+    const url = `${window.location.origin}${window.location.pathname}`; // without the filters
     try {
       if (navigator.share) {
         await navigator.share({ title: `${teacher.name} — Droussy TN`, url });
@@ -68,8 +52,6 @@ export default function TeacherProfileClient({ teacher, items }) {
     }
     setTimeout(() => setShareMsg(null), 3000);
   }
-
-  const openedLocked = opened ? isLocked(opened) : false;
 
   return (
     <div className="home-page">
@@ -99,10 +81,7 @@ export default function TeacherProfileClient({ teacher, items }) {
                 )}
               </div>
 
-              <p className="tp-stats">
-                {counts[CONTENT_TYPES.VIDEO]} vidéo{counts[CONTENT_TYPES.VIDEO] > 1 ? "s" : ""} ·{" "}
-                {counts[CONTENT_TYPES.PDF]} PDF · 👁 {totalViews.toLocaleString("fr-FR")} vue{totalViews > 1 ? "s" : ""}
-              </p>
+              {statsLine && <p className="tp-stats">{statsLine}</p>}
             </div>
 
             <div className="tp-actions">
@@ -124,74 +103,8 @@ export default function TeacherProfileClient({ teacher, items }) {
         </div>
       </section>
 
-      {/* ---------- Documents ---------- */}
-      <div className="tp-container tp-body">
-        <div className="tp-list-head">
-          <h2 className="tp-list-title">Documents publiés</h2>
-          {items.length > 0 && (
-            <div className="tp-filters" role="radiogroup" aria-label="Type de document">
-              {KIND_FILTERS.map((k) => (
-                <button
-                  key={k.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={kind === k.id}
-                  onClick={() => setKind(k.id)}
-                  className={`tp-filter ${kind === k.id ? "tp-filter-active" : ""}`}
-                >
-                  {k.emoji} {k.label}
-                  <span className="tp-filter-count">{counts[k.id] || 0}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-        
-        {/* 
-        {hydrated && !user && items.length > 0 && (
-          <div className="tp-banner">
-            <span className="tp-banner-emoji">👋</span>
-            <p className="tp-banner-text">Connecte-toi pour ouvrir les vidéos et les PDF de ta classe.</p>
-            <Link href="/login" className="tp-btn-primary">
-              Connexion
-            </Link>
-          </div>
-        )}
-        */}
-
-        {shown.length === 0 ? (
-          <p className="tp-empty">
-            {kind === CONTENT_TYPES.PDF
-              ? "Aucun PDF pour l'instant."
-              : kind === CONTENT_TYPES.VIDEO
-              ? "Aucune vidéo pour l'instant."
-              : "Aucun document pour l'instant."}
-          </p>
-        ) : (
-          <div className="vid-grid tp-grid">
-            {shown.map((v) => (
-              <ContentCard
-                key={v.id}
-                item={v}
-                locked={hydrated ? isLocked(v) : true}
-                isLoggedIn={!!user}
-                showGrade
-                onClick={() => setOpened(v)}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
-      {opened && (
-        <DocumentViewer
-          item={opened}
-          locked={openedLocked}
-          isLoggedIn={!!user}
-          linkTeacher={false} // already on this teacher's page
-          onClose={() => setOpened(null)}
-        />
-      )}
+      {/* ---------- His documents: the home-page catalog, limited to this teacher ---------- */}
+      <DocumentsCatalog teacherId={teacher.id} title="Documents publiés" />
     </div>
   );
 }

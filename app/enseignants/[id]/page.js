@@ -28,5 +28,5 @@ export default async function TeacherProfilePage({ params }) {
   const { id } = await params;
   const data = await loadTeacherProfile(id);
   if (!data) notFound();
-  return <TeacherProfileClient teacher={data.teacher} items={data.items} />;
+  return <TeacherProfileClient teacher={data.teacher} stats={data.stats} />;
 }

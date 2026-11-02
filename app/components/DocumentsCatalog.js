@@ -8,7 +8,6 @@ import {
   getCountFromServer,
   query,
   where,
-  orderBy,
   limit,
   startAfter,
 } from "firebase/firestore";
@@ -16,23 +15,28 @@ import { DB } from "../../lib/firebaseConfig";
 import { useUser } from "../../lib/auth";
 import { ALL_GRADES, GRADE_GROUPS, GRADES_WITH_SPECIALIZATION, SPECIALIZATIONS } from "../../lib/liveGrades";
 import { ALL_SUBJECTS, getSubjectsForGrade } from "../../lib/liveSubjects";
-import { getAccessibleGradeIds } from "../../lib/videoAccess";
 import { CONTENT_TYPES, contentTypeOf, PDF_CATEGORIES, getPdfCategory } from "../../lib/videoConfig";
 import LoadingSpinner from "./LoadingSpinner";
-import { ContentCard, PlayerModal, PdfReaderModal, LockedModal } from "./DocumentCards";
+import { ContentCard, PlayerModal, PdfReaderModal } from "./DocumentCards";
+import { AccessModal } from "./AccessModal";
+import { useSubscription, claimAccess } from "../../lib/useSubscription";
+import { isFreeAccess } from "../../lib/subscription";
 import { getGradeEmoji, getSubjectEmoji } from "../../lib/videoDisplay";
+import { normalizeText } from "../../lib/videoText";
 import "../homePage.css";
 import "../videos/videos.css";
-
+import "./catalogFilters.css"; 
 const DROUSSY_WHATSAPP = "21651510183";
 const TEACHER_JOIN_LINK = `https://wa.me/${DROUSSY_WHATSAPP}?text=${encodeURIComponent(
   "Bonjour, je souhaite devenir enseignant sur Droussy TN"
 )}`;
 
-// Documents are fetched from Firestore 50 at a time ("Voir plus" loads the next 50).
-// Filters and sorting run in the Firestore query itself, so 50 is always the
-// best 50 for the current filters — not 50 random docs filtered afterwards.
-const BATCH_SIZE = 50;
+// Documents are fetched from Firestore 40 at a time ("Voir plus" loads the next 40).
+// 40 fills every row of the 4-column (computer) and 2-column (tablet) grids,
+// so the last row never looks like the end of the catalog.
+// Filters and sorting run in the Firestore query itself, so each batch is always the
+// right 40 for the current filters — not 40 random docs filtered afterwards.
+const BATCH_SIZE = 40;
 
 // Grades in curriculum order (1ère année → Bac).
 const ORDERED_GRADES = GRADE_GROUPS.flatMap((group) =>
@@ -65,20 +69,67 @@ function countLabel(n, type) {
 }
 
 /** Firestore filters for the current view (published only — what the rules allow). */
-function filterConstraints({ grade, section, subject, type, docCategory }) {
+function filterConstraints({ grade, section, subject, type, docCategory, teacherId }) {
   const c = [where("status", "==", "published")];
+  if (teacherId) c.push(where("teacherId", "==", teacherId));
   if (grade !== "all") c.push(where("gradeId", "==", grade));
   if (section !== "all") c.push(where("specializationId", "==", section));
   if (type !== "all") c.push(where("type", "==", type));
   if (type === CONTENT_TYPES.PDF && docCategory !== "all") c.push(where("pdfCategory", "==", docCategory));
   if (subject !== "all") c.push(where("subjectId", "==", subject));
   return c;
+} 
+// No orderBy: documents come in Firestore's natural order (by document id),
+// and "Voir plus" continues from the last one loaded.
+
+// ---------- Search ----------
+// Documents carry `searchKeywords`: the normalized words of their title, subject,
+// teacher name and grade (lib/videoText.js → buildSearchKeywords). A search is
+// ONE Firestore query (array-contains-any, max 10 words) run only when the
+// student presses Enter / "Rechercher" — never while typing.
+const SEARCH_LIMIT = 100;
+const SEARCH_MAX_WORDS = 10;
+
+function searchWords(text) {
+  return [
+    ...new Set(
+      normalizeText(text)
+        .split(/[^\p{L}\p{N}]+/u)
+        .filter((w) => w.length >= 2)
+    ),
+  ].slice(0, SEARCH_MAX_WORDS);
 }
 
-function sortConstraints(sort) {
-  return sort === "populaires"
-    ? [orderBy("views", "desc"), orderBy("createdAt", "desc")]
-    : [orderBy("createdAt", "desc")];
+// Singular / plural forms, so "fraction" also finds "fractions" (and the reverse).
+// Firestore accepts at most 30 values in array-contains-any.
+function withVariants(words) {
+  const out = new Set();
+  words.forEach((w) => {
+    out.add(w);
+    if (w.length > 3 && /[sx]$/.test(w)) out.add(w.slice(0, -1));
+    else if (w.length > 2 && /\p{L}$/u.test(w)) out.add(`${w}s`);
+  });
+  return [...out].slice(0, 30);
+}
+
+const sameWord = (a, b) => a === b || a === `${b}s` || b === `${a}s` || a === `${b}x` || b === `${a}x`;
+
+/** Best matches first (words found exactly > words found as the start of a keyword); same score → database order. */
+function rankResults(docs, words) {
+  return docs
+    .map((d) => {
+      const kws = Array.isArray(d.searchKeywords) ? d.searchKeywords : [];
+      const set = new Set(kws);
+      let score = 0;
+      words.forEach((w) => {
+        if (set.has(w) || kws.some((k) => sameWord(k, w))) score += 2;
+        else if (kws.some((k) => k.startsWith(w))) score += 1;
+      });
+      return { d, score };
+    })
+    .filter((r) => r.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .map((r) => r.d);
 }
 
 // ---------- Counts (Firestore count queries: ~1 read each, no documents downloaded) ----------
@@ -102,10 +153,9 @@ async function countMany(entries) {
 }
 
 // A chip/option is shown when it has documents (or its count failed to load).
-const hasDocs = (counts, key) => !counts || counts.get(key) == null || counts.get(key) > 0;
-
+const hasDocs = (counts, key) => !counts || counts.get(key) == null || counts.get(key) > 0; 
 // Home page of the platform (app/page.js) — the documents catalog.
-// Filters live in the URL (?niveau=col-7&type=pdf&doc=serie&matiere=maths&tri=recentes)
+// Filters live in the URL (?niveau=col-7&type=pdf&doc=serie&matiere=maths&q=fractions)
 // so the back button, refresh and shared links keep the same view. We use the
 // History API directly to avoid Next's useSearchParams Suspense requirement.
 function readUrlFilters() {
@@ -118,11 +168,11 @@ function readUrlFilters() {
     subject: p.get("matiere") || "all",
     type: type === CONTENT_TYPES.VIDEO || type === CONTENT_TYPES.PDF ? type : "all",
     docCategory: p.get("doc") || "all",
-    sort: p.get("tri") === "recentes" ? "recentes" : "populaires",
+    q: (p.get("q") || "").slice(0, 80),
   };
 }
 
-function writeUrlFilters({ grade, section, subject, type, docCategory, sort }) {
+function writeUrlFilters({ grade, section, subject, type, docCategory, q }) {
   if (typeof window === "undefined") return;
   const p = new URLSearchParams();
   if (grade && grade !== "all") p.set("niveau", grade);
@@ -130,30 +180,40 @@ function writeUrlFilters({ grade, section, subject, type, docCategory, sort }) {
   if (type === CONTENT_TYPES.PDF && docCategory !== "all") p.set("doc", docCategory);
   if (section !== "all") p.set("section", section);
   if (subject !== "all") p.set("matiere", subject);
-  if (sort !== "populaires") p.set("tri", sort);
+  if (q) p.set("q", q);
   const qs = p.toString();
   const next = `${window.location.pathname}${qs ? `?${qs}` : ""}`;
   if (next !== `${window.location.pathname}${window.location.search}`) {
     window.history.replaceState(null, "", next);
   }
-}
-
+} 
 // =========================================================
 // PAGE
 // =========================================================
 
-export default function DocumentsCatalog() {
+/**
+ * The documents catalog.
+ *  - Home page: <DocumentsCatalog />
+ *  - Teacher profile: <DocumentsCatalog teacherId={id} title="Documents publiés" />
+ *    → same filters, search and 40-by-40 loading, limited to that teacher's documents
+ *      (no hero, no "Vous êtes enseignant ?" box, filter bar not sticky).
+ */
+export default function DocumentsCatalog({ teacherId = null, title = null }) {
   const { user, hydrated } = useUser();
+  const embedded = !!teacherId;
+  // Extra Firestore filter applied to EVERY query and count of this catalog.
+  const teacherScope = useMemo(() => (teacherId ? [where("teacherId", "==", teacherId)] : []), [teacherId]);
 
   const [grade, setGrade] = useState("all");
   const [section, setSection] = useState("all");
   const [subject, setSubject] = useState("all");
   const [type, setType] = useState("all"); // all | video | pdf
   const [docCategory, setDocCategory] = useState("all"); // PDF type (cours, série…)
-  const [sort, setSort] = useState("populaires");
+  const [searchInput, setSearchInput] = useState(""); // what the student types
+  const [searchQuery, setSearchQuery] = useState(""); // what was submitted (Enter / button)
   const [filtersReady, setFiltersReady] = useState(false);
 
-  // Loaded documents for the current filters (grows by 50 with "Voir plus").
+  // Loaded documents for the current filters (grows by 40 with "Voir plus").
   const [items, setItems] = useState([]);
   const [total, setTotal] = useState(null); // matching documents (count query), null = unknown
   const [hasMore, setHasMore] = useState(false);
@@ -175,25 +235,26 @@ export default function DocumentsCatalog() {
 
   const [playing, setPlaying] = useState(null);
   const [reading, setReading] = useState(null);
-  const [lockedItem, setLockedItem] = useState(null);
-
-  const accessible = useMemo(() => getAccessibleGradeIds(user), [user]);
+  const [locked, setLocked] = useState(null); // { item, reason }
   const isStudent = !!user && user.role !== "teacher";
+
+  // Subscription: every grade and every subject (a hidden usage limit protects shared accounts).
+  const { status: subStatus, refresh: refreshSub } = useSubscription(isStudent ? user : null);
   const firstName = user?.name?.split(" ")[0];
 
-  // ---- Initial filters: URL first, otherwise the student's own grade ----
+  // ---- Initial filters: from the URL, otherwise "Tous les niveaux" for everyone ----
   useEffect(() => {
     if (!hydrated || filtersReady) return;
     const fromUrl = readUrlFilters();
-    const myFirstGrade = ORDERED_GRADES.find((g) => accessible.has(g.id))?.id;
-    setGrade(fromUrl.grade || (isStudent && myFirstGrade) || "all");
+    setGrade(fromUrl.grade || "all");
     setSection(fromUrl.section);
     setSubject(fromUrl.subject);
     setType(fromUrl.type);
     setDocCategory(fromUrl.docCategory);
-    setSort(fromUrl.sort);
+    setSearchInput(fromUrl.q);
+    setSearchQuery(fromUrl.q);
     setFiltersReady(true);
-  }, [hydrated, filtersReady, accessible, isStudent]);
+  }, [hydrated, filtersReady]);
 
   const hasSections = grade !== "all" && GRADES_WITH_SPECIALIZATION.has(grade);
   useEffect(() => {
@@ -226,19 +287,18 @@ export default function DocumentsCatalog() {
     if (!filtersReady || subject === "all") return;
     if (!subjectCandidates.some((s) => s.id === subject)) setSubject("all");
     else if (subjectCounts && subjectCounts.get(subject) === 0) setSubject("all");
-  }, [filtersReady, subject, subjectCandidates, subjectCounts]);
-
+  }, [filtersReady, subject, subjectCandidates, subjectCounts]); 
   // ---- Counts ----
   // Per level: once per visit.
   useEffect(() => {
     let cancelled = false;
     countMany(
-      ALL_GRADES.map((g) => [g.id, [where("status", "==", "published"), where("gradeId", "==", g.id)]])
+      ALL_GRADES.map((g) => [g.id, [where("status", "==", "published"), ...teacherScope, where("gradeId", "==", g.id)]])
     ).then((m) => !cancelled && setGradeCounts(m));
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [teacherScope]);
 
   // Per section (grades with specializations).
   useEffect(() => {
@@ -250,7 +310,7 @@ export default function DocumentsCatalog() {
     countMany(
       SPECIALIZATIONS.map((sp) => [
         sp.id,
-        [where("status", "==", "published"), where("gradeId", "==", grade), where("specializationId", "==", sp.id)],
+        [where("status", "==", "published"), ...teacherScope, where("gradeId", "==", grade), where("specializationId", "==", sp.id)],
       ])
     ).then((m) => !cancelled && setSectionCounts(m));
     return () => {
@@ -262,7 +322,7 @@ export default function DocumentsCatalog() {
   useEffect(() => {
     if (!filtersReady) return;
     let cancelled = false;
-    const scope = filterConstraints({ grade, section, subject: "all", type: "all", docCategory: "all" });
+    const scope = filterConstraints({ grade, section, subject: "all", type: "all", docCategory: "all", teacherId });
     countMany([
       [CONTENT_TYPES.VIDEO, [...scope, where("type", "==", CONTENT_TYPES.VIDEO)]],
       [CONTENT_TYPES.PDF, [...scope, where("type", "==", CONTENT_TYPES.PDF)]],
@@ -279,13 +339,12 @@ export default function DocumentsCatalog() {
     return () => {
       cancelled = true;
     };
-  }, [filtersReady, grade, section]);
-
+  }, [filtersReady, grade, section]); 
   // Subjects for the current level + section + type.
   useEffect(() => {
     if (!filtersReady) return;
     let cancelled = false;
-    const scope = filterConstraints({ grade, section, subject: "all", type, docCategory: "all" });
+    const scope = filterConstraints({ grade, section, subject: "all", type, docCategory: "all", teacherId });
     countMany(subjectCandidates.map((s) => [s.id, [...scope, where("subjectId", "==", s.id)]])).then(
       (m) => !cancelled && setSubjectCounts(m)
     );
@@ -301,7 +360,7 @@ export default function DocumentsCatalog() {
       return;
     }
     let cancelled = false;
-    const scope = filterConstraints({ grade, section, subject, type: CONTENT_TYPES.PDF, docCategory: "all" });
+    const scope = filterConstraints({ grade, section, subject, type: CONTENT_TYPES.PDF, docCategory: "all", teacherId });
     countMany(PDF_CATEGORIES.map((c) => [c.id, [...scope, where("pdfCategory", "==", c.id)]])).then(
       (m) => !cancelled && setDocCategoryCounts(m)
     );
@@ -317,18 +376,17 @@ export default function DocumentsCatalog() {
     }
   }, [docCategory, docCategoryCounts]);
 
-  // Levels in the menu: those with documents + the student's own levels.
+  // Levels in the menu: those with documents (+ the one currently selected).
   const gradeGroups = useMemo(
     () =>
       GRADE_GROUPS.map((group) => ({
         levelName: group.levelName,
         grades: group.grades.filter(
-          (g) => accessible.has(g.id) || g.id === grade || hasDocs(gradeCounts, g.id)
+          (g) => g.id === grade || hasDocs(gradeCounts, g.id)
         ),
       })).filter((group) => group.grades.length > 0),
-    [gradeCounts, accessible, grade]
-  );
-
+    [gradeCounts, grade]
+  ); 
   const docCategoryChips = useMemo(
     () =>
       PDF_CATEGORIES.filter((c) => hasDocs(docCategoryCounts, c.id)).map((c) => ({
@@ -341,11 +399,11 @@ export default function DocumentsCatalog() {
   const gradesWithContent = gradeCounts ? [...gradeCounts.values()].filter((n) => n > 0).length : null;
 
   const filters = useMemo(
-    () => ({ grade, section, subject, type, docCategory, sort }),
-    [grade, section, subject, type, docCategory, sort]
+    () => ({ grade, section, subject, type, docCategory, q: searchQuery }),
+    [grade, section, subject, type, docCategory, searchQuery]
   );
 
-  // ---- Load the first 50 whenever the filters change ----
+  // ---- Load the first 40 whenever the filters change ----
   useEffect(() => {
     if (!filtersReady) return;
     writeUrlFilters(filters);
@@ -358,10 +416,34 @@ export default function DocumentsCatalog() {
     setLoading(true);
     setLoadError(null);
 
-    const where_ = filterConstraints(filters);
+    const where_ = filterConstraints({ ...filters, teacherId });
     const base = collection(DB, "videos");
 
-    getDocs(query(base, ...where_, ...sortConstraints(filters.sort), limit(BATCH_SIZE)))
+    // ---- Search: one query, results ranked here, no "Voir plus" ----
+    const words = searchWords(filters.q);
+    if (words.length) {
+      getDocs(query(base, ...where_, where("searchKeywords", "array-contains-any", withVariants(words)), limit(SEARCH_LIMIT)))
+        .then((snap) => {
+          if (requestRef.current !== requestId) return;
+          const ranked = rankResults(
+            snap.docs.map((d) => ({ id: d.id, ...d.data() })),
+            words
+          );
+          setItems(ranked);
+          setTotal(ranked.length);
+        })
+        .catch((err) => {
+          if (requestRef.current !== requestId) return;
+          console.error("Catalog search failed", err);
+          setLoadError("La recherche n'a pas pu aboutir. Réessayez.");
+        })
+        .finally(() => {
+          if (requestRef.current === requestId) setLoading(false);
+        });
+      return;
+    }
+
+    getDocs(query(base, ...where_, limit(BATCH_SIZE)))
       .then((snap) => {
         if (requestRef.current !== requestId) return;
         lastDocRef.current = snap.docs[snap.docs.length - 1] || null;
@@ -378,13 +460,12 @@ export default function DocumentsCatalog() {
         if (requestRef.current === requestId) setLoading(false);
       });
 
-    // How many match in total (1 read per 1000 documents) — for "50 sur 120".
+    // How many match in total (1 read per 1000 documents) — for "40 sur 120".
     getCountFromServer(query(base, ...where_))
       .then((agg) => requestRef.current === requestId && setTotal(agg.data().count))
       .catch(() => {});
-  }, [filtersReady, filters]);
-
-  // ---- "Voir plus": next 50 after the last loaded document ----
+  }, [filtersReady, filters]); 
+  // ---- "Voir plus": next 40 after the last loaded document ----
   async function loadMore() {
     if (loadingMore || !hasMore || !lastDocRef.current) return;
     const requestId = requestRef.current;
@@ -393,8 +474,7 @@ export default function DocumentsCatalog() {
       const snap = await getDocs(
         query(
           collection(DB, "videos"),
-          ...filterConstraints(filters),
-          ...sortConstraints(filters.sort),
+          ...filterConstraints({ ...filters, teacherId }),
           startAfter(lastDocRef.current),
           limit(BATCH_SIZE)
         )
@@ -419,44 +499,91 @@ export default function DocumentsCatalog() {
     const base = collection(DB, "videos");
     const published = where("status", "==", "published");
     Promise.all([
-      getCountFromServer(query(base, published, where("type", "==", CONTENT_TYPES.VIDEO))),
-      getCountFromServer(query(base, published, where("type", "==", CONTENT_TYPES.PDF))),
+      getCountFromServer(query(base, published, ...teacherScope, where("type", "==", CONTENT_TYPES.VIDEO))),
+      getCountFromServer(query(base, published, ...teacherScope, where("type", "==", CONTENT_TYPES.PDF))),
     ])
       .then(([v, p]) => !cancelled && setCatalogTotals({ videos: v.data().count, pdfs: p.data().count }))
       .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, []);
-
+  }, [teacherScope]); 
   const currentGrade = grade !== "all" ? gradeById(grade) : null;
   const currentSubject = subjectChips.find((s) => s.id === subject);
   const currentDocCategory = docCategory !== "all" ? getPdfCategory(docCategory) : null;
-  const gradeLocked = !!user && grade !== "all" && !accessible.has(grade);
+  const searching = searchWords(searchQuery).length > 0;
   const activeFilters =
+    (searching ? 1 : 0) +
     (section !== "all" ? 1 : 0) +
     (subject !== "all" ? 1 : 0) +
     (type !== "all" ? 1 : 0) +
     (currentDocCategory ? 1 : 0);
   const shownTotal = total ?? items.length;
 
-  const exploreGrades = ORDERED_GRADES.filter(
-    (g) => !accessible.has(g.id) && gradeCounts && gradeCounts.get(g.id) > 0
+  // Why a document can't be opened (null = it can). The hidden usage limit is
+  // checked by the server just before opening (claimAccess below).
+  const lockReason = useCallback(
+    (v) => {
+      if (!user) return "login";
+      if (isFreeAccess(user, v)) return null; // teacher's own document
+      if (!subStatus) return null; // still loading → the server decides
+      return subStatus.active ? null : subStatus.state;
+    },
+    [user, subStatus]
   );
-  const showExplore = isStudent && grade !== "all" && !gradeLocked && exploreGrades.length > 0;
 
-  const isLocked = useCallback(
-    (v) => !(accessible.has(v.gradeId) || (user && v.teacherId === user.uid)),
-    [accessible, user]
-  );
+  const [opening, setOpening] = useState(null); // id of the document being checked
 
-  function openItem(v) {
-    if (isLocked(v)) setLockedItem(v);
-    else if (isPdf(v)) setReading(v);
+  async function openItem(v) {
+    const reason = lockReason(v);
+    if (reason) {
+      setLocked({ item: v, reason });
+      return;
+    }
+    if (isStudent && !isFreeAccess(user, v)) {
+      // Ask the server first, so a refusal shows the right window (not an error in the player).
+      setOpening(v.id);
+      const res = await claimAccess(v.id);
+      setOpening(null);
+      if (!res.ok) {
+        setLocked({ item: v, reason: res.code });
+        if (res.code !== "quota") refreshSub();
+        return;
+      }
+    }
+    if (isPdf(v)) setReading(v);
     else setPlaying(v);
   }
 
+  function closeViewer() {
+    setPlaying(null);
+    setReading(null);
+  }
+
+  function submitSearch(e) {
+    e?.preventDefault();
+    const q = searchInput.trim().replace(/\s+/g, " ").slice(0, 80);
+    setSearchInput(q);
+    setSearchQuery(q);
+    // Close the phone keyboard so the results are visible.
+    if (typeof document !== "undefined") document.activeElement?.blur?.();
+  }
+
+  function clearSearch() {
+    setSearchInput("");
+    setSearchQuery("");
+  }
+
+  function searchEverywhere() {
+    setGrade("all");
+    setSection("all");
+    setSubject("all");
+    setType("all");
+    setDocCategory("all");
+  }
+
   function clearFilters() {
+    clearSearch();
     setSection("all");
     setSubject("all");
     setType("all");
@@ -469,10 +596,6 @@ export default function DocumentsCatalog() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  const subscribeLink = (gName) =>
-    `https://wa.me/${DROUSSY_WHATSAPP}?text=${encodeURIComponent(
-      `Bonjour Droussy TN, je souhaite m'abonner au niveau ${gName}.`
-    )}`;
 
   // =========================================================
   // RENDER
@@ -488,8 +611,9 @@ export default function DocumentsCatalog() {
 
 
   return (
-    <div className="home-page">
-      {/* ---------- Hero ---------- */}
+    <div className={embedded ? "cat-embedded" : "home-page"}>
+      {/* ---------- Hero (home page only) ---------- */}
+      {!embedded && (
       <section className="vid-hero">
         <div className="vid-container">
           <p className="vid-eyebrow">🇹🇳 Du primaire au bac · à ton rythme</p>
@@ -508,11 +632,47 @@ export default function DocumentsCatalog() {
           </p>
         </div>
       </section>
+      )}
 
-      {/* ---------- Sticky filter bar ---------- */}
-      <div className="vid-filterbar">
+      {embedded && title && (
+        <div className="vid-container">
+          <h2 className="cat-embedded-title">{title}</h2>
+        </div>
+      )}
+
+      {/* ---------- Filter bar (sticky on computers) ---------- */}
+      <div className={`vid-filterbar cat-filterbar ${embedded ? "cat-filterbar-embedded" : ""}`}>
         <div className="vid-container vid-filterbar-inner">
-          <div className="vid-filter-row">
+          {/* Search: runs only on Enter / "Rechercher" (one query), never while typing */}
+          <form className="cat-search" role="search" onSubmit={submitSearch}>
+            <span className="cat-search-icon" aria-hidden="true">
+              🔍
+            </span>
+            <input
+              type="search"
+              inputMode="search"
+              enterKeyHint="search"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              maxLength={80}
+              placeholder={embedded ? "Chercher une leçon ou une matière…" : "Leçon, matière ou enseignant…"}
+              aria-label="Chercher une leçon, une matière ou un enseignant"
+              className="cat-search-input"
+            />
+            {searchInput && (
+              <button type="button" className="cat-search-clear" onClick={clearSearch} aria-label="Effacer la recherche">
+                ✕
+              </button>
+            )}
+            <button type="submit" className="cat-search-btn" aria-label="Rechercher">
+              <span className="cat-search-btn-label">Rechercher</span>
+              <span className="cat-search-btn-icon" aria-hidden="true">
+                →
+              </span>
+            </button>
+          </form>
+
+          <div className="cat-filter-row">
             <select
               value={grade}
               onChange={(e) => {
@@ -520,7 +680,7 @@ export default function DocumentsCatalog() {
                 setSubject("all");
               }}
               aria-label="Niveau"
-              className="vid-select vid-select-grade"
+              className="vid-select cat-select cat-select-grade"
             >
               <option value="all">🎒 Tous les niveaux</option>
               {gradeGroups.map((group) => (
@@ -528,7 +688,6 @@ export default function DocumentsCatalog() {
                   {group.grades.map((g) => (
                     <option key={g.id} value={g.id}>
                       {gradeEmoji(g.id)} {g.name}
-                      {accessible.has(g.id) ? " ✓" : ""}
                       {gradeCounts?.get(g.id) != null ? ` (${gradeCounts.get(g.id)})` : ""}
                     </option>
                   ))}
@@ -536,7 +695,22 @@ export default function DocumentsCatalog() {
               ))}
             </select>
 
-            <div className="vid-type-toggle" role="radiogroup" aria-label="Type de document">
+            <select
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              aria-label="Matière"
+              className={`vid-select cat-select ${subject !== "all" ? "cat-select-active" : ""}`}
+            >
+              <option value="all">✨ Toutes les matières</option>
+              {subjectChips.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.emoji} {s.name}
+                  {s.count != null ? ` (${s.count})` : ""}
+                </option>
+              ))}
+            </select>
+
+            <div className="vid-type-toggle cat-type-toggle" role="radiogroup" aria-label="Type de document">
               {TYPE_FILTERS.map((t) => (
                 <button
                   key={t.id}
@@ -551,16 +725,6 @@ export default function DocumentsCatalog() {
                 </button>
               ))}
             </div>
-
-            <select
-              value={sort}
-              onChange={(e) => setSort(e.target.value)}
-              aria-label="Trier"
-              className="vid-select vid-select-sort"
-            >
-              <option value="populaires">🔥 Populaires</option>
-              <option value="recentes">🆕 Récents</option>
-            </select>
           </div>
 
           {hasSections && SPECIALIZATIONS.some((sp) => hasDocs(sectionCounts, sp.id)) && (
@@ -573,20 +737,6 @@ export default function DocumentsCatalog() {
                 <Chip small key={s.id} active={section === s.id} onClick={() => setSection(s.id)}>
                   {s.name}
                   {sectionCounts?.get(s.id) != null && <span className="vid-chip-count">{sectionCounts.get(s.id)}</span>}
-                </Chip>
-              ))}
-            </ChipRow>
-          )}
-
-          {subjectChips.length > 0 && (
-            <ChipRow label="Filtrer par matière">
-              <Chip active={subject === "all"} onClick={() => setSubject("all")}>
-                ✨ Toutes les matières
-              </Chip>
-              {subjectChips.map((s) => (
-                <Chip key={s.id} active={subject === s.id} onClick={() => setSubject(s.id)}>
-                  {s.emoji} {s.name}
-                  {s.count != null && <span className="vid-chip-count">{s.count}</span>}
                 </Chip>
               ))}
             </ChipRow>
@@ -607,30 +757,17 @@ export default function DocumentsCatalog() {
             </ChipRow>
           )}
         </div>
-      </div>
-
+      </div> 
       {/* ---------- Results ---------- */}
       <div className="vid-container vid-body">
         {/* Visitors: one short line, so the first cards stay on the first screen */}
         {!user && (
           <div className="vid-login-strip">
-            <span>👋 Connecte-toi pour ouvrir les vidéos et les PDF de ta classe.</span>
+            <span>👋 Connecte-toi pour ouvrir les vidéos et les PDF.</span>
             <Link href="/login" className="vid-login-strip-btn">
               Connexion
             </Link>
           </div>
-        )}
-
-        {gradeLocked && currentGrade && (
-          <Banner
-            emoji="👨‍👩‍👧"
-            title={`${currentGrade.name} n'est pas inclus dans ton abonnement`}
-            text="Un autre enfant dans ce niveau ? Ajoutez-le et débloquez toutes ses vidéos et ses PDF."
-          >
-            <a href={subscribeLink(currentGrade.name)} target="_blank" rel="noopener noreferrer" className="vid-btn-primary">
-              S'abonner
-            </a>
-          </Banner>
         )}
 
         {loading ? (
@@ -638,28 +775,62 @@ export default function DocumentsCatalog() {
         ) : loadError ? (
           <p className="vid-error">{loadError}</p>
         ) : catalogTotals && catalogTotals.videos + catalogTotals.pdfs === 0 ? (
-          <EmptyState emoji="📚" title="Les premiers cours arrivent très bientôt">
-            Nos enseignants préparent leurs vidéos et leurs PDF. Revenez dans quelques jours !
-          </EmptyState>
+          embedded ? (
+            <EmptyState emoji="📚" title="Aucun document pour l'instant">
+              Cet enseignant n'a pas encore publié de vidéo ni de PDF.
+            </EmptyState>
+          ) : (
+            <EmptyState emoji="📚" title="Les premiers cours arrivent très bientôt">
+              Nos enseignants préparent leurs vidéos et leurs PDF. Revenez dans quelques jours !
+            </EmptyState>
+          )
         ) : (
           <>
             <div className="vid-results-head">
               <h2 className="vid-results-title">
-                {currentGrade ? `${gradeEmoji(currentGrade.id)} ${currentGrade.name}` : "Tous les niveaux"}
-                {currentSubject && <span className="vid-results-accent"> · {currentSubject.name}</span>}
+                {searching ? (
+                  <>
+                    🔎 « {searchQuery} »
+                    {(currentGrade || currentSubject) && (
+                      <span className="cat-results-scope">
+                        {" "}
+                        dans {[currentGrade?.name, currentSubject?.name].filter(Boolean).join(" · ")}
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {currentGrade ? `${gradeEmoji(currentGrade.id)} ${currentGrade.name}` : "Tous les niveaux"}
+                    {currentSubject && <span className="vid-results-accent"> · {currentSubject.name}</span>}
+                  </>
+                )}
               </h2>
               <div className="vid-results-meta">
-                <span>{countLabel(shownTotal, type)}</span>
+                <span>
+                  {searching ? `${shownTotal} résultat${shownTotal > 1 ? "s" : ""}` : countLabel(shownTotal, type)}
+                </span>
                 {activeFilters > 0 && (
                   <button type="button" onClick={clearFilters} className="vid-link-btn">
                     Effacer les filtres
                   </button>
                 )}
               </div>
-            </div>
-
+            </div> 
             {items.length === 0 ? (
-              activeFilters > 0 ? (
+              searching ? (
+                <EmptyState emoji="🔎" title={`Aucun résultat pour « ${searchQuery} »`}>
+                  Essaie un autre mot : le nom de la leçon, la matière ou l'enseignant.
+                  <br />
+                  {(grade !== "all" || subject !== "all" || type !== "all" || section !== "all") && (
+                    <button type="button" onClick={searchEverywhere} className="vid-btn-secondary">
+                      Chercher dans tous les niveaux
+                    </button>
+                  )}{" "}
+                  <button type="button" onClick={clearSearch} className="vid-btn-secondary">
+                    Effacer la recherche
+                  </button>
+                </EmptyState>
+              ) : activeFilters > 0 ? (
                 <EmptyState
                   emoji="🔎"
                   title={
@@ -690,15 +861,14 @@ export default function DocumentsCatalog() {
                     <ContentCard
                       key={v.id}
                       item={v}
-                      locked={isLocked(v)}
+                      locked={!!lockReason(v)}
                       isLoggedIn={!!user}
                       showGrade={grade === "all"}
                       showSection={hasSections && section === "all"}
-                      onClick={() => openItem(v)}
+                      onClick={() => opening !== v.id && openItem(v)}
                     />
                   ))}
-                </div>
-
+                </div> 
                 {(hasMore || (total != null && items.length < total)) && (
                   <div className="vid-more">
                     <button
@@ -719,26 +889,10 @@ export default function DocumentsCatalog() {
               </>
             )}
 
-            {showExplore && (
-              <section className="vid-explore">
-                <h2 className="vid-results-title">🌍 Explore les autres niveaux</h2>
-                <p className="vid-section-sub">Un frère ou une sœur ? Toutes les classes sont disponibles.</p>
-                <div className="vid-explore-grid">
-                  {exploreGrades.map((g) => (
-                    <button key={g.id} type="button" onClick={() => jumpToGrade(g.id)} className="vid-explore-card">
-                      <span className="vid-explore-emoji">{gradeEmoji(g.id)}</span>
-                      <span className="vid-explore-name">{g.name}</span>
-                      <span className="vid-explore-count">{countLabel(gradeCounts.get(g.id))}</span>
-                    </button>
-                  ))}
-                </div>
-              </section>
-            )}
           </>
-        )}
-
-        {/* Short teacher call-to-action (was on the old home page) */}
-        {!isStudent && (
+        )} 
+        {/* Short teacher call-to-action (home page only) */}
+        {!isStudent && !embedded && (
           <section className="vid-teacher-cta">
             <span className="vid-teacher-cta-emoji">🏫</span>
             <div className="vid-teacher-cta-text">
@@ -752,31 +906,18 @@ export default function DocumentsCatalog() {
         )}
       </div>
 
-      {playing && <PlayerModal video={playing} onClose={() => setPlaying(null)} />}
-      {reading && <PdfReaderModal pdf={reading} onClose={() => setReading(null)} />}
+      {/* On a teacher's profile, his name in the player is not a link (we are already there). */}
+      {playing && <PlayerModal video={playing} onClose={closeViewer} linkTeacher={!embedded} />}
+      {reading && <PdfReaderModal pdf={reading} onClose={closeViewer} linkTeacher={!embedded} />}
 
-      {lockedItem && <LockedModal item={lockedItem} isLoggedIn={!!user} onClose={() => setLockedItem(null)} />}
+      {locked && <AccessModal item={locked.item} reason={locked.reason} onClose={() => setLocked(null)} />}
     </div>
   );
-}
-
+} 
 // =========================================================
 // SMALL UI PIECES
 // (card, player, PDF reader and locked window: app/components/DocumentCards.js)
 // =========================================================
-
-function Banner({ emoji, title, text, children }) {
-  return (
-    <div className="vid-banner">
-      <span className="vid-banner-emoji">{emoji}</span>
-      <div className="vid-banner-text">
-        <p className="vid-banner-title">{title}</p>
-        <p className="vid-banner-sub">{text}</p>
-      </div>
-      {children}
-    </div>
-  );
-}
 
 function EmptyState({ emoji, title, children }) {
   return (
@@ -786,8 +927,7 @@ function EmptyState({ emoji, title, children }) {
       {children && <div className="vid-empty-text">{children}</div>}
     </div>
   );
-}
-
+} 
 // Horizontal chip row. Phones: swipe. Computers (no horizontal swipe with a
 // mouse): ‹ › arrows appear when chips overflow, and the mouse wheel scrolls
 // the row sideways while the pointer is over it.
@@ -833,7 +973,7 @@ function ChipRow({ label, children }) {
     const el = rowRef.current;
     if (el) el.scrollBy({ left: dir * Math.max(200, el.clientWidth * 0.7), behavior: "smooth" });
   }
-
+ 
   return (
     <div className={`vid-chip-scroller ${edges.left ? "vid-chip-scroller-left" : ""} ${edges.right ? "vid-chip-scroller-right" : ""}`}>
       {edges.left && (
