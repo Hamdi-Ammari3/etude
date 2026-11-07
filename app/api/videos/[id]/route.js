@@ -2,6 +2,7 @@ import { deleteBunnyVideo } from "../../../../lib/bunny";
 import { deleteObject } from "../../../../lib/bunnyStorage";
 import { destroyCloudinaryImage } from "../../../../lib/cloudinaryServer";
 import { adminDb, requireTeacher, jsonError, FieldValue } from "../../../../lib/videoServer";
+import { ensureOpenDoc } from "../../../../lib/openDocsServer";
 import { TITLE_MIN, TITLE_MAX, DEFAULT_THUMBNAIL_PUBLIC_ID } from "../../../../lib/videoConfig";
 import { cleanTitle, normalizeText, buildSearchKeywords } from "../../../../lib/videoText";
 
@@ -28,7 +29,6 @@ async function loadOwnedVideo(request, params) {
   }
   return { teacher, id, ref, video: snap.data() };
 }
-
 export async function PATCH(request, ctx) {
   let owned;
   try {
@@ -73,7 +73,6 @@ export async function DELETE(request, ctx) {
   }
 
   const { ref, video } = owned;
-
   // Soft delete: the doc stays (views, earnings and payouts reference it),
   // but it disappears everywhere — the catalog only lists "published".
   await ref.update({
@@ -82,6 +81,16 @@ export async function DELETE(request, ctx) {
     deletedAt: FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(),
   });
+
+  // It was the teacher's open (free) document → if none is left, his oldest
+  // published document becomes open, so he always keeps at least one.
+  let openReplacementId = null;
+  if (video.isOpen) {
+    openReplacementId = await ensureOpenDoc(adminDb(), owned.teacher.uid).catch((err) => {
+      console.error("ensureOpenDoc failed", owned.teacher.uid, err);
+      return null;
+    });
+  }
 
   // Free the storage (best effort — the video is already hidden either way).
   const [bunnyOk, thumbOk] = await Promise.all([
@@ -103,5 +112,5 @@ export async function DELETE(request, ctx) {
   ]);
   await ref.update({ bunnyDeleted: bunnyOk, thumbnailDeleted: thumbOk }).catch(() => {});
 
-  return Response.json({ id: owned.id, deleted: true });
+  return Response.json({ id: owned.id, deleted: true, openReplacementId });
 }

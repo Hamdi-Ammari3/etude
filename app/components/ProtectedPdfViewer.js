@@ -117,7 +117,8 @@ function drawWatermark(ctx, w, h, text) {
 // VIEWER
 // =========================================================
 
-export default function ProtectedPdfViewer({ docId, onCounted }) {
+// isOpen: open (free) PDF → works without an account, no reading reports (never counted).
+export default function ProtectedPdfViewer({ docId, onCounted, isOpen = false }) {
   const [attempt, setAttempt] = useState(0);
   const [phase, setPhase] = useState("opening"); // opening | downloading | ready | error
   const [loadPct, setLoadPct] = useState(0);
@@ -165,11 +166,12 @@ export default function ProtectedPdfViewer({ docId, onCounted }) {
     (async () => {
       try {
         const token = await auth.currentUser?.getIdToken();
-        if (!token) throw new Error("Connecte-toi pour lire ce PDF.");
-        track.current.token = token;
+        // No account: only open (free) PDFs can be read — the server checks.
+        if (!token && !isOpen) throw new Error("Connecte-toi pour lire ce PDF.");
+        track.current.token = token || null;
         const res = await fetch(`/api/pdfs/${docId}/open`, {
           method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
           signal: ctrl.signal,
         });
         const data = await res.json().catch(() => ({}));
@@ -178,6 +180,8 @@ export default function ProtectedPdfViewer({ docId, onCounted }) {
 
         setWatermark(data.watermark || "Droussy TN");
         track.current.counted = !!data.counted;
+        // Open (free) PDF: never counted → no reading reports at all.
+        track.current.tracking = data.tracking !== false;
         startPageRef.current = Math.max(1, Number(data.lastPage) || 1);
         setPhase("downloading");
 

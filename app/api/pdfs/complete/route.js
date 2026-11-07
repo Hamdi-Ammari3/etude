@@ -1,6 +1,7 @@
 import { PDFDocument } from "pdf-lib";
 import { adminDb, requireTeacher, jsonError, FieldValue } from "../../../../lib/videoServer";
 import { headObject, getObjectBytes, deleteObject } from "../../../../lib/bunnyStorage";
+import { ensureOpenDoc } from "../../../../lib/openDocsServer";
 import { VIDEO_STATUS, MAX_PDF_BYTES, REQUIRE_REVIEW, CONTENT_TYPES } from "../../../../lib/videoConfig";
 
 export const runtime = "nodejs";
@@ -20,7 +21,6 @@ export async function POST(request) {
   } catch (res) {
     return res instanceof Response ? res : jsonError("Erreur d'authentification.", 401);
   }
-
   let body;
   try {
     body = await request.json();
@@ -49,9 +49,10 @@ export async function POST(request) {
       failedAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     });
+    // It was the teacher's open document → another one takes its place.
+    if (data.isOpen) await ensureOpenDoc(adminDb(), teacher.uid).catch((err) => console.error("ensureOpenDoc", err));
     return jsonError(message, 422);
   }
-
   const head = await headObject(data.storageKey);
   if (!head || head.size === 0) {
     return jsonError("Le fichier n'est pas encore arrivé. Réessayez l'envoi.", 409);

@@ -1,6 +1,7 @@
 import { deleteBunnyVideo } from "../../../../lib/bunny";
 import { deleteObject } from "../../../../lib/bunnyStorage";
 import { adminDb, requireTeacher, jsonError, syncVideoFromBunny, FieldValue } from "../../../../lib/videoServer";
+import { ensureOpenDoc } from "../../../../lib/openDocsServer";
 import { VIDEO_STATUS } from "../../../../lib/videoConfig";
 
 export const runtime = "nodejs";
@@ -27,6 +28,8 @@ function sanitizeClientInfo(info) {
  * POST { videoIds: [id], abandon: true }       → teacher's upload failed/was cancelled:
  *                                                 deletes the Bunny object, marks "failed"
  * Only the owning teacher can sync their own videos.
+ * If a document that was the teacher's open (free) one fails, another one
+ * takes its place (oldest published document).
  */
 export async function POST(request) {
   let teacher;
@@ -50,6 +53,7 @@ export async function POST(request) {
 
   const db = adminDb();
   const results = {};
+  let openDocFailed = false;
 
   await Promise.all(
     ids.map(async (id) => {
@@ -75,6 +79,7 @@ export async function POST(request) {
             failedAt: FieldValue.serverTimestamp(),
             updatedAt: FieldValue.serverTimestamp(),
           });
+          if (data.isOpen) openDocFailed = true;
           results[id] = { status: VIDEO_STATUS.FAILED, durationSec: data.durationSec || 0 };
         } else {
           results[id] = { status: data.status, durationSec: data.durationSec || 0 };
@@ -84,6 +89,7 @@ export async function POST(request) {
 
       try {
         const { status, durationSec } = await syncVideoFromBunny(ref, data);
+        if (data.isOpen && status === VIDEO_STATUS.FAILED) openDocFailed = true;
         results[id] = { status, durationSec };
       } catch (err) {
         console.error("sync failed", id, err.details || err);
@@ -92,5 +98,14 @@ export async function POST(request) {
     })
   );
 
-  return Response.json({ videos: results });
+  // The teacher's open document failed → another of his documents becomes open.
+  let openReplacementId = null;
+  if (openDocFailed) {
+    openReplacementId = await ensureOpenDoc(db, teacher.uid).catch((err) => {
+      console.error("ensureOpenDoc failed", teacher.uid, err);
+      return null;
+    });
+  }
+
+  return Response.json({ videos: results, openReplacementId });
 }

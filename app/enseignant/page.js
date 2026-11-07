@@ -41,11 +41,19 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import VideoThumbnail from "../components/VideoThumbnail";
 import { PlayerModal, PdfReaderModal } from "../components/DocumentCards";
 import { getSubjectEmoji } from "../../lib/videoDisplay";
+import {
+  OPEN_DOCS_MIN,
+  OPEN_DOCS_MAX,
+  OPEN_DOC_ALIVE_STATUSES,
+  OPEN_DOC_TOGGLE_STATUSES,
+  OPEN_DOC_MESSAGES,
+} from "../../lib/openDocs";
 import "../homePage.css";
 import "./enseignantPage.css";
 import "./teacherPreview.css";
+import "./teacherOpenDocs.css";
 
-const TEACHER_WHATSAPP = "2165110183";
+const TEACHER_WHATSAPP = "21651510183";
 const WHATSAPP_MESSAGE = "Bonjour Droussy TN, je souhaite devenir enseignant sur la plateforme.";
 
 const STATUS_POLL_MS = 15000;
@@ -78,6 +86,24 @@ function formatFileSize(bytes) {
 }
 
 const isPdf = (item) => contentTypeOf(item) === CONTENT_TYPES.PDF;
+
+// Typical file / camera names: "IMG_2024…", "VID-20240101-WA0001", "Document1", "scan 3", "cours.pdf"…
+const FILE_LIKE_TITLE = new RegExp(
+  [
+    "\\.(pdf|mp4|mov|m4v|3gp|webm|mkv|avi|docx?|pptx?)\\s*$", // ends with a file extension
+    "^(img|vid|video|pxl|dsc|mvi|wa)[\\s_-]?\\d", // camera / WhatsApp names: IMG_2045, VID-2024…, PXL_…
+    "^(document|doc|scan|camscanner|untitled|sans titre|nouveau document|enregistrement|screen ?recording)[\\s_-]*\\d*$", // only a generic name
+  ].join("|"),
+  "i"
+);
+
+/** Error message if the title looks like a file name (IMG_2045, scan.pdf…); null if it's fine. */
+function fileNameTitleError(title) {
+  if (FILE_LIKE_TITLE.test(String(title).trim())) {
+    return "Ce titre ressemble à un nom de fichier. Écrivez le titre de la leçon tel que les élèves le chercheront (ex : « Les fractions — addition et soustraction »).";
+  }
+  return null;
+}
 
 // "20112233" → "20 112 233"
 function formatPhone(digits = "") {
@@ -156,6 +182,8 @@ export default function EnseignantDashboard() {
   const [editingVideo, setEditingVideo] = useState(null);
   const [deletingVideo, setDeletingVideo] = useState(null);
   const [previewing, setPreviewing] = useState(null); // own video / PDF opened on the dashboard (never counted)
+  const [openNotice, setOpenNotice] = useState(null); // { kind: "ok" | "error", text } — free / paid switch
+  const [togglingId, setTogglingId] = useState(null);
   const [infoOpen, setInfoOpen] = useState(false);
 
   useEffect(() => {
@@ -236,7 +264,13 @@ export default function EnseignantDashboard() {
     if (!successMsg) return;
     const t = setTimeout(() => setSuccessMsg(null), 8000);
     return () => clearTimeout(t);
-  }, [successMsg]); 
+  }, [successMsg]);
+
+  useEffect(() => {
+    if (!openNotice) return;
+    const t = setTimeout(() => setOpenNotice(null), 7000);
+    return () => clearTimeout(t);
+  }, [openNotice]); 
   // ---- Earnings account (fresh read: balance changes as students watch) ----
   const [account, setAccount] = useState(null);
   const [payouts, setPayouts] = useState([]);
@@ -271,6 +305,12 @@ export default function EnseignantDashboard() {
   function handleUploaded(video) {
     setMyVideos((prev) => [video, ...prev.filter((v) => v.id !== video.id)]);
     setModalOpen(false);
+    if (video.isOpen === true) {
+      setOpenNotice({
+        kind: "ok",
+        text: "🎁 Ton premier document est gratuit : ouvert à tous, c'est ta vitrine pour attirer des élèves. Tu pourras choisir un autre document gratuit depuis le menu ⋮.",
+      });
+    }
     if (isPdf(video)) {
       setSuccessMsg(
         REQUIRE_REVIEW
@@ -292,11 +332,44 @@ export default function EnseignantDashboard() {
     setSuccessMsg("Titre mis à jour ✅");
   }
 
-  function handleDeleted(id) {
+  function handleDeleted(id, openReplacementId = null) {
     const wasPdf = isPdf(myVideos.find((v) => v.id === id));
-    setMyVideos((prev) => prev.filter((v) => v.id !== id));
+    const replacement = openReplacementId && myVideos.find((v) => v.id === openReplacementId);
+    setMyVideos((prev) =>
+      prev.filter((v) => v.id !== id).map((v) => (v.id === openReplacementId ? { ...v, isOpen: true } : v))
+    );
     setDeletingVideo(null);
     setSuccessMsg(wasPdf ? "PDF supprimé." : "Vidéo supprimée.");
+    if (replacement) {
+      setOpenNotice({
+        kind: "ok",
+        text: `🎁 « ${replacement.title} » est maintenant gratuit, pour garder au moins ${OPEN_DOCS_MIN} document gratuit.`,
+      });
+    }
+  }
+
+  // Free (open) ↔ paid. The server keeps every teacher between 1 and 3 open documents.
+  async function handleToggleOpen(v) {
+    const open = v.isOpen !== true;
+    // Same rules as the server, checked first so the answer is instant.
+    if (open && openCount >= OPEN_DOCS_MAX) return setOpenNotice({ kind: "error", text: OPEN_DOC_MESSAGES.max });
+    if (!open && openCount <= OPEN_DOCS_MIN) return setOpenNotice({ kind: "error", text: OPEN_DOC_MESSAGES.min });
+
+    setTogglingId(v.id);
+    try {
+      const data = await apiRequest(`/api/videos/${v.id}/open`, { body: { open } });
+      setMyVideos((prev) => prev.map((x) => (x.id === v.id ? { ...x, isOpen: data.isOpen } : x)));
+      setOpenNotice({
+        kind: "ok",
+        text: data.isOpen
+          ? `🎁 « ${v.title} » est gratuit : tout le monde peut ${isPdf(v) ? "le lire" : "la regarder"}, même sans compte.`
+          : `🔒 « ${v.title} » est de nouveau réservé aux abonnés.`,
+      });
+    } catch (err) {
+      setOpenNotice({ kind: "error", text: err.message });
+    } finally {
+      setTogglingId(null);
+    }
   } 
   function handleInfoSaved(publicProfile) {
     setAccount((prev) => ({ ...(prev || {}), publicProfile: { ...(prev?.publicProfile || {}), ...publicProfile } }));
@@ -321,6 +394,7 @@ export default function EnseignantDashboard() {
   const publishedCount = myVideos.filter((v) => v.status === "published").length;
   const waitingCount = myVideos.filter((v) => ["uploading", "encoding", "pending"].includes(v.status)).length;
   const pdfCount = myVideos.filter(isPdf).length;
+  const openCount = myVideos.filter((v) => v.isOpen === true && OPEN_DOC_ALIVE_STATUSES.includes(v.status)).length;
   const videoCount = myVideos.length - pdfCount;
   const visibleItems =
     listFilter === "all" ? myVideos : myVideos.filter((v) => contentTypeOf(v) === listFilter);
@@ -503,6 +577,12 @@ export default function EnseignantDashboard() {
           )}
         </div>
 
+        {openNotice && (
+          <p className={`ens-open-notice ens-open-notice-${openNotice.kind}`} role="status">
+            {openNotice.text}
+          </p>
+        )}
+
         {videosLoading ? (
           <LoadingSpinner />
         ) : videosError ? (
@@ -548,6 +628,11 @@ export default function EnseignantDashboard() {
                   setOpenMenuId(null);
                   setPreviewing(v);
                 }}
+                toggling={togglingId === v.id}
+                onToggleOpen={() => {
+                  setOpenMenuId(null);
+                  handleToggleOpen(v);
+                }}
               />
             ))}
           </div>
@@ -587,12 +672,14 @@ export default function EnseignantDashboard() {
 // A video can be played once Bunny has finished encoding it; a PDF once its file is checked.
 const PREVIEWABLE_STATUSES = ["pending", "published", "rejected"];
 
-function TeacherVideoCard({ video, menuOpen, onToggleMenu, onCloseMenu, onEdit, onDelete, onPreview }) {
+function TeacherVideoCard({ video, menuOpen, onToggleMenu, onCloseMenu, onEdit, onDelete, onPreview, onToggleOpen, toggling }) {
   const trimestre = TRIMESTRES.find((t) => t.id === video.trimestre);
   const pdf = isPdf(video);
   const canPreview = PREVIEWABLE_STATUSES.includes(video.status || "published");
   const category = pdf ? getPdfCategory(video.pdfCategory) : null;
   const menuRef = useRef(null);
+  const isOpen = video.isOpen === true && OPEN_DOC_ALIVE_STATUSES.includes(video.status);
+  const canToggleOpen = OPEN_DOC_TOGGLE_STATUSES.includes(video.status);
 
   // Close the menu on outside click or Escape.
   useEffect(() => {
@@ -636,6 +723,12 @@ function TeacherVideoCard({ video, menuOpen, onToggleMenu, onCloseMenu, onEdit, 
           <span className="ens-video-duration">{formatDuration(video.durationSec)}</span>
         )}
 
+        {isOpen && (
+          <span className="vid-free-badge" title="Document gratuit : ouvert à tous, non rémunéré">
+            Gratuit
+          </span>
+        )}
+
         {canPreview && (
           <button
             type="button"
@@ -671,6 +764,25 @@ function TeacherVideoCard({ video, menuOpen, onToggleMenu, onCloseMenu, onEdit, 
             {canPreview && (
               <button type="button" role="menuitem" className="ens-video-menu-item" onClick={onPreview}>
                 <span aria-hidden="true">{pdf ? "📖" : "▶️"}</span> {pdf ? "Lire le PDF" : "Regarder la vidéo"}
+              </button>
+            )}
+            {canToggleOpen && (
+              <button
+                type="button"
+                role="menuitem"
+                className="ens-video-menu-item"
+                onClick={onToggleOpen}
+                disabled={toggling}
+              >
+                {isOpen ? (
+                  <>
+                    <span aria-hidden="true">🔒</span> Rendre payant
+                  </>
+                ) : (
+                  <>
+                    <span aria-hidden="true">🎁</span> Rendre gratuit
+                  </>
+                )}
               </button>
             )}
             <button type="button" role="menuitem" className="ens-video-menu-item" onClick={onEdit}>
@@ -878,8 +990,8 @@ function DeleteVideoModal({ video, onClose, onDeleted }) {
     setDeleting(true);
     setError(null);
     try {
-      await apiRequest(`/api/videos/${video.id}`, { method: "DELETE" });
-      onDeleted(video.id);
+      const data = await apiRequest(`/api/videos/${video.id}`, { method: "DELETE" });
+      onDeleted(video.id, data.openReplacementId || null);
     } catch (err) {
       setError(err.message);
       setDeleting(false);
@@ -1189,16 +1301,8 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
       }
       return;
     }
+    // The title is never taken from the file name: the teacher always types it.
     setPdfFile(f);
-    // Pre-fill the title from the file name if the teacher hasn't typed one.
-    if (!title.trim()) {
-      const fromName = f.name
-        .replace(/\.pdf$/i, "")
-        .replace(/[_-]+/g, " ")
-        .replace(/\s+/g, " ")
-        .trim();
-      if (fromName.length >= TITLE_MIN) setTitle(fromName.slice(0, TITLE_MAX));
-    }
   }
 
   // ---- PDF publish: create doc → PUT to Bunny Storage → server checks the file ----
@@ -1306,6 +1410,8 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
       handleClose();
       return;
     }
+    const fileTitleError = fileNameTitleError(cleanTitle);
+    if (fileTitleError) return setError(fileTitleError);
     setSubmitting(true);
     try {
       const data = await apiRequest(`/api/videos/${editVideo.id}`, { method: "PATCH", body: { title: cleanTitle } });
@@ -1384,6 +1490,8 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
     if (cleanTitle.length < TITLE_MIN) {
       return setError(`Écrivez un titre clair pour la leçon (${TITLE_MIN} caractères minimum).`);
     }
+    const fileTitleError = fileNameTitleError(cleanTitle);
+    if (fileTitleError) return setError(fileTitleError);
     if (!subjectId) return setError("Choisissez une matière.");
     if (needsSpecialization && !specializationId) return setError("Choisissez une spécialité pour ce niveau.");
     if (pdfMode) return handleSubmitPdf(cleanTitle);
@@ -1685,11 +1793,14 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
                 </select>
               </label> 
               <label className="ens-field ens-field-full">
-                <span className="ens-field-label">Titre de la leçon</span>
+                <span className="ens-field-label">Titre de la leçon *</span>
                 <input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   maxLength={TITLE_MAX}
+                  required
+                  minLength={TITLE_MIN}
+                  autoComplete="off"
                   disabled={submitting || !!resumable}
                   placeholder={
                     pdfMode
@@ -1698,7 +1809,9 @@ function PublishVideoModal({ open, onClose, user, onUploaded, editVideo, onEdite
                   }
                   className="ens-input"
                 />
-                <p className="ens-field-hint">Utilisez le nom de la leçon tel qu'il apparaît dans le programme.</p>
+                <p className="ens-field-hint">
+                  À écrire vous-même : le nom de la leçon tel qu'il apparaît dans le programme (pas le nom du fichier).
+                </p>
               </label>
 
               {pdfMode && (

@@ -177,6 +177,70 @@
   }
 }
 
+/* ---------- Tous les documents / Gratuits ----------
+   Second line, on the left: two separate buttons with the same height, font
+   and borders as the dropdowns. A small round marker shows the selected one
+   (filled = selected), like a radio button. */
+.cat-access {
+  grid-column: 1 / -1;
+  order: 99; /* always the last line, under Tout / Vidéos / PDF on phones too */
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.cat-access-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-sizing: border-box;
+  height: 44px;
+  padding: 0 1.1rem 0 0.9rem;
+  border: 2px solid var(--home-border, #d4dfeb);
+  border-radius: 999px;
+  background: var(--home-card, #ffffff);
+  color: var(--home-ink, #1a2846);
+  font: inherit;
+  font-size: 0.88rem; /* same as the dropdowns */
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 150ms ease, background 150ms ease, color 150ms ease;
+}
+
+.cat-access-option::before {
+  content: "";
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--home-border, #d4dfeb);
+  border-radius: 50%;
+  background: var(--home-card, #ffffff);
+  box-sizing: border-box;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.cat-access-option:hover:not(.cat-access-option-active) {
+  border-color: var(--home-primary, #1a8cf0);
+}
+
+.cat-access-option:focus-visible {
+  outline: 3px solid var(--home-primary, #1a8cf0);
+  outline-offset: 2px;
+}
+
+.cat-access-option-active {
+  border-color: var(--home-primary, #1a8cf0);
+  background: var(--home-wash-blue, #e5f0fc);
+  color: var(--home-primary, #1a8cf0);
+}
+
+.cat-access-option-active::before {
+  border-color: var(--home-primary, #1a8cf0);
+  background: var(--home-primary, #1a8cf0);
+  box-shadow: inset 0 0 0 2px var(--home-card, #ffffff);
+}
+
 /* ---------- Phones ---------- */
 
 @media (max-width: 600px) {
@@ -209,6 +273,15 @@
 
   .vid-type-toggle.cat-type-toggle {
     grid-column: 1 / -1;
+  }
+
+  /* Same height and text size as the dropdowns on phones; each button keeps
+     the width of its label, so "Tous les documents" is never cut. */
+  .cat-access-option {
+    height: 42px;
+    padding: 0 0.8rem 0 0.65rem;
+    gap: 0.4rem;
+    font-size: 0.82rem;
   }
 
   .cat-select {

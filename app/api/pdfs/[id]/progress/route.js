@@ -18,7 +18,6 @@ export const dynamic = "force-dynamic";
 const MAX_PAGES = 2000;
 const MAX_CREDIT_PER_BEAT_SEC = 120;
 const MAX_ELAPSED_SEC = 600;
-
 /**
  * POST /api/pdfs/{id}/progress
  * Body: { pages: number[] (1-based, newly seen), activeSec: number, totalPages: number, currentPage: number }
@@ -27,6 +26,7 @@ const MAX_ELAPSED_SEC = 600;
  * long the student read. The first time a student has seen HALF of the pages
  * AND read for 30 s, ONE read is counted (transaction → never twice) and the
  * teacher earns the PDF rate (0,05 DT, frozen on the document at publish time).
+ * Open (free) PDFs are never counted and never paid.
  *
  * The server only trusts what real time allows: new pages are capped by the
  * time since the last report (1 page per 2 s), and reading time can't exceed
@@ -62,14 +62,17 @@ export async function POST(request, { params }) {
   if (!pdfSnap.exists) return jsonError("Document introuvable.", 404);
   const pdf = pdfSnap.data();
   if (pdf.type !== CONTENT_TYPES.PDF) return jsonError("Ce contenu n'est pas un PDF.", 400);
-
   const profile = userSnap.exists ? userSnap.data() : {};
   const role = user.role || profile.role || null;
   if (!canWatchVideo({ ...profile, uid: user.uid, role }, pdf)) return jsonError("Accès refusé.", 403);
 
-  // Only real students on published PDFs generate paid reads.
+  // Only real students on published, paid (not open) PDFs generate paid reads.
   const countable =
-    pdf.status === "published" && pdf.teacherId !== user.uid && role !== "teacher" && role !== "admin";
+    pdf.status === "published" &&
+    pdf.isOpen !== true &&
+    pdf.teacherId !== user.uid &&
+    role !== "teacher" &&
+    role !== "admin";
   if (!countable) return Response.json({ tracking: false, counted: false });
 
   // Page count measured by the server at upload; the viewer's count is only a fallback.
@@ -106,7 +109,6 @@ export async function POST(request, { params }) {
         tx.set(viewRef, base, { merge: true });
         return { counted: true, justCounted: false, seen: view.pagesSeenCount || required, readSec: view.readSec || 0, accepted: [] };
       }
-
       // Time that really passed since the last report (first report: one heartbeat window).
       const lastMs = view?.lastHeartbeatAt?.toMillis?.() || 0;
       const elapsedSec = lastMs
@@ -141,7 +143,6 @@ export async function POST(request, { params }) {
           views: FieldValue.increment(1),
           [`monthlyViews.${monthKey}`]: FieldValue.increment(1),
         });
-
         tx.set(
           db.collection("users").doc(pdf.teacherId),
           {

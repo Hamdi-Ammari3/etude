@@ -20,13 +20,13 @@ export const dynamic = "force-dynamic";
  * Records which 10-second chunks the student really watched. The first time
  * a student reaches 50% of DISTINCT chunks, ONE view is counted, inside a
  * transaction, so it can never be counted twice (two tabs, retries, rewatch).
+ * Open (free) videos are never counted and never paid.
  *
  * Writes (Admin SDK only):
  *   videoViews/{videoId}_{uid}          progress + counted flag (one doc per student per video)
  *   videos/{videoId}                    views +1, monthlyViews["YYYY-MM"] +1
  *   teacherEarnings/{teacherId}_{YYYY-MM}  views +1, amountMillimes +100
- */
-export async function POST(request, { params }) {
+ */ export async function POST(request, { params }) {
   let user;
   try {
     user = await requireUser(request);
@@ -60,6 +60,9 @@ export async function POST(request, { params }) {
   if (!canWatchVideo({ ...profile, uid: user.uid, role }, video)) {
     return jsonError("Accès refusé.", 403);
   }
+
+  // Open (free) videos are never counted or paid — nothing to track.
+  if (video.isOpen === true) return Response.json({ counted: false, tracking: false });
 
   // Only real students on published videos generate paid views.
   // Teachers previewing their own video and admins are never counted.
@@ -96,7 +99,6 @@ export async function POST(request, { params }) {
         tx.set(viewRef, base, { merge: true });
         return { counted: true, justCounted: false, watched: view.watchedCount || required, accepted: [] };
       }
-
       // Re-measure from scratch if the video length changed.
       const storedBits = view?.totalChunks === total ? view.watchedBits : null;
       const allowance = chunkAllowance(view?.lastHeartbeatAt?.toMillis?.() || 0, now);
@@ -150,7 +152,6 @@ export async function POST(request, { params }) {
       tx.set(viewRef, update, { merge: true });
       return { counted: update.counted, justCounted: update.counted, watched, accepted };
     });
-
     return Response.json({
       tracking: true,
       counted: result.counted,

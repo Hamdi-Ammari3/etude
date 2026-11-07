@@ -78,151 +78,224 @@
 }
 
 .profil-section-title {
-  margin: 0;
+  margin: 0 0 1rem;
   font-family: var(--home-font-display);
   font-size: 1.4rem;
   font-weight: 800;
 }
 
-.profil-section-sub {
-  margin: 0.3rem 0 0;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--home-muted);
+.profil-sub-loading {
+  padding: 2rem 0;
 }
 
-/* ---------- Empty states ---------- */
+/* ---------- Subscription card ---------- */
 
-.profil-empty-box {
-  margin-top: 1rem;
+.profil-plan {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
   padding: 1.75rem;
   border-radius: var(--home-radius-2xl, 28px);
-  background: var(--home-secondary, #f7efd1);
-  text-align: center;
+  background: var(--home-card);
+  border: 2px solid var(--home-border);
+  box-shadow: 0 6px 0 var(--home-border, #d4dfeb);
 }
 
-.profil-empty-text {
-  margin: 0;
-  font-weight: 800;
-  color: var(--home-secondary-foreground, #55310f);
+/* Colored top edge by state */
+.profil-plan-active {
+  border-top: 6px solid var(--home-mint, #73e0b4);
+}
+.profil-plan-soon {
+  border-top: 6px solid var(--home-sun, #faca4b);
+}
+.profil-plan-expired {
+  border-top: 6px solid var(--home-coral, #ff8573);
+}
+.profil-plan-inactive,
+.profil-plan-none {
+  border-top: 6px solid var(--home-border, #d4dfeb);
 }
 
-.profil-empty-cta {
-  display: inline-block;
-  margin-top: 1rem;
-  padding: 0.75rem 1.5rem;
+.profil-plan-head {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+
+.profil-plan-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
   border-radius: 999px;
+  font-size: 0.8rem;
   font-weight: 800;
+}
+
+.profil-plan-pill-active {
+  background: var(--home-mint, #73e0b4);
+  color: var(--home-mint-foreground, #003729);
+}
+.profil-plan-pill-soon {
+  background: var(--home-sun, #faca4b);
+  color: var(--home-ink, #1a2846);
+}
+.profil-plan-pill-expired {
+  background: var(--home-coral, #ff8573);
+  color: var(--home-coral-foreground, #fffbfa);
+}
+.profil-plan-pill-inactive,
+.profil-plan-pill-none {
+  background: var(--home-wash-blue, #e5f0fc);
+  color: var(--home-ink, #1a2846);
+}
+
+.profil-plan-title {
+  margin: 0.2rem 0 0;
+  font-family: var(--home-font-display);
+  font-size: 1.3rem;
+  font-weight: 800;
+}
+
+.profil-plan-text {
+  margin: 0;
+  color: var(--home-muted);
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+/* Dates: Début · Fin · Reste */
+.profil-plan-dates {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.75rem;
+}
+
+.profil-plan-date {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.85rem 1rem;
+  border-radius: 18px;
+  background: var(--home-wash-blue, #e5f0fc);
+}
+
+.profil-plan-date-label {
+  color: var(--home-muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.profil-plan-date-value {
+  color: var(--home-ink);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.profil-plan-days {
+  color: var(--home-primary);
+}
+
+/* Time already gone in the subscription period */
+.profil-plan-bar {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--home-wash-blue, #e5f0fc);
+  overflow: hidden;
+}
+
+.profil-plan-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--home-primary);
+}
+
+.profil-plan-soon .profil-plan-bar > span {
+  background: var(--home-sun, #faca4b);
+}
+
+/* What's included */
+.profil-plan-included {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.5rem 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.profil-plan-included li {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--home-ink);
   font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.profil-plan-included li span {
+  flex-shrink: 0;
+  font-size: 1.15rem;
+}
+
+/* Buttons */
+.profil-plan-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.profil-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 0 1.4rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 800;
   text-decoration: none;
-  transition: transform 150ms ease;
+  transition: transform 150ms ease, background-color 150ms ease;
 }
 
-.profil-empty-cta:hover {
-  transform: scale(1.04);
+.profil-btn:hover {
+  transform: scale(1.03);
 }
 
-.profil-empty-cta-primary {
+.profil-btn-primary {
   background: var(--home-primary);
   color: var(--home-primary-foreground, #f9fcff);
 }
 
-.profil-empty-cta-coral {
-  background: var(--home-coral, #ff8573);
-  color: var(--home-coral-foreground, #fffbfa);
-}
-
-/* ---------- Video subscriptions ---------- */
-
-.profil-sub-list {
-  list-style: none;
-  margin: 1rem 0 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.profil-sub-card {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.9rem;
-  padding: 1rem 1.25rem;
-  border-radius: var(--home-radius-2xl, 28px);
+.profil-btn-ghost {
+  border: 2px solid var(--home-primary);
   background: var(--home-card);
-  border: 2px solid var(--home-border);
-  box-shadow: 0 4px 0 var(--home-border, #d4dfeb);
-}
-
-.profil-sub-emoji {
-  flex-shrink: 0;
-  font-size: 2rem;
-}
-
-.profil-sub-info {
-  min-width: 0;
-  flex: 1;
-}
-
-.profil-sub-name {
-  margin: 0;
-  font-weight: 800;
-  font-size: 1rem;
-}
-
-.profil-sub-hint {
-  margin: 0.15rem 0 0;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--home-muted);
-}
-
-.profil-watch-btn {
-  flex-shrink: 0;
-  padding: 0.55rem 1.1rem;
-  border-radius: 999px;
-  background: var(--home-mint, #73e0b4);
-  color: var(--home-mint-foreground, #003729);
-  font-weight: 800;
-  font-size: 0.85rem;
-  text-decoration: none;
-  transition: transform 150ms ease;
-}
-
-.profil-watch-btn:hover {
-  transform: scale(1.05);
-}
-
-.profil-add-grade {
-  display: inline-block;
-  margin-top: 1rem;
-  font-size: 0.85rem;
-  font-weight: 800;
   color: var(--home-primary);
-  text-decoration: none;
 }
 
-.profil-add-grade:hover {
-  text-decoration: underline;
+.profil-btn-ghost:hover {
+  background: var(--home-wash-blue, #e5f0fc);
 }
 
-/* ---------- Documents ---------- */
+/* ---------- Help ---------- */
 
-.profil-grade-grid {
-  margin-top: 1rem;
+.profil-help-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 0.75rem;
 }
 
 @media (min-width: 640px) {
-  .profil-grade-grid {
+  .profil-help-grid {
     grid-template-columns: 1fr 1fr;
   }
 }
 
-.profil-grade-card {
+.profil-help-card {
   display: flex;
   align-items: center;
   gap: 0.9rem;
@@ -235,25 +308,26 @@
   transition: transform 180ms ease, box-shadow 180ms ease;
 }
 
-.profil-grade-card:hover {
+.profil-help-card:hover {
   transform: translateY(-3px);
   box-shadow: var(--home-shadow-pop, 0 6px 0 var(--home-border, #d4dfeb));
 }
 
-.profil-grade-emoji {
+.profil-help-emoji {
   flex-shrink: 0;
   font-size: 1.8rem;
 }
 
-.profil-grade-name {
-  margin: 0;
+.profil-help-title {
+  display: block;
   font-weight: 800;
   font-size: 0.95rem;
 }
 
-.profil-grade-hint {
-  margin: 0.15rem 0 0;
-  font-size: 0.78rem;
+.profil-help-hint {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: var(--home-muted);
 }
@@ -284,8 +358,26 @@
     width: 100%;
   }
 
-  .profil-watch-btn {
+  .profil-plan {
+    padding: 1.25rem;
+    gap: 1rem;
+  }
+
+  .profil-plan-title {
+    font-size: 1.15rem;
+  }
+
+  .profil-plan-dates {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* "Reste" takes the whole line under Début / Fin */
+  .profil-plan-date:nth-child(3) {
+    grid-column: 1 / -1;
+  }
+
+  .profil-plan-actions,
+  .profil-btn {
     width: 100%;
-    text-align: center;
   }
 }

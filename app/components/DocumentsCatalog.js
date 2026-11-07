@@ -21,11 +21,13 @@ import { ContentCard, PlayerModal, PdfReaderModal } from "./DocumentCards";
 import { AccessModal } from "./AccessModal";
 import { useSubscription, claimAccess } from "../../lib/useSubscription";
 import { isFreeAccess } from "../../lib/subscription";
+import { isOpenDoc } from "../../lib/openDocs";
 import { getGradeEmoji, getSubjectEmoji } from "../../lib/videoDisplay";
 import { normalizeText } from "../../lib/videoText";
 import "../homePage.css";
 import "../videos/videos.css";
-import "./catalogFilters.css"; 
+import "./catalogFilters.css";
+import "./openDocs.css"; 
 const DROUSSY_WHATSAPP = "21651510183";
 const TEACHER_JOIN_LINK = `https://wa.me/${DROUSSY_WHATSAPP}?text=${encodeURIComponent(
   "Bonjour, je souhaite devenir enseignant sur Droussy TN"
@@ -69,9 +71,10 @@ function countLabel(n, type) {
 }
 
 /** Firestore filters for the current view (published only — what the rules allow). */
-function filterConstraints({ grade, section, subject, type, docCategory, teacherId }) {
+function filterConstraints({ grade, section, subject, type, docCategory, teacherId, free }) {
   const c = [where("status", "==", "published")];
   if (teacherId) c.push(where("teacherId", "==", teacherId));
+  if (free) c.push(where("isOpen", "==", true)); // "Gratuit" filter
   if (grade !== "all") c.push(where("gradeId", "==", grade));
   if (section !== "all") c.push(where("specializationId", "==", section));
   if (type !== "all") c.push(where("type", "==", type));
@@ -169,10 +172,11 @@ function readUrlFilters() {
     type: type === CONTENT_TYPES.VIDEO || type === CONTENT_TYPES.PDF ? type : "all",
     docCategory: p.get("doc") || "all",
     q: (p.get("q") || "").slice(0, 80),
+    free: p.get("gratuit") === "1",
   };
 }
 
-function writeUrlFilters({ grade, section, subject, type, docCategory, q }) {
+function writeUrlFilters({ grade, section, subject, type, docCategory, q, free }) {
   if (typeof window === "undefined") return;
   const p = new URLSearchParams();
   if (grade && grade !== "all") p.set("niveau", grade);
@@ -181,6 +185,7 @@ function writeUrlFilters({ grade, section, subject, type, docCategory, q }) {
   if (section !== "all") p.set("section", section);
   if (subject !== "all") p.set("matiere", subject);
   if (q) p.set("q", q);
+  if (free) p.set("gratuit", "1");
   const qs = p.toString();
   const next = `${window.location.pathname}${qs ? `?${qs}` : ""}`;
   if (next !== `${window.location.pathname}${window.location.search}`) {
@@ -209,6 +214,7 @@ export default function DocumentsCatalog({ teacherId = null, title = null }) {
   const [subject, setSubject] = useState("all");
   const [type, setType] = useState("all"); // all | video | pdf
   const [docCategory, setDocCategory] = useState("all"); // PDF type (cours, série…)
+  const [freeOnly, setFreeOnly] = useState(false); // "Gratuit" filter: open documents only
   const [searchInput, setSearchInput] = useState(""); // what the student types
   const [searchQuery, setSearchQuery] = useState(""); // what was submitted (Enter / button)
   const [filtersReady, setFiltersReady] = useState(false);
@@ -253,6 +259,7 @@ export default function DocumentsCatalog({ teacherId = null, title = null }) {
     setDocCategory(fromUrl.docCategory);
     setSearchInput(fromUrl.q);
     setSearchQuery(fromUrl.q);
+    setFreeOnly(!!fromUrl.free);
     setFiltersReady(true);
   }, [hydrated, filtersReady]);
 
@@ -322,7 +329,7 @@ export default function DocumentsCatalog({ teacherId = null, title = null }) {
   useEffect(() => {
     if (!filtersReady) return;
     let cancelled = false;
-    const scope = filterConstraints({ grade, section, subject: "all", type: "all", docCategory: "all", teacherId });
+    const scope = filterConstraints({ grade, section, subject: "all", type: "all", docCategory: "all", teacherId, free: freeOnly });
     countMany([
       [CONTENT_TYPES.VIDEO, [...scope, where("type", "==", CONTENT_TYPES.VIDEO)]],
       [CONTENT_TYPES.PDF, [...scope, where("type", "==", CONTENT_TYPES.PDF)]],
@@ -339,19 +346,19 @@ export default function DocumentsCatalog({ teacherId = null, title = null }) {
     return () => {
       cancelled = true;
     };
-  }, [filtersReady, grade, section]); 
+  }, [filtersReady, grade, section, freeOnly]); 
   // Subjects for the current level + section + type.
   useEffect(() => {
     if (!filtersReady) return;
     let cancelled = false;
-    const scope = filterConstraints({ grade, section, subject: "all", type, docCategory: "all", teacherId });
+    const scope = filterConstraints({ grade, section, subject: "all", type, docCategory: "all", teacherId, free: freeOnly });
     countMany(subjectCandidates.map((s) => [s.id, [...scope, where("subjectId", "==", s.id)]])).then(
       (m) => !cancelled && setSubjectCounts(m)
     );
     return () => {
       cancelled = true;
     };
-  }, [filtersReady, grade, section, type, subjectCandidates]);
+  }, [filtersReady, grade, section, type, subjectCandidates, freeOnly]);
 
   // PDF types (Cours, Série…) on the PDF tab, for the current level + section + subject.
   useEffect(() => {
@@ -360,14 +367,14 @@ export default function DocumentsCatalog({ teacherId = null, title = null }) {
       return;
     }
     let cancelled = false;
-    const scope = filterConstraints({ grade, section, subject, type: CONTENT_TYPES.PDF, docCategory: "all", teacherId });
+    const scope = filterConstraints({ grade, section, subject, type: CONTENT_TYPES.PDF, docCategory: "all", teacherId, free: freeOnly });
     countMany(PDF_CATEGORIES.map((c) => [c.id, [...scope, where("pdfCategory", "==", c.id)]])).then(
       (m) => !cancelled && setDocCategoryCounts(m)
     );
     return () => {
       cancelled = true;
     };
-  }, [filtersReady, grade, section, subject, type]);
+  }, [filtersReady, grade, section, subject, type, freeOnly]);
 
   // A PDF type with no documents for the new filters falls back to "all".
   useEffect(() => {
@@ -399,8 +406,8 @@ export default function DocumentsCatalog({ teacherId = null, title = null }) {
   const gradesWithContent = gradeCounts ? [...gradeCounts.values()].filter((n) => n > 0).length : null;
 
   const filters = useMemo(
-    () => ({ grade, section, subject, type, docCategory, q: searchQuery }),
-    [grade, section, subject, type, docCategory, searchQuery]
+    () => ({ grade, section, subject, type, docCategory, q: searchQuery, free: freeOnly }),
+    [grade, section, subject, type, docCategory, searchQuery, freeOnly]
   );
 
   // ---- Load the first 40 whenever the filters change ----
@@ -517,6 +524,7 @@ export default function DocumentsCatalog({ teacherId = null, title = null }) {
     (section !== "all" ? 1 : 0) +
     (subject !== "all" ? 1 : 0) +
     (type !== "all" ? 1 : 0) +
+    (freeOnly ? 1 : 0) +
     (currentDocCategory ? 1 : 0);
   const shownTotal = total ?? items.length;
 
@@ -524,6 +532,7 @@ export default function DocumentsCatalog({ teacherId = null, title = null }) {
   // checked by the server just before opening (claimAccess below).
   const lockReason = useCallback(
     (v) => {
+      if (isOpenDoc(v)) return null; // open (free) document: everyone, even without an account
       if (!user) return "login";
       if (isFreeAccess(user, v)) return null; // teacher's own document
       if (!subStatus) return null; // still loading → the server decides
@@ -540,7 +549,7 @@ export default function DocumentsCatalog({ teacherId = null, title = null }) {
       setLocked({ item: v, reason });
       return;
     }
-    if (isStudent && !isFreeAccess(user, v)) {
+    if (isStudent && !isFreeAccess(user, v) && !isOpenDoc(v)) {
       // Ask the server first, so a refusal shows the right window (not an error in the player).
       setOpening(v.id);
       const res = await claimAccess(v.id);
@@ -580,6 +589,7 @@ export default function DocumentsCatalog({ teacherId = null, title = null }) {
     setSubject("all");
     setType("all");
     setDocCategory("all");
+    setFreeOnly(false);
   }
 
   function clearFilters() {
@@ -588,7 +598,13 @@ export default function DocumentsCatalog({ teacherId = null, title = null }) {
     setSubject("all");
     setType("all");
     setDocCategory("all");
+    setFreeOnly(false);
   }
+
+
+  // Banner under an open document: visitors and students without an active subscription.
+  const showFreeCta = (v) =>
+    isOpenDoc(v) && (!user || (isStudent && !isFreeAccess(user, v) && subStatus?.active !== true));
 
   function jumpToGrade(id) {
     setGrade(id);
@@ -655,7 +671,7 @@ export default function DocumentsCatalog({ teacherId = null, title = null }) {
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               maxLength={80}
-              placeholder={embedded ? "Chercher une leçon ou une matière…" : "Leçon, matière ou enseignant…"}
+              placeholder={embedded ? "Leçon ou matière…" : "Leçon, matière ou enseignant…"}
               aria-label="Chercher une leçon, une matière ou un enseignant"
               className="cat-search-input"
             />
@@ -725,6 +741,25 @@ export default function DocumentsCatalog({ teacherId = null, title = null }) {
                 </button>
               ))}
             </div>
+
+            {/* All documents ↔ free ones only: two clear buttons, one always selected. */}
+            <div className="cat-access" role="radiogroup" aria-label="Accès aux documents">
+              {[
+                { id: false, label: "Tous les documents" },
+                { id: true, label: "Gratuits" },
+              ].map((a) => (
+                <button
+                  key={String(a.id)}
+                  type="button"
+                  role="radio"
+                  aria-checked={freeOnly === a.id}
+                  onClick={() => setFreeOnly(a.id)}
+                  className={`cat-access-option ${freeOnly === a.id ? "cat-access-option-active" : ""}`}
+                >
+                  {a.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {hasSections && SPECIALIZATIONS.some((sp) => hasDocs(sectionCounts, sp.id)) && (
@@ -756,6 +791,7 @@ export default function DocumentsCatalog({ teacherId = null, title = null }) {
               ))}
             </ChipRow>
           )}
+
         </div>
       </div> 
       {/* ---------- Results ---------- */}
@@ -763,7 +799,7 @@ export default function DocumentsCatalog({ teacherId = null, title = null }) {
         {/* Visitors: one short line, so the first cards stay on the first screen */}
         {!user && (
           <div className="vid-login-strip">
-            <span>👋 Connecte-toi pour ouvrir les vidéos et les PDF.</span>
+            <span>👋 Essaie les documents gratuits, ou connecte-toi pour tout ouvrir.</span>
             <Link href="/login" className="vid-login-strip-btn">
               Connexion
             </Link>
@@ -802,6 +838,7 @@ export default function DocumentsCatalog({ teacherId = null, title = null }) {
                   <>
                     {currentGrade ? `${gradeEmoji(currentGrade.id)} ${currentGrade.name}` : "Tous les niveaux"}
                     {currentSubject && <span className="vid-results-accent"> · {currentSubject.name}</span>}
+                    {freeOnly && <span className="vid-results-accent"> · Gratuits</span>}
                   </>
                 )}
               </h2>
@@ -907,8 +944,24 @@ export default function DocumentsCatalog({ teacherId = null, title = null }) {
       </div>
 
       {/* On a teacher's profile, his name in the player is not a link (we are already there). */}
-      {playing && <PlayerModal video={playing} onClose={closeViewer} linkTeacher={!embedded} />}
-      {reading && <PdfReaderModal pdf={reading} onClose={closeViewer} linkTeacher={!embedded} />}
+      {playing && (
+        <PlayerModal
+          video={playing}
+          onClose={closeViewer}
+          linkTeacher={!embedded}
+          freeCta={showFreeCta(playing)}
+          isLoggedIn={!!user}
+        />
+      )}
+      {reading && (
+        <PdfReaderModal
+          pdf={reading}
+          onClose={closeViewer}
+          linkTeacher={!embedded}
+          freeCta={showFreeCta(reading)}
+          isLoggedIn={!!user}
+        />
+      )}
 
       {locked && <AccessModal item={locked.item} reason={locked.reason} onClose={() => setLocked(null)} />}
     </div>

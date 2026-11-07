@@ -1,6 +1,7 @@
 import { adminDb, requireTeacher, jsonError, FieldValue } from "../../../../lib/videoServer";
 import { presignPdfUpload, pdfKeyFor } from "../../../../lib/bunnyStorage";
 import { cleanTitle, normalizeText, buildSearchKeywords } from "../../../../lib/videoText";
+import { shouldOpenNewDoc } from "../../../../lib/openDocsServer";
 import {
   TITLE_MIN,
   TITLE_MAX,
@@ -22,7 +23,6 @@ const UPLOAD_URL_TTL_SEC = 3600; // slow connections: 1 h to send the file
 function str(value, max = 120) {
   return typeof value === "string" ? value.trim().replace(/\s+/g, " ").slice(0, max) : "";
 }
-
 /**
  * POST /api/pdfs/create-upload
  * Body: { title, gradeId, gradeName, specializationId?, specializationName?,
@@ -70,7 +70,6 @@ export async function POST(request) {
   if (fileSize > MAX_PDF_BYTES) {
     return jsonError(`Le PDF ne doit pas dépasser ${Math.round(MAX_PDF_BYTES / (1024 * 1024))} Mo.`);
   }
-
   const db = adminDb();
 
   const openUploads = await db
@@ -93,6 +92,9 @@ export async function POST(request) {
     console.error("Bunny Storage presign failed", err);
     return jsonError("Le service de stockage est indisponible. Réessayez dans un instant.", 502);
   }
+
+  // First document of the teacher (no open document yet) → open (free) automatically.
+  const isOpen = await shouldOpenNewDoc(db, teacher.uid);
 
   const payload = {
     type: CONTENT_TYPES.PDF,
@@ -122,6 +124,7 @@ export async function POST(request) {
     thumbnailPublicId: null,
     views: 0,
     monthlyViews: {},
+    isOpen, // open (free) document: anyone can read it, never paid or counted
     status: VIDEO_STATUS.UPLOADING,
     createdAt: FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(),

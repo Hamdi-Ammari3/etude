@@ -1,5 +1,6 @@
 import { createBunnyVideo, deleteBunnyVideo, buildTusSignature, bunnyConfig } from "../../../../lib/bunny";
 import { adminDb, requireTeacher, jsonError, FieldValue } from "../../../../lib/videoServer";
+import { shouldOpenNewDoc } from "../../../../lib/openDocsServer";
 import {
   TITLE_MIN,
   TITLE_MAX,
@@ -66,7 +67,6 @@ export async function POST(request) {
   if (title.length < TITLE_MIN) return jsonError("Le titre est trop court.");
   if (!gradeId || !gradeName) return jsonError("Niveau manquant.");
   if (!subjectId || !subjectName) return jsonError("Matière manquante.");
-
   // Every video uses the shared default thumbnail (set on the server, so the
   // browser can't point it anywhere else). thumbnailPublicId stays null so
   // deleting a video never deletes the shared image.
@@ -89,6 +89,9 @@ export async function POST(request) {
   if (openUploads.size >= MAX_OPEN_UPLOADS) {
     return jsonError("Trop d'envois en cours. Attendez la fin de vos envois précédents.", 429);
   }
+
+  // First document of the teacher (no open document yet) → open (free) automatically.
+  const isOpen = await shouldOpenNewDoc(db, teacher.uid);
 
   // ---- Create the empty video on Bunny ----
   let bunnyVideoId;
@@ -124,6 +127,7 @@ export async function POST(request) {
     durationSec: clientDurationSec, // provisional — replaced by Bunny's real length after encoding
     views: 0,
     monthlyViews: {},
+    isOpen, // open (free) document: anyone can watch it, never paid or counted
     status: VIDEO_STATUS.UPLOADING,
     createdAt: FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(),
@@ -136,7 +140,6 @@ export async function POST(request) {
     await deleteBunnyVideo(bunnyVideoId).catch(() => {});
     return jsonError("Impossible d'enregistrer la vidéo. Réessayez.", 500);
   }
-
   // ---- Signed, time-limited TUS credentials for the browser ----
   const expires = Math.floor(Date.now() / 1000) + TUS_SIGNATURE_TTL_SEC;
   const signature = buildTusSignature(bunnyVideoId, expires);

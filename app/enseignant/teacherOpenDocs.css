@@ -1,0 +1,35 @@
+/* =========================================================
+   TEACHER DASHBOARD — open (free) documents
+   (the "Gratuit" thumbnail badge comes from components/openDocs.css)
+   Only the platform's own colors.
+   ========================================================= */
+
+.ens-video-thumb {
+  position: relative;
+}
+
+.ens-open-notice {
+  margin: 0 0 1rem;
+  padding: 0.65rem 0.95rem;
+  border-radius: 12px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.ens-open-notice-ok {
+  border: 2px solid var(--home-primary, #1a8cf0);
+  background: var(--home-wash-blue, #e5f0fc);
+  color: var(--home-ink, #1a2846);
+}
+
+.ens-open-notice-error {
+  border: 2px solid rgba(196, 44, 44, 0.35);
+  background: #fdf1f1;
+  color: #9b1c1c;
+}
+
+.ens-video-menu-item:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}

@@ -1,6 +1,6 @@
 "use client";
 
-// Shared by the documents catalog (home page "/") and the teacher profile page
+// Shared by the documents catalog (/videos) and the teacher profile page
 // (/enseignants/[id]): the card, the video player, the PDF reader, the
 // "locked" window, and the clickable teacher name.
 
@@ -15,6 +15,7 @@ import TrackedVideoPlayer from "./TrackedVideoPlayer";
 import ProtectedPdfViewer from "./ProtectedPdfViewer";
 import VideoThumbnail from "./VideoThumbnail";
 import "../videos/videos.css";
+import "./openDocs.css";
 
 const DROUSSY_WHATSAPP = "21651510183";
 
@@ -96,9 +97,13 @@ export function ContentCard({ item, locked, isLoggedIn, showGrade, showSection, 
       <div className="vid-thumb">
         <VideoThumbnail video={item} />
         {badge && <span className={`vid-duration ${pdf ? "vid-badge-pdf" : ""}`}>{badge}</span>}
+        {item.isOpen === true && (
+          <span className="vid-free-badge" title="Document gratuit : accessible à tous, sans abonnement">
+            Gratuit
+          </span>
+        )}
         {locked ? (
-          // Visitors: light lock so they can still read what's on offer.
-          <span className={`vid-locked-overlay ${isLoggedIn ? "" : "vid-locked-soft"}`}>
+          <span className="vid-locked-overlay">
             <span>{isLoggedIn ? "🔓 À débloquer" : "🔒 Connecte-toi"}</span>
           </span>
         ) : (
@@ -139,11 +144,45 @@ export function DocumentViewer({ item, locked, isLoggedIn, onClose, linkTeacher 
 }
 
 // =========================================================
-// PLAYER (short-lived signed Bunny URL + view tracking)
+// FREE DOCUMENT BANNER — under an open document, for visitors and
+// students without an active subscription.
 // =========================================================
 
-export function PlayerModal({ video, onClose, linkTeacher = true }) {
+const FREE_CTA_TEXT = "Bonjour Droussy TN, j'ai essayé un document gratuit et je souhaite m'abonner pour tout débloquer.";
+
+export function FreeDocBanner({ isLoggedIn }) {
+  return (
+    <div className="vid-free-cta">
+      <p className="vid-free-cta-text">
+        <strong>Document gratuit.</strong> Abonne-toi pour débloquer toutes les vidéos et tous les PDF de Droussy TN.
+      </p>
+      <div className="vid-free-cta-actions">
+        <a
+          href={`https://wa.me/${DROUSSY_WHATSAPP}?text=${encodeURIComponent(FREE_CTA_TEXT)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="vid-free-cta-btn"
+        >
+          💬 S'abonner sur WhatsApp
+        </a>
+        {!isLoggedIn && (
+          <Link href="/login" className="vid-free-cta-link">
+            J'ai déjà un compte
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// =========================================================
+// PLAYER (short-lived signed Bunny URL + view tracking)
+// Open (free) videos work without an account and are never tracked.
+// =========================================================
+
+export function PlayerModal({ video, onClose, linkTeacher = true, freeCta = false, isLoggedIn = true }) {
   const [embedUrl, setEmbedUrl] = useState(null);
+  const [tracking, setTracking] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -153,14 +192,18 @@ export function PlayerModal({ video, onClose, linkTeacher = true }) {
       setError(null);
       try {
         const idToken = await auth.currentUser?.getIdToken();
-        if (!idToken) throw new Error("Connecte-toi pour regarder cette vidéo.");
+        // No account: only open (free) videos can be played — the server checks.
+        if (!idToken && video.isOpen !== true) throw new Error("Connecte-toi pour regarder cette vidéo.");
         const res = await fetch(`/api/videos/${video.id}/play`, {
           method: "POST",
-          headers: { Authorization: `Bearer ${idToken}` },
+          headers: idToken ? { Authorization: `Bearer ${idToken}` } : {},
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.error || "Lecture impossible pour le moment.");
-        if (!cancelled) setEmbedUrl(data.embedUrl);
+        if (!cancelled) {
+          setTracking(data.tracking !== false);
+          setEmbedUrl(data.embedUrl);
+        }
       } catch (err) {
         if (!cancelled) setError(err.message);
       }
@@ -191,13 +234,25 @@ export function PlayerModal({ video, onClose, linkTeacher = true }) {
             <p>⚠️ {error}</p>
           </div>
         ) : embedUrl ? (
-          <TrackedVideoPlayer videoId={video.id} embedUrl={embedUrl} title={video.title} />
+          tracking ? (
+            <TrackedVideoPlayer videoId={video.id} embedUrl={embedUrl} title={video.title} />
+          ) : (
+            // Open (free) video: plain player, nothing reported (never counted or paid).
+            <iframe
+              src={embedUrl}
+              title={video.title}
+              loading="lazy"
+              allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
+              allowFullScreen
+            />
+          )
         ) : (
           <div className="vid-player-msg">
             <LoadingSpinner />
           </div>
         )}
       </div>
+      {freeCta && <FreeDocBanner isLoggedIn={isLoggedIn} />}
     </Modal>
   );
 }
@@ -206,7 +261,7 @@ export function PlayerModal({ video, onClose, linkTeacher = true }) {
 // PDF READER (protected viewer, full screen on phones)
 // =========================================================
 
-export function PdfReaderModal({ pdf, onClose, linkTeacher = true }) {
+export function PdfReaderModal({ pdf, onClose, linkTeacher = true, freeCta = false, isLoggedIn = true }) {
   const category = getPdfCategory(pdf.pdfCategory);
   const before = [category && `${category.emoji} ${category.label}`, pdf.hasCorrection && "✅ Corrigé"].filter(Boolean);
   const subject = `${getSubjectEmoji(pdf.subjectId, pdf.subjectEmoji)} ${pdf.subjectName || ""}`.trim();
@@ -216,20 +271,19 @@ export function PdfReaderModal({ pdf, onClose, linkTeacher = true }) {
         {pdf.title}
       </h2>
       <p className="vid-modal-desc vid-reader-desc">
+        {before.length > 0 && `${before.join(" · ")} · `}
         {pdf.teacherName && (
           <>
             <TeacherLink teacherId={pdf.teacherId} name={pdf.teacherName} link={linkTeacher} />
             {" · "}
           </>
         )}
-        
-        {before.length > 0 && `${before.join(" · ")} · `}
-        
         {subject}
       </p>
       <div className="vid-reader">
-        <ProtectedPdfViewer docId={pdf.id} />
+        <ProtectedPdfViewer docId={pdf.id} isOpen={pdf.isOpen === true} />
       </div>
+      {freeCta && <FreeDocBanner isLoggedIn={isLoggedIn} />}
     </Modal>
   );
 }
