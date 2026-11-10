@@ -15,11 +15,13 @@ export function subscribeHref(kind = "new") {
       ? "Bonjour Droussy TN, je souhaite renouveler mon abonnement."
       : kind === "limit"
       ? "Bonjour Droussy TN, mon compte a atteint sa limite d'utilisation."
+      : kind === "trial"
+      ? "Bonjour Droussy TN, mon essai gratuit est terminé, je souhaite m'abonner."
       : "Bonjour Droussy TN, je souhaite m'abonner pour accéder à tous les documents.";
   return `https://wa.me/${DROUSSY_WHATSAPP}?text=${encodeURIComponent(text)}`;
 }
 
-/** reason: "login" | "none" | "expired" | "inactive" | "quota" */
+/** reason: "login" | "none" | "expired" | "inactive" | "quota" | "trial_ended" */
 export function AccessModal({ item, reason, onClose }) {
   const pdf = item ? isPdf(item) : false;
   const what = pdf ? "ce PDF" : "cette vidéo";
@@ -62,6 +64,16 @@ export function AccessModal({ item, reason, onClose }) {
       cta: (
         <a href={subscribeHref("renew")} target="_blank" rel="noopener noreferrer" className="vid-btn-primary">
           💬 Nous contacter
+        </a>
+      ),
+    },
+    trial_ended: {
+      icon: "🎓",
+      title: "Ton essai gratuit est terminé",
+      text: `Tu as découvert Droussy TN ! Abonne-toi pour ouvrir toutes les vidéos et tous les PDF, de tous les niveaux et de toutes les matières, pour ${SUBSCRIPTION_PRICE_DT} DT par an.`,
+      cta: (
+        <a href={subscribeHref("trial")} target="_blank" rel="noopener noreferrer" className="vid-btn-primary">
+          💬 S'abonner
         </a>
       ),
     },

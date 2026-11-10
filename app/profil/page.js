@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { logoutUser, useUser } from "../../lib/auth";
 import { useSubscription } from "../../lib/useSubscription";
+import { SUBSCRIPTION_PRICE_DT } from "../../lib/subscription";
 import LoadingSpinner from "../components/LoadingSpinner";
 import "../homePage.css";
 import "./profil.css";
@@ -30,12 +31,43 @@ function formatPhone(d = "") {
 
 /**
  * Everything the subscription card shows, from subscriptionStatus().
- * Only dates are shown — never the hidden documents counter.
+ * Only dates are shown — never the hidden documents counter
+ * (except during the free trial, whose 30 documents are part of the offer).
  */
 function describeSubscription(status, now = Date.now()) {
   if (!status) return null;
   const { state, startedAt, endsAt } = status;
   const daysLeft = endsAt ? Math.max(0, Math.ceil((endsAt - now) / DAY_MS)) : null;
+
+  if (status.trial) {
+    const subscribe = { label: "💬 S'abonner sur WhatsApp", href: waLink("Bonjour Droussy TN, je suis en essai gratuit et je souhaite m'abonner.") };
+    const over = state !== "active" || status.remaining <= 0;
+    if (over) {
+      return {
+        tone: "expired",
+        pill: "🎓 Essai terminé",
+        title: "Ton essai gratuit est terminé",
+        text: `Abonne-toi pour continuer : toutes les vidéos et tous les PDF, de tous les niveaux, pour ${SUBSCRIPTION_PRICE_DT} DT par an.`,
+        startedAt,
+        endsAt,
+        daysLeft: null,
+        elapsedPct: null,
+        cta: subscribe,
+      };
+    }
+    const elapsed = startedAt && endsAt && endsAt > startedAt ? ((now - startedAt) / (endsAt - startedAt)) * 100 : null;
+    return {
+      tone: "soon",
+      pill: "🧪 Essai gratuit",
+      title: `Encore ${status.remaining} document${status.remaining > 1 ? "s" : ""} à découvrir`,
+      text: `Ton essai te permet d'ouvrir ${status.quota} vidéos ou PDF jusqu'au ${new Date(endsAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}. Abonne-toi quand tu veux pour tout débloquer pendant un an.`,
+      startedAt,
+      endsAt,
+      daysLeft,
+      elapsedPct: elapsed === null ? null : Math.min(100, Math.max(0, elapsed)),
+      cta: subscribe,
+    };
+  }
   const expiringSoon = state === "active" && daysLeft !== null && daysLeft <= EXPIRING_SOON_DAYS;
 
   // Share of the subscription period already gone (time only).

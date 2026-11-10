@@ -1,5 +1,6 @@
 import { adminDb, requireUser, jsonError, FieldValue } from "../../../../../lib/videoServer";
 import { canWatchVideo } from "../../../../../lib/videoAccess";
+import { isTrialProfile } from "../../../../../lib/subscription";
 import {
   CONTENT_TYPES,
   TEACHER_FIELDS,
@@ -67,12 +68,14 @@ export async function POST(request, { params }) {
   if (!canWatchVideo({ ...profile, uid: user.uid, role }, pdf)) return jsonError("Accès refusé.", 403);
 
   // Only real students on published, paid (not open) PDFs generate paid reads.
+  // Free-trial students never do: teachers are not paid for trial reads.
   const countable =
     pdf.status === "published" &&
     pdf.isOpen !== true &&
     pdf.teacherId !== user.uid &&
     role !== "teacher" &&
-    role !== "admin";
+    role !== "admin" &&
+    !isTrialProfile(profile);
   if (!countable) return Response.json({ tracking: false, counted: false });
 
   // Page count measured by the server at upload; the viewer's count is only a fallback.

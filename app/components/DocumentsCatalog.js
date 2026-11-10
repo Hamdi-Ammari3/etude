@@ -20,7 +20,7 @@ import LoadingSpinner from "./LoadingSpinner";
 import { ContentCard, PlayerModal, PdfReaderModal } from "./DocumentCards";
 import { AccessModal } from "./AccessModal";
 import { useSubscription, claimAccess } from "../../lib/useSubscription";
-import { isFreeAccess } from "../../lib/subscription";
+import { isFreeAccess, deniedCode } from "../../lib/subscription";
 import { isOpenDoc } from "../../lib/openDocs";
 import { getGradeEmoji, getSubjectEmoji } from "../../lib/videoDisplay";
 import { normalizeText } from "../../lib/videoText";
@@ -536,7 +536,7 @@ export default function DocumentsCatalog({ teacherId = null, title = null }) {
       if (!user) return "login";
       if (isFreeAccess(user, v)) return null; // teacher's own document
       if (!subStatus) return null; // still loading → the server decides
-      return subStatus.active ? null : subStatus.state;
+      return subStatus.active ? null : deniedCode(subStatus); // trial over → "trial_ended"
     },
     [user, subStatus]
   );

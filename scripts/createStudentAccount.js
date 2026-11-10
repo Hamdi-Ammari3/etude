@@ -20,13 +20,13 @@ const app = initializeApp({
 const db = getFirestore(app);
 
 // EDIT THESE FOR EACH NEW ACCOUNT ------------------------------------------
-const NAME = "Mohamed Chikhaoui";
-const RAW_PHONE = "99536298";
+const NAME = "Mohamed Cherif";
+const RAW_PHONE = "23761433";
 const MONTHS = 12; // subscription length
 // ---------------------------------------------------------------------------
 
 // Same value as DOC_QUOTA in lib/subscription.js (never shown to students).
-const DOC_QUOTA = 10;
+const DOC_QUOTA = 1000;
 
 function generatePin() {
   return String(Math.floor(1000 + Math.random() * 9000));

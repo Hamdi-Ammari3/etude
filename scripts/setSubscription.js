@@ -117,6 +117,9 @@ async function activate(phone, args) {
     used: 0,
     startedAt: Timestamp.fromDate(now),
     endsAt: Timestamp.fromDate(addMonths(now, months)),
+    // Always a paid plan: also turns a free-trial account into a paid one
+    // (set with merge keeps nested fields, so "trial" must be overwritten).
+    plan: "paid",
     updatedAt: FieldValue.serverTimestamp(),
   };
 

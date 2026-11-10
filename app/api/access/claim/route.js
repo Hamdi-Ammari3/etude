@@ -1,6 +1,6 @@
 import { adminDb, requireUser, jsonError } from "../../../../lib/videoServer";
 import { canWatchVideo } from "../../../../lib/videoAccess";
-import { subscriptionStatus, isFreeAccess, accessDeniedMessage } from "../../../../lib/subscription";
+import { subscriptionStatus, isFreeAccess, accessDeniedMessage, deniedCode } from "../../../../lib/subscription";
 import { claimDocAccess } from "../../../../lib/subscriptionServer";
 
 export const runtime = "nodejs";
@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
  * inside the player. Counts the document against the subscription — the play
  * and PDF routes call the same claim again, which never counts twice.
  *
- * → 200 { ok: true }   or   403 { ok: false, code: "none" | "expired" | "inactive" | "quota", error }
+ * → 200 { ok: true }   or   403 { ok: false, code: "none" | "expired" | "inactive" | "quota" | "trial_ended", error }
  * The response never contains the counter (students don't see it).
  */
 export async function POST(request) {
@@ -45,8 +45,8 @@ export async function POST(request) {
 
   if (!canWatchVideo(viewer, doc)) {
     if (!isFreeAccess(viewer, doc) && doc.status !== "published") return jsonError("Document introuvable.", 404);
-    const st = subscriptionStatus(viewer);
-    return Response.json({ ok: false, code: st.state, error: accessDeniedMessage(st.state) }, { status: 403 });
+    const code = deniedCode(subscriptionStatus(viewer));
+    return Response.json({ ok: false, code, error: accessDeniedMessage(code) }, { status: 403 });
   }
 
   try {

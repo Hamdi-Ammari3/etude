@@ -1,6 +1,7 @@
 import { adminDb, requireUser, jsonError, FieldValue } from "../../../../../lib/videoServer";
 import { canWatchVideo } from "../../../../../lib/videoAccess";
 import { VIEW_RATE_MILLIMES, TEACHER_FIELDS } from "../../../../../lib/videoConfig";
+import { isTrialProfile } from "../../../../../lib/subscription";
 import {
   totalChunksFor,
   requiredChunksFor,
@@ -66,8 +67,15 @@ export const dynamic = "force-dynamic";
 
   // Only real students on published videos generate paid views.
   // Teachers previewing their own video and admins are never counted.
+  // Free-trial students are never counted either: teachers are not paid for
+  // trial views (the position is still saved; if the student later subscribes
+  // and watches the video again, that view is paid).
   const countable =
-    video.status === "published" && video.teacherId !== user.uid && role !== "teacher" && role !== "admin";
+    video.status === "published" &&
+    video.teacherId !== user.uid &&
+    role !== "teacher" &&
+    role !== "admin" &&
+    !isTrialProfile(profile);
 
   const total = totalChunksFor(video.durationSec);
   if (total === 0) {

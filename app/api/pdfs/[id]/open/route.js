@@ -2,7 +2,7 @@ import { presignPdfRead } from "../../../../../lib/bunnyStorage";
 import { adminDb, requireUser, jsonError } from "../../../../../lib/videoServer";
 import { canWatchVideo } from "../../../../../lib/videoAccess";
 import { CONTENT_TYPES, PDF_URL_TTL_SEC } from "../../../../../lib/videoConfig";
-import { subscriptionStatus, isFreeAccess, accessDeniedMessage } from "../../../../../lib/subscription";
+import { subscriptionStatus, isFreeAccess, accessDeniedMessage, deniedCode } from "../../../../../lib/subscription";
 import { claimDocAccess } from "../../../../../lib/subscriptionServer";
 import { isOpenDoc } from "../../../../../lib/openDocs";
 
@@ -62,8 +62,8 @@ export async function POST(request, { params }) {
     const viewer = { ...profile, uid: user.uid, role: user.role || profile.role };
     if (!canWatchVideo(viewer, pdf)) {
       if (!isFreeAccess(viewer, pdf) && pdf.status !== "published") return jsonError("Document introuvable.", 404);
-      const st = subscriptionStatus(viewer);
-      return Response.json({ error: accessDeniedMessage(st.state), code: st.state }, { status: 403 });
+      const code = deniedCode(subscriptionStatus(viewer));
+      return Response.json({ error: accessDeniedMessage(code), code }, { status: 403 });
     }
 
     // Count it against the subscription (no-op if already opened in this subscription).

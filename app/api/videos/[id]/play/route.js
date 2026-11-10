@@ -1,7 +1,7 @@
 import { buildEmbedUrl } from "../../../../../lib/bunny";
 import { adminDb, requireUser, jsonError } from "../../../../../lib/videoServer";
 import { canWatchVideo } from "../../../../../lib/videoAccess";
-import { subscriptionStatus, isFreeAccess, accessDeniedMessage } from "../../../../../lib/subscription";
+import { subscriptionStatus, isFreeAccess, accessDeniedMessage, deniedCode } from "../../../../../lib/subscription";
 import { claimDocAccess } from "../../../../../lib/subscriptionServer";
 import { isOpenDoc } from "../../../../../lib/openDocs";
 
@@ -56,8 +56,8 @@ export async function POST(request, { params }) {
     const viewer = { ...profile, uid: user.uid, role: user.role || profile.role };
     if (!canWatchVideo(viewer, video)) {
       if (!isFreeAccess(viewer, video) && video.status !== "published") return jsonError("Vidéo indisponible.", 404);
-      const st = subscriptionStatus(viewer);
-      return Response.json({ error: accessDeniedMessage(st.state), code: st.state }, { status: 403 });
+      const code = deniedCode(subscriptionStatus(viewer));
+      return Response.json({ error: accessDeniedMessage(code), code }, { status: 403 });
     }
 
     // Count it against the subscription (no-op if already opened in this subscription).

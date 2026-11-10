@@ -44,8 +44,8 @@ const F = {
   BALANCE: "videoBalanceMillimes",
   EARNED_TOTAL: "videoEarnedMillimes",
 };
-const MIN_VIEWS = 2;
-const MAX_VIEWS = 5;
+const MIN_VIEWS = 1;
+const MAX_VIEWS = 3;
 
 // ---------- Helpers ----------
 
